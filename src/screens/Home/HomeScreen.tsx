@@ -52,10 +52,10 @@ export function HomeScreen() {
               >
                 <span style={{ fontSize: '1.5rem' }}>✅</span>
                 <span style={{ flex: 1 }}>
-                  <span className="card__title">
+                  <span className="card__title" style={{ display: 'block' }}>
                     {templateTitle(template, language)}
                   </span>
-                  <span className="card__meta">
+                  <span className="card__meta" style={{ display: 'block' }}>
                     {t('templates.tasksCount', { count: template.tasks.length })}
                   </span>
                 </span>
