@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createHashRouter } from 'react-router-dom';
 import { HomeScreen } from '@/screens/Home/HomeScreen';
 import { TemplateListScreen } from '@/screens/TemplateList/TemplateListScreen';
 import { TemplateEditorScreen } from '@/screens/TemplateEditor/TemplateEditorScreen';
@@ -7,7 +7,7 @@ import { SignatureCaptureScreen } from '@/screens/SignatureCapture/SignatureCapt
 import { ReportPreviewScreen } from '@/screens/ReportPreview/ReportPreviewScreen';
 import { SettingsScreen } from '@/screens/Settings/SettingsScreen';
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   { path: '/', element: <HomeScreen /> },
   { path: '/templates', element: <TemplateListScreen /> },
   { path: '/templates/new', element: <TemplateEditorScreen /> },
