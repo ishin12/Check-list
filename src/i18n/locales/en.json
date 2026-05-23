@@ -1,0 +1,116 @@
+{
+  "app": {
+    "name": "Check-list",
+    "tagline": "Job checklists, signed and sent."
+  },
+  "nav": {
+    "home": "Home",
+    "templates": "Templates",
+    "settings": "Settings",
+    "back": "Back"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "duplicate": "Duplicate",
+    "edit": "Edit",
+    "add": "Add",
+    "done": "Done",
+    "next": "Next",
+    "clear": "Clear",
+    "confirm": "Confirm",
+    "close": "Close",
+    "optional": "optional",
+    "copy": "Copy",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "home": {
+    "start": "Start a new job",
+    "startDesc": "Pick a checklist, complete the tasks, get a signature, and share.",
+    "manageTemplates": "Manage templates",
+    "noTemplates": "No templates yet. Create one to get started.",
+    "chooseTemplate": "Choose a checklist"
+  },
+  "templates": {
+    "title": "Templates",
+    "new": "New template",
+    "empty": "No templates yet.",
+    "emptyHint": "Create your first checklist template.",
+    "tasksCount": "{{count}} task",
+    "tasksCount_other": "{{count}} tasks",
+    "deleteConfirm": "Delete this template?",
+    "deleteConfirmBody": "This can't be undone.",
+    "copySuffix": "(copy)"
+  },
+  "editor": {
+    "newTitle": "New template",
+    "editTitle": "Edit template",
+    "nameEn": "Name (English)",
+    "nameAr": "Name (Arabic)",
+    "namePlaceholderEn": "e.g. AC Maintenance",
+    "namePlaceholderAr": "مثال: صيانة المكيف",
+    "tasks": "Tasks",
+    "taskEn": "Task (English)",
+    "taskAr": "Task (Arabic)",
+    "addTask": "Add task",
+    "required": "Required",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "removeTask": "Remove task",
+    "noTasks": "No tasks yet. Add your first task below.",
+    "nameRequired": "Please enter a template name."
+  },
+  "job": {
+    "customer": "Customer details",
+    "customerName": "Customer name",
+    "customerPhone": "Phone number",
+    "phoneHint": "Used to open WhatsApp to the right contact.",
+    "checklist": "Checklist",
+    "progress": "{{done}} of {{total}} done",
+    "addNote": "Add note",
+    "notePlaceholder": "Note (optional)",
+    "requiredBadge": "Required",
+    "toSignature": "Continue to signature",
+    "requiredRemaining": "Complete required tasks to continue."
+  },
+  "signature": {
+    "title": "Customer signature",
+    "instruction": "Ask the customer to sign below with their finger.",
+    "signerName": "Signer name",
+    "clear": "Clear",
+    "empty": "Please capture a signature.",
+    "confirm": "Confirm signature",
+    "tapToSign": "Sign here"
+  },
+  "report": {
+    "title": "Report",
+    "preview": "Preview",
+    "share": "Share via WhatsApp",
+    "generating": "Preparing PDF…",
+    "shared": "Shared successfully.",
+    "downloaded": "PDF downloaded. Attach it in WhatsApp to send.",
+    "shareError": "Couldn't share. The PDF was downloaded instead.",
+    "newJob": "Start another job",
+    "reportTitle": "Job Checklist Report",
+    "date": "Date",
+    "customer": "Customer",
+    "signature": "Signature",
+    "completed": "Completed",
+    "notCompleted": "Not completed",
+    "tasksDone": "{{done}}/{{total}} tasks completed",
+    "signedBy": "Signed by"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "languageDesc": "Choose the app and report language.",
+    "english": "English",
+    "arabic": "العربية",
+    "about": "About",
+    "aboutDesc": "Check-list works offline. Data is stored on this device only.",
+    "install": "Install app",
+    "installHint": "On iPhone: tap Share, then \"Add to Home Screen\"."
+  }
+}

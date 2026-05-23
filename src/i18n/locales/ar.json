@@ -1,0 +1,116 @@
+{
+  "app": {
+    "name": "قائمة المهام",
+    "tagline": "قوائم مهام موقّعة ومُرسلة."
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "templates": "القوالب",
+    "settings": "الإعدادات",
+    "back": "رجوع"
+  },
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "duplicate": "نسخ",
+    "edit": "تعديل",
+    "add": "إضافة",
+    "done": "تم",
+    "next": "التالي",
+    "clear": "مسح",
+    "confirm": "تأكيد",
+    "close": "إغلاق",
+    "optional": "اختياري",
+    "copy": "نسخة",
+    "yes": "نعم",
+    "no": "لا"
+  },
+  "home": {
+    "start": "بدء مهمة جديدة",
+    "startDesc": "اختر قائمة، أكمل المهام، احصل على التوقيع، ثم شارك.",
+    "manageTemplates": "إدارة القوالب",
+    "noTemplates": "لا توجد قوالب بعد. أنشئ قالباً للبدء.",
+    "chooseTemplate": "اختر قائمة"
+  },
+  "templates": {
+    "title": "القوالب",
+    "new": "قالب جديد",
+    "empty": "لا توجد قوالب بعد.",
+    "emptyHint": "أنشئ أول قالب قائمة مهام.",
+    "tasksCount": "{{count}} مهمة",
+    "tasksCount_other": "{{count}} مهام",
+    "deleteConfirm": "حذف هذا القالب؟",
+    "deleteConfirmBody": "لا يمكن التراجع عن هذا الإجراء.",
+    "copySuffix": "(نسخة)"
+  },
+  "editor": {
+    "newTitle": "قالب جديد",
+    "editTitle": "تعديل القالب",
+    "nameEn": "الاسم (إنجليزي)",
+    "nameAr": "الاسم (عربي)",
+    "namePlaceholderEn": "مثال: AC Maintenance",
+    "namePlaceholderAr": "مثال: صيانة المكيف",
+    "tasks": "المهام",
+    "taskEn": "المهمة (إنجليزي)",
+    "taskAr": "المهمة (عربي)",
+    "addTask": "إضافة مهمة",
+    "required": "إلزامية",
+    "moveUp": "تحريك لأعلى",
+    "moveDown": "تحريك لأسفل",
+    "removeTask": "حذف المهمة",
+    "noTasks": "لا توجد مهام بعد. أضف أول مهمة بالأسفل.",
+    "nameRequired": "الرجاء إدخال اسم القالب."
+  },
+  "job": {
+    "customer": "بيانات العميل",
+    "customerName": "اسم العميل",
+    "customerPhone": "رقم الهاتف",
+    "phoneHint": "يُستخدم لفتح واتساب على جهة الاتصال الصحيحة.",
+    "checklist": "قائمة المهام",
+    "progress": "{{done}} من {{total}} مكتملة",
+    "addNote": "إضافة ملاحظة",
+    "notePlaceholder": "ملاحظة (اختياري)",
+    "requiredBadge": "إلزامية",
+    "toSignature": "المتابعة إلى التوقيع",
+    "requiredRemaining": "أكمل المهام الإلزامية للمتابعة."
+  },
+  "signature": {
+    "title": "توقيع العميل",
+    "instruction": "اطلب من العميل التوقيع بالأسفل بإصبعه.",
+    "signerName": "اسم الموقّع",
+    "clear": "مسح",
+    "empty": "الرجاء التوقيع.",
+    "confirm": "تأكيد التوقيع",
+    "tapToSign": "وقّع هنا"
+  },
+  "report": {
+    "title": "التقرير",
+    "preview": "معاينة",
+    "share": "المشاركة عبر واتساب",
+    "generating": "جارٍ تجهيز ملف PDF…",
+    "shared": "تمت المشاركة بنجاح.",
+    "downloaded": "تم تنزيل ملف PDF. أرفقه في واتساب للإرسال.",
+    "shareError": "تعذّرت المشاركة. تم تنزيل ملف PDF بدلاً من ذلك.",
+    "newJob": "بدء مهمة أخرى",
+    "reportTitle": "تقرير قائمة المهام",
+    "date": "التاريخ",
+    "customer": "العميل",
+    "signature": "التوقيع",
+    "completed": "مكتملة",
+    "notCompleted": "غير مكتملة",
+    "tasksDone": "{{done}}/{{total}} مهام مكتملة",
+    "signedBy": "وقّع بواسطة"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "language": "اللغة",
+    "languageDesc": "اختر لغة التطبيق والتقرير.",
+    "english": "English",
+    "arabic": "العربية",
+    "about": "حول التطبيق",
+    "aboutDesc": "يعمل التطبيق دون اتصال. تُحفظ البيانات على هذا الجهاز فقط.",
+    "install": "تثبيت التطبيق",
+    "installHint": "على آيفون: اضغط مشاركة، ثم \"إضافة إلى الشاشة الرئيسية\"."
+  }
+}
