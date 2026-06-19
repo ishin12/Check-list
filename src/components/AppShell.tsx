@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useAuth } from '@/app/providers/AuthContext';
 import { BottomTabBar } from './BottomTabBar';
+import { SideNav } from './SideNav';
 
 interface Props {
   children: ReactNode;
@@ -10,11 +11,12 @@ interface Props {
 
 export function AppShell({ children, bare }: Props) {
   const { user } = useAuth();
-  const showTabs = !bare && user && (user.role === 'worker' || user.role === 'manager');
+  const showNav = !bare && user && (user.role === 'worker' || user.role === 'manager');
   return (
-    <div className={`app-shell${showTabs ? ' app-shell--with-tabs' : ''}`}>
-      {children}
-      {showTabs ? <BottomTabBar role={user!.role} /> : null}
+    <div className={`app-shell${showNav ? ' app-shell--with-nav' : ''}`}>
+      {showNav ? <SideNav role={user!.role} /> : null}
+      <div className="app-shell__main">{children}</div>
+      {showNav ? <BottomTabBar role={user!.role} /> : null}
     </div>
   );
 }
