@@ -354,6 +354,15 @@ textarea {
   background: var(--color-success-soft);
 }
 
+.check-item--required-missing {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+}
+.check-item--required-missing .badge {
+  background: var(--color-brand);
+  color: #fff;
+}
+
 .check-item__main {
   display: flex;
   align-items: center;

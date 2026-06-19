@@ -24,6 +24,7 @@ export function TaskDetailScreen() {
   const [openNotes, setOpenNotes] = useState<ClientNote[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [decisionNote, setDecisionNote] = useState('');
+  const [requiredItems, setRequiredItems] = useState<{ id: string; label: string }[]>([]);
 
   async function load() {
     if (!id) return;
@@ -40,6 +41,17 @@ export function TaskDetailScreen() {
       ]);
       setProofs((ps ?? []).map(rowToProof));
       setOpenNotes((ns ?? []).map(rowToNote));
+
+      // Load the template's required items so we can gate Submit.
+      if (t.templateId) {
+        const { data: tpl } = await sb.from('templates').select('tasks, title').eq('id', t.templateId).maybeSingle();
+        const items = ((tpl?.tasks ?? []) as Array<{ id: string; required?: boolean; label: { en: string; ar: string } }>)
+          .filter((it) => it.required)
+          .map((it) => ({ id: it.id, label: it.label?.en ?? it.label?.ar ?? '—' }));
+        setRequiredItems(items);
+      } else {
+        setRequiredItems([]);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -65,6 +77,11 @@ export function TaskDetailScreen() {
   const canEditProofs =
     (role === 'worker' && task.assignedWorkerId === user?.id) ||
     role === 'manager';
+  // Missing required checklist items block Submit.
+  const missingRequired = requiredItems.filter(
+    (item) => !task.results.find((r) => r.taskId === item.id && r.checked),
+  );
+  const submitBlocked = missingRequired.length > 0;
 
   async function doAction(action: 'start' | 'submit' | 'approve' | 'reject' | 'reopen') {
     if (!task) return;
@@ -74,6 +91,10 @@ export function TaskDetailScreen() {
     // a direct "Capture"/"Retake" tap on a proof row does not (see MediaCaptureScreen).
     if (action === 'start' && needsStartProof) {
       navigate(`/tasks/${task.id}/capture/start?auto=1`);
+      return;
+    }
+    if (action === 'submit' && submitBlocked) {
+      // UI also disables the button, but guard here in case of stale state.
       return;
     }
     if (action === 'submit' && needsFinishProof) {
@@ -199,18 +220,32 @@ export function TaskDetailScreen() {
         ) : null}
       </main>
 
+      {submitBlocked && actions.includes('submit') ? (
+        <div className="banner banner--info" style={{ margin: '0 var(--space-4) 0' }}>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>
+            {t('task.requiredRemaining', 'Complete the required items below before submitting:')}
+          </div>
+          <ul style={{ margin: 0, paddingInlineStart: 18 }}>
+            {missingRequired.map((it) => <li key={it.id}>{it.label}</li>)}
+          </ul>
+        </div>
+      ) : null}
       {actions.length > 0 ? (
         <div className="action-bar">
-          {actions.map((a) => (
-            <button
-              key={a}
-              type="button"
-              className={`btn btn--block ${a === 'reject' ? 'btn--danger' : 'btn--primary'}`}
-              onClick={() => doAction(a)}
-            >
-              {t(`task.action.${a}`, defaultActionLabel(a))}
-            </button>
-          ))}
+          {actions.map((a) => {
+            const disabled = a === 'submit' && submitBlocked;
+            return (
+              <button
+                key={a}
+                type="button"
+                className={`btn btn--block ${a === 'reject' ? 'btn--danger' : 'btn--primary'}`}
+                onClick={() => doAction(a)}
+                disabled={disabled}
+              >
+                {t(`task.action.${a}`, defaultActionLabel(a))}
+              </button>
+            );
+          })}
         </div>
       ) : null}
     </AppShell>

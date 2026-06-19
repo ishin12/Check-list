@@ -62,14 +62,15 @@ export function TemplateRunner({ templateId, taskId, initialResults, readOnly, o
           const r = results.find((x) => x.taskId === item.id);
           const checked = !!r?.checked;
           const label = item.label?.[language] ?? item.label?.en ?? '';
+          const flagged = item.required && !checked;
           return (
             <button
               key={item.id}
               type="button"
-              className={`check-item ${checked ? 'check-item--done' : ''}`}
+              className={`check-item ${checked ? 'check-item--done' : ''}${flagged ? ' check-item--required-missing' : ''}`}
               onClick={() => toggle(item.id)}
               disabled={readOnly}
-              style={{ textAlign: 'start', border: '1px solid var(--color-border)' }}
+              style={{ textAlign: 'start' }}
             >
               <div className="check-item__main">
                 <span className={`checkbox ${checked ? 'checkbox--checked' : ''}`} aria-hidden>✓</span>

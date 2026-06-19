@@ -156,6 +156,7 @@
     "decisionPlaceholder": "أضف سبباً في حال الرفض…",
     "rejectedNote": "رُفضت — تعليق المدير:",
     "approvedNote": "تمت الموافقة — تعليق المدير:",
+    "requiredRemaining": "أكمل البنود الإلزامية أدناه قبل الإرسال:",
     "action": {
       "start": "ابدأ",
       "submit": "أرسل للموافقة",

@@ -138,6 +138,7 @@
     "decisionPlaceholder": "Add a reason if rejecting…",
     "rejectedNote": "Rejected — manager said:",
     "approvedNote": "Approved — manager said:",
+    "requiredRemaining": "Complete the required items below before submitting:",
     "action": {
       "start": "Start",
       "submit": "Submit",
