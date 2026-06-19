@@ -117,6 +117,17 @@ export async function createTask(input: CreateTaskInput): Promise<FieldTask> {
   return rowToTask(data as TaskRow);
 }
 
+/** Delete all proofs of a given kind on a task, plus the underlying files. */
+export async function deleteProofsOfKind(taskId: string, kind: 'start' | 'finish'): Promise<void> {
+  const sb = getSupabase();
+  const { data } = await sb.from('task_proofs').select('id, storage_path').eq('task_id', taskId).eq('kind', kind);
+  const paths = ((data ?? []) as Array<{ id: string; storage_path: string }>).map((r) => r.storage_path);
+  if (paths.length) {
+    await sb.storage.from('proofs').remove(paths);
+    await sb.from('task_proofs').delete().eq('task_id', taskId).eq('kind', kind);
+  }
+}
+
 /**
  * Auto-creates the next occurrence in a recurring series. Returns the new
  * task, or null if the source task does not recur or the next visit is

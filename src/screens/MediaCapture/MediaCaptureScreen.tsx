@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/AppShell';
 import { enqueueProof, flushQueue, pendingCount } from '@/services/media/mediaQueue';
-import { updateTaskStatus, getTask } from '@/services/data/tasks';
+import { deleteProofsOfKind, updateTaskStatus, getTask } from '@/services/data/tasks';
 
 export function MediaCaptureScreen() {
   const { t } = useTranslation();
   const { id, kind } = useParams<{ id: string; kind: 'start' | 'finish' }>();
+  const [params] = useSearchParams();
+  const replace = params.get('replace') === '1';
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -28,6 +30,10 @@ export function MediaCaptureScreen() {
     if (!file || !id || !kind) return;
     setSaving(true);
     try {
+      // Replace mode: drop the old proof of this kind first.
+      if (replace) {
+        await deleteProofsOfKind(id, kind);
+      }
       await enqueueProof({
         taskId: id,
         kind,
@@ -35,14 +41,16 @@ export function MediaCaptureScreen() {
         capturedAt: new Date().toISOString(),
         blob: file,
       });
-      // Optimistically advance the task status.
-      const now = new Date().toISOString();
-      const task = await getTask(id);
-      if (task) {
-        if (kind === 'start' && task.status === 'not_started') {
-          await updateTaskStatus(id, { status: 'in_progress', started_at: now });
-        } else if (kind === 'finish' && task.status === 'in_progress') {
-          await updateTaskStatus(id, { status: 'submitted', finished_at: now });
+      // Only auto-advance the status on the initial capture, not on retake.
+      if (!replace) {
+        const now = new Date().toISOString();
+        const task = await getTask(id);
+        if (task) {
+          if (kind === 'start' && task.status === 'not_started') {
+            await updateTaskStatus(id, { status: 'in_progress', started_at: now });
+          } else if (kind === 'finish' && task.status === 'in_progress') {
+            await updateTaskStatus(id, { status: 'submitted', finished_at: now });
+          }
         }
       }
       void flushQueue();

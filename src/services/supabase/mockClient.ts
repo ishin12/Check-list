@@ -78,7 +78,7 @@ async function loadAll(): Promise<void> {
     if (v) blobs.set(String(k), v);
   }
   const seeded = await conn.get('meta', 'seeded');
-  if (seeded !== 'v2') await seedDemo();
+  if (seeded !== 'v3') await seedDemo();
   const u = await conn.get('meta', 'activeUserId');
   if (typeof u === 'string') activeUserId = u;
 }
@@ -426,6 +426,8 @@ export interface MockClient {
   storage: {
     from(bucket: 'proofs'): {
       upload(path: string, blob: Blob, opts?: { contentType?: string; upsert?: boolean }): Promise<{ error: null }>;
+      createSignedUrl(path: string, expiresIn: number): Promise<{ data: { signedUrl: string } | null; error: { message: string } | null }>;
+      remove(paths: string[]): Promise<{ error: null }>;
     };
   };
   channel(name: string): {
@@ -468,11 +470,26 @@ export function getMockClient(): MockClient {
     storage: {
       from(_bucket) {
         return {
-          async upload(path, blob) {
+          async upload(path: string, blob: Blob) {
             await ensureReady();
             blobs.set(path, blob);
             const conn = await db();
             await conn.put('blobs', blob, path);
+            return { error: null };
+          },
+          async createSignedUrl(path: string, _expiresIn: number) {
+            await ensureReady();
+            const b = blobs.get(path);
+            if (!b) return { data: null, error: { message: 'not found' } };
+            return { data: { signedUrl: URL.createObjectURL(b) }, error: null };
+          },
+          async remove(paths: string[]) {
+            await ensureReady();
+            const conn = await db();
+            for (const p of paths) {
+              blobs.delete(p);
+              await conn.delete('blobs', p);
+            }
             return { error: null };
           },
         };
@@ -577,7 +594,7 @@ async function seedDemo(): Promise<void> {
   ];
 
   state.tasks = [
-    mkTask('k-1', 'AC maintenance — Living room', 'u-wa', 'c-1', day(0, 9),  'not_started'),
+    mkTask('k-1', 'AC maintenance — Living room', 'u-wa', 'c-1', day(0, 9),  'not_started', { template_id: 't-ac' }),
     mkTask('k-2', 'Quarterly inspection',          'u-wa', 'c-2', day(0, 11), 'in_progress', { started_at: day(0, 10, 0), recurrence: 'quarterly', series_id: 's-2' }),
     mkTask('k-3', 'Pool service',                  'u-wb', 'c-3', day(0, 14), 'not_started', { recurrence: 'weekly', series_id: 's-3' }),
     mkTask('k-4', 'Filter change',                 'u-wa', 'c-2', day(-1, 10),'submitted',   { started_at: day(-1, 10, 5), finished_at: day(-1, 10, 55) }),
@@ -608,11 +625,45 @@ async function seedDemo(): Promise<void> {
     { id: 'a-4', actor_id: 'u-mgr', action: 'task.rejected', entity: 'task', entity_id: 'k-6', payload: { status: 'rejected' },   at: day(-2, 15) },
   ];
 
+  // Seed a handful of demo proofs so images show up on first load.
+  const proofSeeds = [
+    { task: 'k-2', kind: 'start',  label: 'AC unit · before' },
+    { task: 'k-4', kind: 'start',  label: 'Filter · old' },
+    { task: 'k-4', kind: 'finish', label: 'Filter · new' },
+    { task: 'k-5', kind: 'start',  label: 'Tile · before' },
+    { task: 'k-5', kind: 'finish', label: 'Tile · sealed' },
+    { task: 'k-6', kind: 'start',  label: 'Pipe area' },
+    { task: 'k-6', kind: 'finish', label: 'Leak point' },
+  ] as const;
+  state.task_proofs = [];
+  for (const seed of proofSeeds) {
+    const id = `p-${seed.task}-${seed.kind}`;
+    const path = `${seed.task}/${seed.kind}-${id}.svg`;
+    const blob = svgPlaceholder(seed.label, seed.kind === 'start' ? '#0E1116' : '#FF6A1A');
+    blobs.set(path, blob);
+    state.task_proofs.push({
+      id, task_id: seed.task, kind: seed.kind, storage_path: path,
+      mime: 'image/svg+xml', captured_at: day(seed.kind === 'start' ? -1 : -1, 10, 5),
+      uploaded_at: day(-1, 10, 5), uploaded_by: 'u-wa',
+    });
+  }
+
   for (const t of TABLES) await persist(t);
   const conn = await db();
+  // Persist blob seeds.
+  for (const [path, blob] of blobs.entries()) await conn.put('blobs', blob, path);
   // Re-seed when the value here changes (bump on each schema-affecting change).
-  await conn.put('meta', 'v2', 'seeded');
+  await conn.put('meta', 'v3', 'seeded');
   await conn.put('meta', activeUserId, 'activeUserId');
+}
+
+function svgPlaceholder(label: string, color: string): Blob {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+    <rect width="640" height="480" fill="${color}"/>
+    <text x="320" y="240" font-family="-apple-system, sans-serif" font-size="36" font-weight="800" fill="#fff" text-anchor="middle" dominant-baseline="middle">${label}</text>
+    <text x="320" y="290" font-family="-apple-system, sans-serif" font-size="14" font-weight="500" fill="rgba(255,255,255,0.7)" text-anchor="middle">demo proof</text>
+  </svg>`;
+  return new Blob([svg], { type: 'image/svg+xml' });
 }
 
 function mkTask(

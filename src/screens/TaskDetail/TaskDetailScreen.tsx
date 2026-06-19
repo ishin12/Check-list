@@ -11,6 +11,8 @@ import { availableActions, canTransition, proofRequirements, timeOnTaskMinutes }
 import { recurrenceLabel } from '@/domain/job/recurrence';
 import type { ClientNote, FieldTask, TaskProof } from '@/domain/models/ops';
 import { NoteComposer, resolveNote } from '@/components/NoteComposer';
+import { ProofMedia } from '@/components/ProofMedia';
+import { TemplateRunner } from '@/components/TemplateRunner';
 
 export function TaskDetailScreen() {
   const { t } = useTranslation();
@@ -59,6 +61,10 @@ export function TaskDetailScreen() {
   const role = user?.role ?? 'worker';
   const actions = availableActions(task.status, role);
   const { needsStartProof, needsFinishProof } = proofRequirements(task.status, proofs);
+  // Worker can retake on their own task at any stage; manager can always retake.
+  const canEditProofs =
+    (role === 'worker' && task.assignedWorkerId === user?.id) ||
+    role === 'manager';
 
   async function doAction(action: 'start' | 'submit' | 'approve' | 'reject' | 'reopen') {
     if (!task) return;
@@ -143,6 +149,28 @@ export function TaskDetailScreen() {
           </div>
         ) : null}
 
+        {/* Manager's decision note for a previously rejected/approved task. */}
+        {task.decisionNote && (task.status === 'rejected' || task.status === 'approved') ? (
+          <div className={`banner banner--${task.status === 'rejected' ? 'error' : 'success'}`}>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>
+              {task.status === 'rejected'
+                ? t('task.rejectedNote', 'Rejected — manager said:')
+                : t('task.approvedNote', 'Approved — manager said:')}
+            </div>
+            <div>{task.decisionNote}</div>
+          </div>
+        ) : null}
+
+        {task.templateId ? (
+          <TemplateRunner
+            templateId={task.templateId}
+            taskId={task.id}
+            initialResults={task.results}
+            readOnly={role === 'client' || task.status === 'approved'}
+            onChange={load}
+          />
+        ) : null}
+
         <section className="card">
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <span className="section-title">{t('proof.title', 'Proof')}</span>
@@ -151,8 +179,8 @@ export function TaskDetailScreen() {
             </span>
           </div>
           <div className="stack" style={{ marginTop: 8 }}>
-            <ProofRow kind="start" proofs={proofs} />
-            <ProofRow kind="finish" proofs={proofs} />
+            <ProofRow kind="start"  proofs={proofs} taskId={task.id} canEdit={canEditProofs} />
+            <ProofRow kind="finish" proofs={proofs} taskId={task.id} canEdit={canEditProofs} />
           </div>
         </section>
 
@@ -191,15 +219,42 @@ function defaultActionLabel(a: string): string {
   return ({ start: 'Start', submit: 'Submit', approve: 'Approve', reject: 'Reject', reopen: 'Reopen' } as Record<string, string>)[a] ?? a;
 }
 
-function ProofRow({ kind, proofs }: { kind: 'start' | 'finish'; proofs: TaskProof[] }) {
-  const found = proofs.find((p) => p.kind === kind);
+function ProofRow({ kind, proofs, taskId, canEdit }: { kind: 'start' | 'finish'; proofs: TaskProof[]; taskId: string; canEdit: boolean }) {
+  const navigate = useNavigate();
+  // If the worker re-took a proof, the most recent one is what counts.
+  const found = proofs
+    .filter((p) => p.kind === kind)
+    .sort((a, b) => (a.capturedAt < b.capturedAt ? 1 : -1))[0];
+  const retakeUrl = `/tasks/${taskId}/capture/${kind}?replace=1`;
+
   return (
-    <div className="row">
-      <span className={`proof-dot proof-dot--${found ? 'on' : 'off'}`} aria-hidden />
-      <span style={{ flex: 1 }}>{kind === 'start' ? 'Start proof' : 'Finish proof'}</span>
-      <span className="card__meta">
-        {found ? new Date(found.capturedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : 'Missing'}
-      </span>
+    <div className="proof-block">
+      <div className="row" style={{ alignItems: 'center' }}>
+        <span className={`proof-dot proof-dot--${found ? 'on' : 'off'}`} aria-hidden />
+        <span style={{ flex: 1, fontWeight: 600 }}>
+          {kind === 'start' ? 'Start proof' : 'Finish proof'}
+        </span>
+        <span className="card__meta">
+          {found
+            ? new Date(found.capturedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+            : 'Missing'}
+        </span>
+        {canEdit && found ? (
+          <button type="button" className="btn btn--ghost btn--icon" onClick={() => navigate(retakeUrl)} aria-label="Retake">
+            ↻
+          </button>
+        ) : null}
+        {canEdit && !found ? (
+          <button type="button" className="btn btn--ghost" onClick={() => navigate(`/tasks/${taskId}/capture/${kind}`)}>
+            Capture
+          </button>
+        ) : null}
+      </div>
+      {found ? (
+        <div className="proof-block__media">
+          <ProofMedia proof={found} />
+        </div>
+      ) : null}
     </div>
   );
 }

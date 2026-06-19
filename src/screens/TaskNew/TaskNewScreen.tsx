@@ -8,16 +8,19 @@ import { createTask } from '@/services/data/tasks';
 import { RECURRENCE_OPTIONS, recurrenceLabel, type Recurrence } from '@/domain/job/recurrence';
 
 interface Option { id: string; label: string }
+interface TemplateOpt extends Option { /* same shape, kept distinct for readability */ }
 
 export function TaskNewScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [workers, setWorkers] = useState<Option[]>([]);
   const [clients, setClients] = useState<Option[]>([]);
+  const [templates, setTemplates] = useState<TemplateOpt[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [workerId, setWorkerId] = useState('');
   const [clientId, setClientId] = useState('');
+  const [templateId, setTemplateId] = useState('');
   const [when, setWhen] = useState(defaultWhen());
   const [recurrence, setRecurrence] = useState<Recurrence>('none');
   const [saving, setSaving] = useState(false);
@@ -26,12 +29,17 @@ export function TaskNewScreen() {
   useEffect(() => {
     void (async () => {
       const sb = getSupabase();
-      const [{ data: ws }, { data: cs }] = await Promise.all([
+      const [{ data: ws }, { data: cs }, { data: ts }] = await Promise.all([
         sb.from('profiles').select('id, full_name, email').eq('role', 'worker').eq('active', true),
         sb.from('clients').select('id, name').order('name'),
+        sb.from('templates').select('id, title').order('updated_at', { ascending: false }),
       ]);
       setWorkers((ws ?? []).map((w) => ({ id: w.id, label: w.full_name ?? w.email ?? w.id })));
       setClients((cs ?? []).map((c) => ({ id: c.id, label: c.name })));
+      setTemplates((ts ?? []).map((tpl) => ({
+        id: tpl.id,
+        label: (tpl.title?.en ?? tpl.title?.ar ?? 'Untitled') as string,
+      })));
     })();
   }, []);
 
@@ -45,6 +53,7 @@ export function TaskNewScreen() {
         clientId, assignedWorkerId: workerId,
         scheduledAt: new Date(when).toISOString(),
         recurrence,
+        templateId: templateId || undefined,
       });
       navigate(`/tasks/${task.id}`, { replace: true });
     } catch (err) {
@@ -86,6 +95,14 @@ export function TaskNewScreen() {
         <div className="field">
           <label className="field__label">{t('taskNew.when', 'Scheduled at')}</label>
           <input className="input" type="datetime-local" required value={when} onChange={(e) => setWhen(e.target.value)} />
+        </div>
+        <div className="field">
+          <label className="field__label">{t('taskNew.template', 'Checklist template')}</label>
+          <select className="input" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+            <option value="">{t('taskNew.noTemplate', '— none —')}</option>
+            {templates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.label}</option>)}
+          </select>
+          <div className="hint">{t('taskNew.templateHint', 'The worker sees this checklist on the task and ticks items off as they go.')}</div>
         </div>
         <div className="field">
           <label className="field__label">{t('taskNew.repeats', 'Repeats')}</label>

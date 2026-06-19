@@ -136,6 +136,8 @@
     "description": "Description",
     "decisionNote": "Note (optional)",
     "decisionPlaceholder": "Add a reason if rejecting…",
+    "rejectedNote": "Rejected — manager said:",
+    "approvedNote": "Approved — manager said:",
     "action": {
       "start": "Start",
       "submit": "Submit",
@@ -151,7 +153,22 @@
     "worker": "Assign to",
     "when": "Scheduled at",
     "repeats": "Repeats",
+    "template": "Checklist template",
+    "noTemplate": "— none —",
+    "templateHint": "The worker sees this checklist on the task and ticks items off as they go.",
     "create": "Create task"
+  },
+  "runner": { "title": "Checklist" },
+  "audit": {
+    "title": "Audit log",
+    "empty": "Nothing logged yet.",
+    "filters": "Filters",
+    "entity": "Type",
+    "actor": "Who",
+    "from": "From",
+    "to": "To",
+    "anyone": "Anyone",
+    "allTypes": "All"
   },
   "recurrence": {
     "none": "Does not repeat",
@@ -221,10 +238,6 @@
     "past": "Completed",
     "noUpcoming": "Nothing scheduled.",
     "noPast": "No completed visits yet."
-  },
-  "audit": {
-    "title": "Audit log",
-    "empty": "Nothing logged yet."
   },
   "users": {
     "title": "Team & clients",
