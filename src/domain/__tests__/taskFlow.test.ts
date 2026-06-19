@@ -19,6 +19,7 @@ function task(partial: Partial<FieldTask>): FieldTask {
     createdAt: '2026-06-18T00:00:00Z',
     updatedAt: '2026-06-18T00:00:00Z',
     results: [],
+    recurrence: 'none',
     ...partial,
   };
 }

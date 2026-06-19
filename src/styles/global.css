@@ -643,6 +643,47 @@ textarea {
 .status-pill--approved    { background: var(--status-approved-bg);    color: var(--status-approved-fg);    }
 .status-pill--rejected    { background: var(--status-rejected-bg);    color: var(--status-rejected-fg);    }
 
+/* Demo account picker on login -------------------------------------------- */
+.demo-account {
+  align-items: center;
+  gap: var(--space-3);
+  text-align: start;
+}
+.demo-account__role {
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  width: 72px;
+  text-align: center;
+}
+.demo-account__role--manager { background: var(--color-ink); color: var(--color-brand); }
+.demo-account__role--worker  { background: var(--color-brand-soft); color: var(--color-brand-strong); }
+.demo-account__role--client  { background: var(--status-submitted-bg); color: var(--status-submitted-fg); }
+.demo-account__arrow {
+  color: var(--color-text-muted);
+  font-size: 1.25rem;
+  margin-inline-start: auto;
+}
+html[dir='rtl'] .demo-account__arrow { transform: scaleX(-1); }
+
+.repeat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+  white-space: nowrap;
+}
+
 /* Hero — brand variant ----------------------------------------------------- */
 .hero--brand {
   background: linear-gradient(135deg, var(--color-ink), var(--color-ink-soft));

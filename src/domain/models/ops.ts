@@ -1,4 +1,5 @@
 import type { Signature, TaskResult } from './types';
+import type { Recurrence } from '@/domain/job/recurrence';
 
 export type Role = 'manager' | 'worker' | 'client';
 
@@ -49,6 +50,8 @@ export interface FieldTask {
   decisionNote?: string;
   results: TaskResult[];
   signature?: Signature;
+  recurrence: Recurrence;
+  seriesId?: string;
 }
 
 export type ProofKind = 'start' | 'finish';

@@ -5,6 +5,7 @@ import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
 import { createTask } from '@/services/data/tasks';
+import { RECURRENCE_OPTIONS, recurrenceLabel, type Recurrence } from '@/domain/job/recurrence';
 
 interface Option { id: string; label: string }
 
@@ -18,6 +19,7 @@ export function TaskNewScreen() {
   const [workerId, setWorkerId] = useState('');
   const [clientId, setClientId] = useState('');
   const [when, setWhen] = useState(defaultWhen());
+  const [recurrence, setRecurrence] = useState<Recurrence>('none');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,6 +44,7 @@ export function TaskNewScreen() {
         title, description: description || undefined,
         clientId, assignedWorkerId: workerId,
         scheduledAt: new Date(when).toISOString(),
+        recurrence,
       });
       navigate(`/tasks/${task.id}`, { replace: true });
     } catch (err) {
@@ -83,6 +86,19 @@ export function TaskNewScreen() {
         <div className="field">
           <label className="field__label">{t('taskNew.when', 'Scheduled at')}</label>
           <input className="input" type="datetime-local" required value={when} onChange={(e) => setWhen(e.target.value)} />
+        </div>
+        <div className="field">
+          <label className="field__label">{t('taskNew.repeats', 'Repeats')}</label>
+          <select
+            className="input"
+            value={recurrence}
+            onChange={(e) => setRecurrence(e.target.value as Recurrence)}
+          >
+            {RECURRENCE_OPTIONS.map((opt) => {
+              const lbl = recurrenceLabel(opt);
+              return <option key={opt} value={opt}>{t(lbl.i18n, lbl.fallback)}</option>;
+            })}
+          </select>
         </div>
         <button className="btn btn--primary btn--block btn--lg" disabled={!ready || saving} type="submit">
           {saving ? t('common.saving', 'Saving…') : t('taskNew.create', 'Create task')}

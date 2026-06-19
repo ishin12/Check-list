@@ -78,7 +78,7 @@ async function loadAll(): Promise<void> {
     if (v) blobs.set(String(k), v);
   }
   const seeded = await conn.get('meta', 'seeded');
-  if (!seeded) await seedDemo();
+  if (seeded !== 'v2') await seedDemo();
   const u = await conn.get('meta', 'activeUserId');
   if (typeof u === 'string') activeUserId = u;
 }
@@ -578,12 +578,12 @@ async function seedDemo(): Promise<void> {
 
   state.tasks = [
     mkTask('k-1', 'AC maintenance — Living room', 'u-wa', 'c-1', day(0, 9),  'not_started'),
-    mkTask('k-2', 'Quarterly inspection',          'u-wa', 'c-2', day(0, 11), 'in_progress', { started_at: day(0, 10, 0) }),
-    mkTask('k-3', 'Pool service',                  'u-wb', 'c-3', day(0, 14), 'not_started'),
+    mkTask('k-2', 'Quarterly inspection',          'u-wa', 'c-2', day(0, 11), 'in_progress', { started_at: day(0, 10, 0), recurrence: 'quarterly', series_id: 's-2' }),
+    mkTask('k-3', 'Pool service',                  'u-wb', 'c-3', day(0, 14), 'not_started', { recurrence: 'weekly', series_id: 's-3' }),
     mkTask('k-4', 'Filter change',                 'u-wa', 'c-2', day(-1, 10),'submitted',   { started_at: day(-1, 10, 5), finished_at: day(-1, 10, 55) }),
     mkTask('k-5', 'Tile sealing',                  'u-wb', 'c-1', day(-1, 15),'approved',    { started_at: day(-1, 15, 5), finished_at: day(-1, 16, 30), decision_at: day(-1, 17), decision_note: '' }),
     mkTask('k-6', 'Leak inspection',               'u-wa', 'c-3', day(-2, 13),'rejected',    { started_at: day(-2, 13, 10), finished_at: day(-2, 14, 0), decision_at: day(-2, 15), decision_note: 'Photos unclear — please re-shoot.' }),
-    mkTask('k-7', 'Follow-up AC',                  'u-wb', 'c-1', day(1, 9),  'not_started'),
+    mkTask('k-7', 'Follow-up AC',                  'u-wb', 'c-1', day(1, 9),  'not_started', { recurrence: 'monthly', series_id: 's-7' }),
     mkTask('k-8', 'Quote walk-through',            'u-wa', 'c-3', day(1, 13), 'not_started'),
   ];
 
@@ -610,7 +610,8 @@ async function seedDemo(): Promise<void> {
 
   for (const t of TABLES) await persist(t);
   const conn = await db();
-  await conn.put('meta', '1', 'seeded');
+  // Re-seed when the value here changes (bump on each schema-affecting change).
+  await conn.put('meta', 'v2', 'seeded');
   await conn.put('meta', activeUserId, 'activeUserId');
 }
 
@@ -628,6 +629,7 @@ function mkTask(
     started_at: null, finished_at: null,
     decision_at: null, decision_note: null,
     results: [], signature: null,
+    recurrence: 'none', series_id: id,
     ...extra,
   };
 }

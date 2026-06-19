@@ -1,8 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { useAuth } from '@/app/providers/AuthContext';
+import { isDemoMode } from '@/services/supabase/client';
+
+interface DemoProfile { id: string; full_name: string; email: string; role: 'manager' | 'worker' | 'client' }
+
+const ROLE_BLURB: Record<DemoProfile['role'], string> = {
+  manager: 'Full access — calendar, approvals, clients, audit',
+  worker:  'Sees only own tasks · capture proof · submit',
+  client:  'Read-only portal — visits & approved proof',
+};
 
 export function LoginScreen() {
   const { t } = useTranslation();
@@ -10,6 +19,14 @@ export function LoginScreen() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [demoProfiles, setDemoProfiles] = useState<DemoProfile[]>([]);
+  const demo = isDemoMode();
+
+  useEffect(() => {
+    if (!demo) return;
+    const profiles = (window.__demo?.listProfiles() ?? []) as DemoProfile[];
+    setDemoProfiles(profiles);
+  }, [demo]);
 
   if (user) return <Navigate to="/" replace />;
 
@@ -21,6 +38,17 @@ export function LoginScreen() {
     try {
       await signInWithEmail(email.trim());
       setStatus('sent');
+    } catch (err) {
+      setStatus('error');
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  async function signInDemo(profile: DemoProfile) {
+    setStatus('sending');
+    setError(null);
+    try {
+      await signInWithEmail(profile.email);
     } catch (err) {
       setStatus('error');
       setError(err instanceof Error ? err.message : String(err));
@@ -39,9 +67,40 @@ export function LoginScreen() {
         <div className="hero hero--brand">
           <div className="hero__title">{t('auth.welcome', 'Welcome back')}</div>
           <div className="hero__desc">
-            {t('auth.magicLinkHint', 'Enter your email — we’ll send a one-tap sign-in link.')}
+            {demo
+              ? t('demo.loginHint', 'Demo mode — pick an account below to see exactly what they see.')
+              : t('auth.magicLinkHint', 'Enter your email — we’ll send a one-tap sign-in link.')}
           </div>
         </div>
+
+        {demo && demoProfiles.length > 0 ? (
+          <section className="stack">
+            <div className="section-title">{t('demo.accountsTitle', 'Demo accounts')}</div>
+            <div className="stack">
+              {demoProfiles.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className="card card--tap demo-account"
+                  onClick={() => signInDemo(p)}
+                  disabled={status === 'sending'}
+                >
+                  <div className={`demo-account__role demo-account__role--${p.role}`}>
+                    {p.role}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div className="card__title">{p.full_name}</div>
+                    <div className="card__meta">{ROLE_BLURB[p.role]}</div>
+                  </div>
+                  <span className="demo-account__arrow" aria-hidden>→</span>
+                </button>
+              ))}
+            </div>
+            <div className="hint" style={{ textAlign: 'center' }}>
+              {t('demo.orEmail', 'Or sign in with email below:')}
+            </div>
+          </section>
+        ) : null}
 
         <form className="stack" onSubmit={onSubmit}>
           <div className="field">

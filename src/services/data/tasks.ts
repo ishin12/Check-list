@@ -1,5 +1,6 @@
 import { getSupabase } from '@/services/supabase/client';
 import type { FieldTask } from '@/domain/models/ops';
+import { nextOccurrenceDate, type Recurrence } from '@/domain/job/recurrence';
 
 interface TaskRow {
   id: string;
@@ -20,6 +21,8 @@ interface TaskRow {
   decision_note: string | null;
   results: FieldTask['results'];
   signature: FieldTask['signature'];
+  recurrence: Recurrence | null;
+  series_id: string | null;
 }
 
 function rowToTask(r: TaskRow): FieldTask {
@@ -42,6 +45,8 @@ function rowToTask(r: TaskRow): FieldTask {
     decisionNote: r.decision_note ?? undefined,
     results: r.results ?? [],
     signature: r.signature ?? undefined,
+    recurrence: r.recurrence ?? 'none',
+    seriesId: r.series_id ?? undefined,
   };
 }
 
@@ -51,11 +56,13 @@ export async function listTasks(opts: {
   from?: string;
   to?: string;
   status?: FieldTask['status'];
+  seriesId?: string;
 } = {}): Promise<FieldTask[]> {
   let q = getSupabase().from('tasks').select('*').order('scheduled_at', { ascending: true });
   if (opts.workerId)  q = q.eq('assigned_worker_id', opts.workerId);
   if (opts.clientId)  q = q.eq('client_id', opts.clientId);
   if (opts.status)    q = q.eq('status', opts.status);
+  if (opts.seriesId)  q = q.eq('series_id', opts.seriesId);
   if (opts.from)      q = q.gte('scheduled_at', opts.from);
   if (opts.to)        q = q.lte('scheduled_at', opts.to);
   const { data, error } = await q;
@@ -86,9 +93,12 @@ export interface CreateTaskInput {
   scheduledAt: string;
   scheduledEnd?: string;
   templateId?: string;
+  recurrence?: Recurrence;
 }
 
 export async function createTask(input: CreateTaskInput): Promise<FieldTask> {
+  const recurrence: Recurrence = input.recurrence ?? 'none';
+  const seriesId = crypto.randomUUID();
   const { data, error } = await getSupabase()
     .from('tasks')
     .insert({
@@ -99,6 +109,43 @@ export async function createTask(input: CreateTaskInput): Promise<FieldTask> {
       scheduled_at: input.scheduledAt,
       scheduled_end: input.scheduledEnd ?? null,
       template_id: input.templateId ?? null,
+      recurrence,
+      series_id: seriesId,
+    })
+    .select('*').single();
+  if (error) throw error;
+  return rowToTask(data as TaskRow);
+}
+
+/**
+ * Auto-creates the next occurrence in a recurring series. Returns the new
+ * task, or null if the source task does not recur or the next visit is
+ * already scheduled.
+ */
+export async function createNextOccurrence(task: FieldTask): Promise<FieldTask | null> {
+  if (task.recurrence === 'none') return null;
+  const nextAt = nextOccurrenceDate(task.scheduledAt, task.recurrence);
+  if (!nextAt) return null;
+  const seriesId = task.seriesId ?? task.id;
+
+  // Avoid double-creating if there's already a future visit in this series.
+  const existing = await listTasks({ seriesId, from: new Date(task.scheduledAt).toISOString() });
+  if (existing.some((t) => t.id !== task.id && new Date(t.scheduledAt) > new Date(task.scheduledAt))) {
+    return null;
+  }
+
+  const { data, error } = await getSupabase()
+    .from('tasks')
+    .insert({
+      title: task.title,
+      description: task.description ?? null,
+      client_id: task.clientId,
+      assigned_worker_id: task.assignedWorkerId,
+      scheduled_at: nextAt,
+      scheduled_end: null,
+      template_id: task.templateId ?? null,
+      recurrence: task.recurrence,
+      series_id: seriesId,
     })
     .select('*').single();
   if (error) throw error;

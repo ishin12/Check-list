@@ -5,9 +5,10 @@ import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
 import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/app/providers/AuthContext';
-import { getTask, updateTaskStatus } from '@/services/data/tasks';
+import { createNextOccurrence, getTask, updateTaskStatus } from '@/services/data/tasks';
 import { getSupabase } from '@/services/supabase/client';
 import { availableActions, canTransition, proofRequirements, timeOnTaskMinutes } from '@/domain/job/taskFlow';
+import { recurrenceLabel } from '@/domain/job/recurrence';
 import type { ClientNote, FieldTask, TaskProof } from '@/domain/models/ops';
 import { NoteComposer, resolveNote } from '@/components/NoteComposer';
 
@@ -80,6 +81,10 @@ export function TaskDetailScreen() {
       patch.decision_note = decisionNote || null;
     }
     await updateTaskStatus(task.id, patch);
+    if (action === 'approve' && task.recurrence !== 'none') {
+      // Auto-schedule the next visit in this recurring series.
+      await createNextOccurrence({ ...task, status: next });
+    }
     await load();
   }
 
@@ -95,7 +100,13 @@ export function TaskDetailScreen() {
               weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
             })}
           </span>
-          <StatusPill status={task.status} />
+          <div className="row" style={{ gap: 6 }}>
+            {task.recurrence !== 'none' ? (() => {
+              const lbl = recurrenceLabel(task.recurrence);
+              return <span className="repeat-pill">↻ {t(lbl.i18n, lbl.fallback)}</span>;
+            })() : null}
+            <StatusPill status={task.status} />
+          </div>
         </div>
 
         {openNotes.length > 0 ? (

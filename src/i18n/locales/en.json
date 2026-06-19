@@ -150,7 +150,20 @@
     "client": "Client",
     "worker": "Assign to",
     "when": "Scheduled at",
+    "repeats": "Repeats",
     "create": "Create task"
+  },
+  "recurrence": {
+    "none": "Does not repeat",
+    "weekly": "Every week",
+    "monthly": "Every month",
+    "quarterly": "Every 3 months",
+    "biannual": "Every 6 months"
+  },
+  "demo": {
+    "loginHint": "Demo mode — pick an account below to see exactly what they see.",
+    "accountsTitle": "Demo accounts",
+    "orEmail": "Or sign in with email below:"
   },
   "proof": {
     "title": "Proof",
