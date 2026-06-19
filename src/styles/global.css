@@ -30,6 +30,22 @@
 
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-ar: 'Cairo', system-ui, sans-serif;
+
+  /* Field-ops brand: deep ink + signal orange + warm sand.
+     Layered on top of the existing tokens — legacy screens keep working. */
+  --color-ink: #0E1116;
+  --color-ink-soft: #2A2F3A;
+  --color-sand: #F6F1EA;
+  --color-brand: #FF6A1A;
+  --color-brand-strong: #E55310;
+  --color-brand-soft: #FFE8D9;
+
+  /* Status palette (non-traffic-light) */
+  --status-not_started-bg: #E2E8F0;  --status-not_started-fg: #475569;
+  --status-in_progress-bg: #FEF3C7;  --status-in_progress-fg: #92400E;
+  --status-submitted-bg:   #E0E7FF;  --status-submitted-fg:   #3730A3;
+  --status-approved-bg:    #DCFCE7;  --status-approved-fg:    #15803D;
+  --status-rejected-bg:    #FEE2E2;  --status-rejected-fg:    #B91C1C;
 }
 
 * {
@@ -546,6 +562,269 @@ textarea {
   display: flex;
   gap: var(--space-3);
   margin-top: var(--space-5);
+}
+
+/* Bottom tab bar ----------------------------------------------------------- */
+.app-shell--with-tabs .app-main {
+  padding-bottom: calc(var(--space-6) + 72px + env(safe-area-inset-bottom));
+}
+
+.tab-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 20;
+  max-width: 560px;
+  margin-inline: auto;
+}
+
+.tab-bar__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 4px;
+  text-decoration: none;
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  min-height: 60px;
+}
+
+.tab-bar__icon { font-size: 1.25rem; line-height: 1; }
+
+.tab-bar__item--active {
+  color: var(--color-brand);
+}
+.tab-bar__item--active .tab-bar__icon {
+  transform: translateY(-1px);
+}
+
+/* Status pills ------------------------------------------------------------- */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.status-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.6;
+}
+.status-pill--not_started { background: var(--status-not_started-bg); color: var(--status-not_started-fg); }
+.status-pill--in_progress { background: var(--status-in_progress-bg); color: var(--status-in_progress-fg); }
+.status-pill--submitted   { background: var(--status-submitted-bg);   color: var(--status-submitted-fg);   }
+.status-pill--approved    { background: var(--status-approved-bg);    color: var(--status-approved-fg);    }
+.status-pill--rejected    { background: var(--status-rejected-bg);    color: var(--status-rejected-fg);    }
+
+/* Hero — brand variant ----------------------------------------------------- */
+.hero--brand {
+  background: linear-gradient(135deg, var(--color-ink), var(--color-ink-soft));
+  position: relative;
+  overflow: hidden;
+}
+.hero--brand::after {
+  content: '';
+  position: absolute;
+  inset-block-start: -40%;
+  inset-inline-end: -20%;
+  width: 70%;
+  aspect-ratio: 1;
+  background: radial-gradient(circle, var(--color-brand) 0%, transparent 60%);
+  opacity: 0.45;
+  pointer-events: none;
+}
+.hero--brand .hero__title,
+.hero--brand .hero__desc { position: relative; }
+
+/* Agenda calendar ---------------------------------------------------------- */
+.agenda { display: flex; flex-direction: column; gap: var(--space-5); }
+
+.agenda__day { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.agenda__header {
+  position: sticky;
+  top: 64px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: 6px;
+  background: var(--color-bg);
+}
+
+.agenda__date {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+.agenda__count {
+  margin-inline-start: auto;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* Cards — accent + interactive variants ------------------------------------ */
+.card--accent {
+  border-color: var(--color-brand-soft);
+  background: linear-gradient(180deg, var(--color-brand-soft) 0%, var(--color-surface) 30%);
+}
+
+.card--unread {
+  border-inline-start: 3px solid var(--color-brand);
+}
+
+/* Buttons — refined primary (signal orange) -------------------------------- */
+.btn--primary {
+  background: var(--color-brand);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 1px 0 rgba(0,0,0,0.04);
+}
+.btn--primary:active { background: var(--color-brand-strong); }
+.btn--primary:disabled { background: var(--color-brand); }
+
+/* Open-note (paperclip card) ---------------------------------------------- */
+.note-card {
+  background: #FFFAF0;
+  border: 1px solid #F5E6C8;
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  position: relative;
+}
+.note-card::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  inset-inline-start: 12px;
+  width: 24px;
+  height: 12px;
+  border: 2px solid #C9A14A;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+}
+
+/* Timeline (visit history) ------------------------------------------------- */
+.timeline { display: flex; flex-direction: column; gap: var(--space-3); position: relative; }
+.timeline::before {
+  content: '';
+  position: absolute;
+  inset-block: 16px;
+  inset-inline-start: 12px;
+  width: 2px;
+  background: var(--color-border);
+}
+.timeline__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  padding-inline-start: 36px;
+}
+.timeline__dot {
+  position: absolute;
+  inset-inline-start: 6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--color-brand);
+  border: 3px solid var(--color-surface);
+}
+
+/* Proof dots --------------------------------------------------------------- */
+.proof-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+.proof-dot--on  { background: var(--status-approved-fg); }
+.proof-dot--off { background: var(--color-border); }
+
+/* Camera capture sheet ----------------------------------------------------- */
+.capture {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+.capture__chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+.capture__chrome .icon-btn { color: #fff; }
+.capture__label { font-weight: 700; }
+.capture__stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+}
+.capture__placeholder {
+  text-align: center;
+  color: rgba(255,255,255,0.7);
+}
+.capture__media {
+  max-width: 100%;
+  max-height: 60vh;
+  border-radius: var(--radius);
+}
+.capture__shutter {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.capture__shutter-btn {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: transparent;
+  border: 4px solid #fff;
+  padding: 4px;
+  min-height: 76px;
+}
+.capture__shutter-btn > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #fff;
 }
 
 /* Offscreen render host for PDF capture ------------------------------------ */

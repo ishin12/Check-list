@@ -8,9 +8,10 @@ interface Props {
   showBack?: boolean;
   showLanguage?: boolean;
   action?: React.ReactNode;
+  children?: React.ReactNode;
 }
 
-export function AppHeader({ title, showBack, showLanguage, action }: Props) {
+export function AppHeader({ title, showBack, showLanguage, action, children }: Props) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -32,6 +33,7 @@ export function AppHeader({ title, showBack, showLanguage, action }: Props) {
       ) : null}
       <span className="app-header__title">{title}</span>
       {action}
+      {children}
       {showLanguage ? <LanguageToggle /> : null}
     </header>
   );

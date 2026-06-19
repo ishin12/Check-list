@@ -2,6 +2,7 @@ import { RouterProvider } from 'react-router-dom';
 import { StorageProviderContext } from './providers/StorageContext';
 import { LanguageProvider, useLanguage } from './providers/LanguageContext';
 import { CurrentJobProvider } from './providers/CurrentJobContext';
+import { AuthProvider } from './providers/AuthContext';
 import { router } from './router';
 
 function AppRoutes() {
@@ -14,9 +15,11 @@ export default function App() {
   return (
     <StorageProviderContext>
       <LanguageProvider>
-        <CurrentJobProvider>
-          <AppRoutes />
-        </CurrentJobProvider>
+        <AuthProvider>
+          <CurrentJobProvider>
+            <AppRoutes />
+          </CurrentJobProvider>
+        </AuthProvider>
       </LanguageProvider>
     </StorageProviderContext>
   );
