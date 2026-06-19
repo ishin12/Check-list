@@ -1,13 +1,37 @@
-# Supabase setup (one-time)
+# Try the demo first (no setup)
 
-The app now requires a Supabase project for auth, data, and media storage. The
-free tier is plenty for this scale (<10 workers, <50 clients, <500 tasks/mo).
+The app ships with a built-in **demo mode** that runs against an in-browser
+fake backend pre-seeded with sample data. Use it to try every feature before
+deciding whether to wire up real Supabase.
+
+```
+npm install
+npm run dev
+```
+
+On `/login` enter any email and tap "Send magic link" — you'll be signed in
+instantly as the demo manager. Use the **Demo** chip in the header to switch
+between Manager / Worker / Client roles. Everything persists across reloads
+(IndexedDB). **Settings → Reset demo data** wipes it back to the seed.
+
+The demo mirrors the real schema and triggers in `supabase/migrations/0001_init.sql`
+1:1, so behaviour you see is what you'll get in production.
+
+---
+
+# Going live with Supabase
+
+Once you've validated the app and want real auth, persistence, and email:
+
+The free tier is plenty for this scale (<10 workers, <50 clients, <500 tasks/mo).
 
 ## 1. Create the project
 1. Sign up at https://supabase.com and create a new project.
 2. From **Project Settings → API**, copy the **Project URL** and **anon public** key.
-3. In the repo, copy `.env.example` to `.env.local` and paste them in:
+3. In the repo, copy `.env.example` to `.env.local` and paste them in. **Also
+   set `VITE_DEMO_MODE=0`** to switch the app off demo mode:
    ```
+   VITE_DEMO_MODE=0
    VITE_SUPABASE_URL=https://<your-project>.supabase.co
    VITE_SUPABASE_ANON_KEY=eyJ...
    ```

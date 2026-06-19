@@ -4,6 +4,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { useAuth } from '@/app/providers/AuthContext';
+import { isDemoMode } from '@/services/supabase/client';
 
 export function SettingsScreen() {
   const { t } = useTranslation();
@@ -49,6 +50,25 @@ export function SettingsScreen() {
             <Link to="/templates" className="card card--tap"><div className="card__title">{t('nav.templates', 'Templates')}</div></Link>
             <Link to="/users" className="card card--tap"><div className="card__title">{t('users.title', 'Team & clients')}</div></Link>
             <Link to="/audit" className="card card--tap"><div className="card__title">{t('audit.title', 'Audit log')}</div></Link>
+          </div>
+        ) : null}
+
+        {isDemoMode() ? (
+          <div className="card stack">
+            <div className="card__title">Demo mode</div>
+            <div className="card__meta">
+              You're running against in-browser seed data. Switch roles from the “Demo” chip
+              in the header. To go live, set <code>VITE_SUPABASE_URL</code>,
+              <code>VITE_SUPABASE_ANON_KEY</code> in <code>.env.local</code>, run the SQL
+              migration, then set <code>VITE_DEMO_MODE=0</code>.
+            </div>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={async () => { await window.__demo?.reset(); location.reload(); }}
+            >
+              Reset demo data
+            </button>
           </div>
         ) : null}
 

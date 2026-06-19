@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { LanguageToggle } from './LanguageToggle';
+import { DemoSwitcher } from './DemoSwitcher';
 
 interface Props {
   title: string;
@@ -34,6 +35,7 @@ export function AppHeader({ title, showBack, showLanguage, action, children }: P
       <span className="app-header__title">{title}</span>
       {action}
       {children}
+      <DemoSwitcher />
       {showLanguage ? <LanguageToggle /> : null}
     </header>
   );
