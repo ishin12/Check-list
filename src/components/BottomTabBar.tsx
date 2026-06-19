@@ -16,6 +16,7 @@ const TABS: Tab[] = [
   { to: '/approvals',     i18n: 'tabs.approvals',     fallback: 'Approvals', icon: '✓', roles: ['manager'] },
   { to: '/clients',       i18n: 'tabs.clients',       fallback: 'Clients',   icon: '⌖', roles: ['manager'] },
   { to: '/notifications', i18n: 'tabs.notifications', fallback: 'Inbox',     icon: '◉', roles: ['worker', 'manager'] },
+  { to: '/settings',      i18n: 'tabs.me',            fallback: 'Me',        icon: '☰', roles: ['worker', 'manager'] },
 ];
 
 export function BottomTabBar({ role }: { role: Role }) {

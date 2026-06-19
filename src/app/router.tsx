@@ -15,7 +15,10 @@ import { TaskNewScreen } from '@/screens/TaskNew/TaskNewScreen';
 import { MediaCaptureScreen } from '@/screens/MediaCapture/MediaCaptureScreen';
 import { ClientsScreen } from '@/screens/Clients/ClientsScreen';
 import { ClientDetailScreen } from '@/screens/Clients/ClientDetailScreen';
+import { ClientNewScreen } from '@/screens/Clients/ClientNewScreen';
 import { ApprovalsScreen } from '@/screens/Approvals/ApprovalsScreen';
+import { AuditScreen } from '@/screens/Audit/AuditScreen';
+import { UsersScreen } from '@/screens/Users/UsersScreen';
 import { NotificationsScreen } from '@/screens/Notifications/NotificationsScreen';
 import { PortalScreen } from '@/screens/Portal/PortalScreen';
 import { RoleGate } from '@/components/RoleGate';
@@ -36,8 +39,11 @@ export const router = createHashRouter([
 
   // Manager-only
   { path: '/clients',        element: <RoleGate roles={['manager']}><ClientsScreen /></RoleGate> },
+  { path: '/clients/new',    element: <RoleGate roles={['manager']}><ClientNewScreen /></RoleGate> },
   { path: '/clients/:id',    element: <RoleGate roles={['manager']}><ClientDetailScreen /></RoleGate> },
   { path: '/approvals',      element: <RoleGate roles={['manager']}><ApprovalsScreen /></RoleGate> },
+  { path: '/audit',          element: <RoleGate roles={['manager']}><AuditScreen /></RoleGate> },
+  { path: '/users',          element: <RoleGate roles={['manager']}><UsersScreen /></RoleGate> },
 
   // Client portal
   { path: '/portal',         element: <RoleGate roles={['client']}><PortalScreen /></RoleGate> },

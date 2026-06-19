@@ -9,23 +9,6 @@
     "settings": "Settings",
     "back": "Back"
   },
-  "common": {
-    "save": "Save",
-    "cancel": "Cancel",
-    "delete": "Delete",
-    "duplicate": "Duplicate",
-    "edit": "Edit",
-    "add": "Add",
-    "done": "Done",
-    "next": "Next",
-    "clear": "Clear",
-    "confirm": "Confirm",
-    "close": "Close",
-    "optional": "optional",
-    "copy": "Copy",
-    "yes": "Yes",
-    "no": "No"
-  },
   "home": {
     "start": "Start a new job",
     "startDesc": "Pick a checklist, complete the tasks, get a signature, and share.",
@@ -112,5 +95,153 @@
     "aboutDesc": "Check-list works offline. Data is stored on this device only.",
     "install": "Install app",
     "installHint": "On iPhone: tap Share, then \"Add to Home Screen\"."
+  },
+  "tabs": {
+    "today": "Today",
+    "calendar": "Calendar",
+    "approvals": "Approvals",
+    "clients": "Clients",
+    "notifications": "Inbox",
+    "me": "Me"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "welcome": "Welcome back",
+    "magicLinkHint": "Enter your email — we'll send a one-tap sign-in link.",
+    "email": "Email",
+    "sending": "Sending…",
+    "sendLink": "Send magic link",
+    "linkSent": "Check your email and tap the link to continue.",
+    "notConfigured": "Supabase is not configured. See .env.example."
+  },
+  "today": {
+    "title": "Today",
+    "greeting": "Hi {{name}}",
+    "empty": "No visits scheduled today. Enjoy the calm.",
+    "summary": "{{count}} visits · {{done}} done · {{min}} min on task",
+    "upNext": "Up next",
+    "rest": "Rest of today"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "add": "Add task",
+    "byWorker": "By worker",
+    "byClient": "By client",
+    "all": "All",
+    "empty": "No visits in this range."
+  },
+  "task": {
+    "title": "Task",
+    "description": "Description",
+    "decisionNote": "Note (optional)",
+    "decisionPlaceholder": "Add a reason if rejecting…",
+    "action": {
+      "start": "Start",
+      "submit": "Submit",
+      "approve": "Approve",
+      "reject": "Reject",
+      "reopen": "Reopen"
+    }
+  },
+  "taskNew": {
+    "title": "New task",
+    "description": "Description",
+    "client": "Client",
+    "worker": "Assign to",
+    "when": "Scheduled at",
+    "create": "Create task"
+  },
+  "proof": {
+    "title": "Proof",
+    "start": "Start proof",
+    "finish": "Finish proof",
+    "tapToCapture": "Tap the shutter to take a photo or video.",
+    "use": "Use this",
+    "saving": "Saving…",
+    "offlineHint": "Offline — we'll upload when you're back online."
+  },
+  "status": {
+    "notStarted": "Not started",
+    "inProgress": "In progress",
+    "submitted": "Submitted",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
+  "clients": {
+    "title": "Clients",
+    "add": "Add client",
+    "search": "Search clients…",
+    "empty": "No clients yet.",
+    "upcoming": "Upcoming visits",
+    "noUpcoming": "Nothing scheduled.",
+    "history": "Visit history",
+    "noHistory": "No past visits yet."
+  },
+  "clientNew": {
+    "title": "New client",
+    "name": "Name",
+    "phone": "Phone",
+    "address": "Address",
+    "create": "Create client"
+  },
+  "notes": {
+    "open": "Open notes",
+    "none": "No open notes.",
+    "openFromBefore": "Notes left for this visit",
+    "newForNext": "Leave a note for next time",
+    "add": "Leave a note for the next visit…",
+    "save": "Save note",
+    "resolve": "Mark resolved"
+  },
+  "approvals": {
+    "title": "Approvals",
+    "empty": "Nothing waiting on you."
+  },
+  "notifications": {
+    "title": "Inbox",
+    "empty": "No notifications yet."
+  },
+  "portal": {
+    "title": "Your visits",
+    "upcoming": "Upcoming",
+    "past": "Completed",
+    "noUpcoming": "Nothing scheduled.",
+    "noPast": "No completed visits yet."
+  },
+  "audit": {
+    "title": "Audit log",
+    "empty": "Nothing logged yet."
+  },
+  "users": {
+    "title": "Team & clients",
+    "invite": "Invite someone",
+    "name": "Name",
+    "role": "Role",
+    "linkClient": "Linked client record",
+    "sending": "Sending invite…",
+    "sendInvite": "Send invite",
+    "inviteSent": "Invite sent.",
+    "everyone": "Everyone",
+    "deactivate": "Deactivate",
+    "activate": "Activate"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "duplicate": "Duplicate",
+    "edit": "Edit",
+    "add": "Add",
+    "done": "Done",
+    "next": "Next",
+    "clear": "Clear",
+    "confirm": "Confirm",
+    "close": "Close",
+    "optional": "optional",
+    "copy": "Copy",
+    "yes": "Yes",
+    "no": "No",
+    "saving": "Saving…"
   }
 }

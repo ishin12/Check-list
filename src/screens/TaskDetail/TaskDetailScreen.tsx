@@ -9,6 +9,7 @@ import { getTask, updateTaskStatus } from '@/services/data/tasks';
 import { getSupabase } from '@/services/supabase/client';
 import { availableActions, canTransition, proofRequirements, timeOnTaskMinutes } from '@/domain/job/taskFlow';
 import type { ClientNote, FieldTask, TaskProof } from '@/domain/models/ops';
+import { NoteComposer, resolveNote } from '@/components/NoteComposer';
 
 export function TaskDetailScreen() {
   const { t } = useTranslation();
@@ -104,12 +105,25 @@ export function TaskDetailScreen() {
               {openNotes.map((n) => (
                 <div key={n.id} className="note-card">
                   <div>{n.body}</div>
-                  <div className="card__meta">{new Date(n.createdAt).toLocaleDateString()}</div>
+                  <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
+                    <span className="card__meta">{new Date(n.createdAt).toLocaleDateString()}</span>
+                    <button
+                      className="btn btn--ghost"
+                      onClick={async () => { await resolveNote(n.id, task!.id); await load(); }}
+                    >
+                      {t('notes.resolve', 'Mark resolved')}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           </section>
         ) : null}
+
+        <section>
+          <div className="section-title">{t('notes.newForNext', 'Leave a note for next time')}</div>
+          <NoteComposer clientId={task.clientId} taskId={task.id} onSaved={load} />
+        </section>
 
         {task.description ? (
           <div className="card">

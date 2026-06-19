@@ -1,15 +1,18 @@
 import { LocalStorageProvider } from './LocalStorageProvider';
+import { SupabaseStorageProvider } from './SupabaseStorageProvider';
+import { hasSupabaseConfig } from '@/services/supabase/client';
 import type { StorageProvider } from './StorageProvider';
 
 let instance: StorageProvider | null = null;
 
 /**
- * Single place that decides which StorageProvider the app uses. To move to a
- * backend later, return an ApiStorageProvider here instead.
+ * Returns the live StorageProvider. Uses Supabase when env vars are set
+ * (production / configured dev), otherwise falls back to localStorage so the
+ * app still runs unconfigured.
  */
 export function getStorage(): StorageProvider {
   if (!instance) {
-    instance = new LocalStorageProvider();
+    instance = hasSupabaseConfig() ? new SupabaseStorageProvider() : new LocalStorageProvider();
   }
   return instance;
 }

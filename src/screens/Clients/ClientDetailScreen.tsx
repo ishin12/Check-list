@@ -7,6 +7,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { getSupabase } from '@/services/supabase/client';
 import { listTasks } from '@/services/data/tasks';
 import type { Client, ClientNote, FieldTask } from '@/domain/models/ops';
+import { NoteComposer, resolveNote } from '@/components/NoteComposer';
 
 export function ClientDetailScreen() {
   const { t } = useTranslation();
@@ -15,32 +16,32 @@ export function ClientDetailScreen() {
   const [tasks, setTasks] = useState<FieldTask[]>([]);
   const [notes, setNotes] = useState<ClientNote[]>([]);
 
-  useEffect(() => {
+  async function load() {
     if (!id) return;
-    void (async () => {
-      const sb = getSupabase();
-      const [{ data: c }, ts, { data: ns }] = await Promise.all([
-        sb.from('clients').select('*').eq('id', id).maybeSingle(),
-        listTasks({ clientId: id }),
-        sb.from('client_notes').select('*').eq('client_id', id).order('created_at', { ascending: false }),
-      ]);
-      if (c) {
-        setClient({
-          id: c.id, name: c.name, email: c.email ?? undefined, phone: c.phone ?? undefined,
-          address: c.address ?? undefined, notes: c.notes ?? undefined,
-          createdAt: c.created_at, updatedAt: c.updated_at,
-        });
-      }
-      setTasks(ts);
-      setNotes((ns ?? []).map((r) => ({
-        id: r.id, clientId: r.client_id, body: r.body, status: r.status,
-        createdAt: r.created_at, resolvedAt: r.resolved_at ?? undefined,
-        createdInTaskId: r.created_in_task_id ?? undefined,
-        resolvedInTaskId: r.resolved_in_task_id ?? undefined,
-        createdBy: r.created_by ?? undefined,
-      })));
-    })();
-  }, [id]);
+    const sb = getSupabase();
+    const [{ data: c }, ts, { data: ns }] = await Promise.all([
+      sb.from('clients').select('*').eq('id', id).maybeSingle(),
+      listTasks({ clientId: id }),
+      sb.from('client_notes').select('*').eq('client_id', id).order('created_at', { ascending: false }),
+    ]);
+    if (c) {
+      setClient({
+        id: c.id, name: c.name, email: c.email ?? undefined, phone: c.phone ?? undefined,
+        address: c.address ?? undefined, notes: c.notes ?? undefined,
+        createdAt: c.created_at, updatedAt: c.updated_at,
+      });
+    }
+    setTasks(ts);
+    setNotes((ns ?? []).map((r) => ({
+      id: r.id, clientId: r.client_id, body: r.body, status: r.status,
+      createdAt: r.created_at, resolvedAt: r.resolved_at ?? undefined,
+      createdInTaskId: r.created_in_task_id ?? undefined,
+      resolvedInTaskId: r.resolved_in_task_id ?? undefined,
+      createdBy: r.created_by ?? undefined,
+    })));
+  }
+
+  useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
 
   if (!client) {
     return (
@@ -64,19 +65,29 @@ export function ClientDetailScreen() {
           <div className="card__meta">{[client.phone, client.email, client.address].filter(Boolean).join(' · ') || '—'}</div>
         </div>
 
-        {openNotes.length > 0 ? (
-          <section>
-            <div className="section-title">📎 {t('notes.open', 'Open notes')}</div>
+        <section>
+          <div className="section-title">📎 {t('notes.open', 'Open notes')}</div>
+          {openNotes.length === 0 ? (
+            <p className="hint">{t('notes.none', 'No open notes.')}</p>
+          ) : (
             <div className="stack">
               {openNotes.map((n) => (
                 <div key={n.id} className="note-card">
                   <div>{n.body}</div>
-                  <div className="card__meta">{new Date(n.createdAt).toLocaleDateString()}</div>
+                  <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
+                    <span className="card__meta">{new Date(n.createdAt).toLocaleDateString()}</span>
+                    <button className="btn btn--ghost" onClick={async () => { await resolveNote(n.id); await load(); }}>
+                      {t('notes.resolve', 'Mark resolved')}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
-          </section>
-        ) : null}
+          )}
+          <div style={{ marginTop: 12 }}>
+            <NoteComposer clientId={client.id} onSaved={load} />
+          </div>
+        </section>
 
         <section>
           <div className="section-title">{t('clients.upcoming', 'Upcoming visits')}</div>

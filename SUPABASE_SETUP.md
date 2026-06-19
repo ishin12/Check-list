@@ -36,12 +36,28 @@ values ('<your-auth.uid>', 'manager', 'Your Name', 'you@example.com', true);
 ```
 You can find your `auth.uid()` in **Authentication → Users**.
 
-## 5. (Optional) Email notifications
+## 5. (Optional) Email notifications via Resend
 The in-app inbox works out of the box via the `notifications` table + Realtime.
-For email, deploy the `notify` Edge Function (TODO) and set a `RESEND_API_KEY`
-secret. Until then, users only see in-app notifications.
+For email, deploy the `notify` Edge Function:
+```
+supabase functions deploy notify --no-verify-jwt
+supabase secrets set RESEND_API_KEY=re_xxx
+supabase secrets set RESEND_FROM='Check-list <noreply@your-domain.com>'
+```
+Then in **Database → Webhooks**, create a webhook on `notifications` for
+INSERT events pointing at the `notify` function. Now every in-app notification
+also fans out to email.
 
-## 6. Run the app
+## 6. (Optional) Invite-from-the-app via Edge Function
+The manager's `/users` screen calls a small Edge Function to invite workers
+and clients without dropping into SQL:
+```
+supabase functions deploy invite-user
+supabase secrets set APP_URL=https://your-app-url.example
+```
+Once deployed, you can invite team members straight from **Settings → Team & clients**.
+
+## 7. Run the app
 ```
 npm install
 npm run dev
