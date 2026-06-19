@@ -10,6 +10,11 @@ export function MediaCaptureScreen() {
   const { id, kind } = useParams<{ id: string; kind: 'start' | 'finish' }>();
   const [params] = useSearchParams();
   const replace = params.get('replace') === '1';
+  // When the camera is opened via the Start/Submit action-bar button, we
+  // advance the task status as part of the capture. When it's opened directly
+  // from a proof row, we just attach the photo and leave status alone so the
+  // worker can press Submit explicitly when they're ready.
+  const autoAdvance = params.get('auto') === '1';
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -41,8 +46,9 @@ export function MediaCaptureScreen() {
         capturedAt: new Date().toISOString(),
         blob: file,
       });
-      // Only auto-advance the status on the initial capture, not on retake.
-      if (!replace) {
+      // Only auto-advance the status when the camera was opened via the
+      // action-bar Start/Submit button — and never on a retake.
+      if (autoAdvance && !replace) {
         const now = new Date().toISOString();
         const task = await getTask(id);
         if (task) {

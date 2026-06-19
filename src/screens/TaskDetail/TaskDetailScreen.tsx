@@ -70,12 +70,14 @@ export function TaskDetailScreen() {
     if (!task) return;
     const next = canTransition(task.status, action, role);
     if (!next) return;
+    // The action-bar flow lets the camera auto-advance the status (?auto=1);
+    // a direct "Capture"/"Retake" tap on a proof row does not (see MediaCaptureScreen).
     if (action === 'start' && needsStartProof) {
-      navigate(`/tasks/${task.id}/capture/start`);
+      navigate(`/tasks/${task.id}/capture/start?auto=1`);
       return;
     }
     if (action === 'submit' && needsFinishProof) {
-      navigate(`/tasks/${task.id}/capture/finish`);
+      navigate(`/tasks/${task.id}/capture/finish?auto=1`);
       return;
     }
     const patch: Record<string, string | null> = { status: next };
