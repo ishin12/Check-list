@@ -20,6 +20,7 @@ function task(partial: Partial<FieldTask>): FieldTask {
     updatedAt: '2026-06-18T00:00:00Z',
     results: [],
     recurrence: 'none',
+    extraWork: [],
     ...partial,
   };
 }

@@ -57,6 +57,14 @@ export function PortalScreen() {
                 <div key={x.id} className="card">
                   <div className="card__title">{x.title}</div>
                   <div className="card__meta">{new Date(x.scheduledAt).toLocaleDateString()}</div>
+                  {x.extraWork.length > 0 ? (
+                    <div style={{ marginTop: 12 }}>
+                      <div className="section-title">{t('extras.title', 'Extra work done')}</div>
+                      <ul style={{ marginBlock: 6, paddingInlineStart: 18 }}>
+                        {x.extraWork.map((e) => <li key={e.id}>{e.body}</li>)}
+                      </ul>
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>

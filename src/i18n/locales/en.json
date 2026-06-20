@@ -160,6 +160,14 @@
     "create": "Create task"
   },
   "runner": { "title": "Checklist" },
+  "extras": {
+    "title": "Extra work done",
+    "placeholder": "Add something you did off the list…",
+    "add": "Add",
+    "empty": "Nothing extra logged yet.",
+    "remove": "Remove",
+    "lockedAfterApproval": "Locked after approval."
+  },
   "audit": {
     "title": "Audit log",
     "empty": "Nothing logged yet.",

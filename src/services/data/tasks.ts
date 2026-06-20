@@ -1,5 +1,5 @@
 import { getSupabase } from '@/services/supabase/client';
-import type { FieldTask } from '@/domain/models/ops';
+import type { ExtraWorkEntry, FieldTask } from '@/domain/models/ops';
 import { nextOccurrenceDate, type Recurrence } from '@/domain/job/recurrence';
 
 interface TaskRow {
@@ -23,6 +23,7 @@ interface TaskRow {
   signature: FieldTask['signature'];
   recurrence: Recurrence | null;
   series_id: string | null;
+  extra_work: ExtraWorkEntry[] | null;
 }
 
 function rowToTask(r: TaskRow): FieldTask {
@@ -47,6 +48,7 @@ function rowToTask(r: TaskRow): FieldTask {
     signature: r.signature ?? undefined,
     recurrence: r.recurrence ?? 'none',
     seriesId: r.series_id ?? undefined,
+    extraWork: r.extra_work ?? [],
   };
 }
 

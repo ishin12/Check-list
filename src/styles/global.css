@@ -693,6 +693,17 @@ html[dir='rtl'] .demo-account__arrow { transform: scaleX(-1); }
   white-space: nowrap;
 }
 
+/* Extra-work entries ------------------------------------------------------- */
+.extra-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
 /* Proof media -------------------------------------------------------------- */
 .proof-block { display: flex; flex-direction: column; gap: 8px; }
 .proof-block__media {

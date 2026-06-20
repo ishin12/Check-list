@@ -13,6 +13,7 @@ import type { ClientNote, FieldTask, TaskProof } from '@/domain/models/ops';
 import { NoteComposer, resolveNote } from '@/components/NoteComposer';
 import { ProofMedia } from '@/components/ProofMedia';
 import { TemplateRunner } from '@/components/TemplateRunner';
+import { ExtraWorkLog } from '@/components/ExtraWorkLog';
 
 export function TaskDetailScreen() {
   const { t } = useTranslation();
@@ -193,6 +194,19 @@ export function TaskDetailScreen() {
             onChange={load}
           />
         ) : null}
+
+        <ExtraWorkLog
+          taskId={task.id}
+          entries={task.extraWork}
+          canEdit={
+            task.status !== 'approved' &&
+            ((role === 'worker' && task.assignedWorkerId === user?.id) || role === 'manager')
+          }
+          currentUserId={user?.id}
+          currentUserName={user?.fullName ?? user?.email}
+          lockedHint={task.status === 'approved' ? t('extras.lockedAfterApproval', 'Locked after approval.') : undefined}
+          onChange={load}
+        />
 
         <section className="card">
           <div className="row" style={{ justifyContent: 'space-between' }}>

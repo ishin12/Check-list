@@ -52,6 +52,16 @@ export interface FieldTask {
   signature?: Signature;
   recurrence: Recurrence;
   seriesId?: string;
+  extraWork: ExtraWorkEntry[];
+}
+
+export interface ExtraWorkEntry {
+  id: string;
+  body: string;
+  addedAt: string;
+  addedBy: string;
+  /** Cached author display name at write time. */
+  addedByName?: string;
 }
 
 export type ProofKind = 'start' | 'finish';
