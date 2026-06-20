@@ -7,6 +7,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/app/providers/AuthContext';
 import { listTasks } from '@/services/data/tasks';
 import { getSupabase } from '@/services/supabase/client';
+import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
 
 interface Option { id: string; label: string }
@@ -111,6 +112,7 @@ export function CalendarScreen() {
                   <Link key={x.id} to={`/tasks/${x.id}`} className="card card--tap">
                     <div style={{ flex: 1 }}>
                       <div className="card__title">{x.title}</div>
+                      <TaskWhoLine task={x} hideWorker={!isManager} />
                       <div className="card__meta">
                         {new Date(x.scheduledAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                       </div>

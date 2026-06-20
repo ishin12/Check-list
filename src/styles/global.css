@@ -693,6 +693,12 @@ html[dir='rtl'] .demo-account__arrow { transform: scaleX(-1); }
   white-space: nowrap;
 }
 
+/* Task who-line ------------------------------------------------------------ */
+.who-line { display: inline-flex; align-items: center; gap: 6px; }
+.who-line__sep { opacity: 0.5; }
+.who-line__link { color: var(--color-brand-strong); text-decoration: none; font-weight: 600; }
+.who-line__link:hover { text-decoration: underline; }
+
 /* Extra-work entries ------------------------------------------------------- */
 .extra-entry {
   display: flex;

@@ -14,6 +14,7 @@ import { NoteComposer, resolveNote } from '@/components/NoteComposer';
 import { ProofMedia } from '@/components/ProofMedia';
 import { TemplateRunner } from '@/components/TemplateRunner';
 import { ExtraWorkLog } from '@/components/ExtraWorkLog';
+import { TaskWhoLine } from '@/components/TaskWhoLine';
 
 export function TaskDetailScreen() {
   const { t } = useTranslation();
@@ -138,6 +139,8 @@ export function TaskDetailScreen() {
             <StatusPill status={task.status} />
           </div>
         </div>
+        <TaskWhoLine task={task} linkClient />
+
 
         {openNotes.length > 0 ? (
           <section>

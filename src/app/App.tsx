@@ -3,6 +3,7 @@ import { StorageProviderContext } from './providers/StorageContext';
 import { LanguageProvider, useLanguage } from './providers/LanguageContext';
 import { CurrentJobProvider } from './providers/CurrentJobContext';
 import { AuthProvider } from './providers/AuthContext';
+import { DirectoryProvider } from './providers/DirectoryContext';
 import { router } from './router';
 
 function AppRoutes() {
@@ -16,9 +17,11 @@ export default function App() {
     <StorageProviderContext>
       <LanguageProvider>
         <AuthProvider>
-          <CurrentJobProvider>
-            <AppRoutes />
-          </CurrentJobProvider>
+          <DirectoryProvider>
+            <CurrentJobProvider>
+              <AppRoutes />
+            </CurrentJobProvider>
+          </DirectoryProvider>
         </AuthProvider>
       </LanguageProvider>
     </StorageProviderContext>

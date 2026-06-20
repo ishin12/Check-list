@@ -4,11 +4,13 @@ import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { useAuth } from '@/app/providers/AuthContext';
 import { getSupabase } from '@/services/supabase/client';
+import { useDirectory } from '@/app/providers/DirectoryContext';
 import type { AppNotification } from '@/domain/models/ops';
 
 export function NotificationsScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { workers } = useDirectory();
   const [items, setItems] = useState<AppNotification[]>([]);
 
   useEffect(() => {
@@ -59,15 +61,22 @@ export function NotificationsScreen() {
           </div>
         ) : (
           <div className="stack">
-            {items.map((n) => (
-              <div key={n.id} className={`card ${n.readAt ? '' : 'card--unread'}`}>
-                <div className="card__title">{renderKind(n.kind)}</div>
-                <div className="card__meta">{new Date(n.createdAt).toLocaleString()}</div>
-                {(n.payload as { title?: string }).title ? (
-                  <div className="card__meta">{(n.payload as { title: string }).title}</div>
-                ) : null}
-              </div>
-            ))}
+            {items.map((n) => {
+              const payload = n.payload as { title?: string; worker_id?: string };
+              const workerId = payload.worker_id;
+              const workerName = workerId ? (workers.get(workerId)?.fullName ?? workers.get(workerId)?.email) : null;
+              return (
+                <div key={n.id} className={`card ${n.readAt ? '' : 'card--unread'}`}>
+                  <div className="card__title">{renderKind(n.kind)}</div>
+                  <div className="card__meta">{new Date(n.createdAt).toLocaleString()}</div>
+                  {payload.title ? (
+                    <div className="card__meta">
+                      {payload.title}{workerName ? ` · ${workerName}` : ''}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         )}
       </main>

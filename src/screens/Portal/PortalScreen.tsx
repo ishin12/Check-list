@@ -5,6 +5,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/app/providers/AuthContext';
 import { listTasks } from '@/services/data/tasks';
+import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
 
 export function PortalScreen() {
@@ -37,6 +38,7 @@ export function PortalScreen() {
                   <div className="row" style={{ justifyContent: 'space-between' }}>
                     <div>
                       <div className="card__title">{x.title}</div>
+                      <TaskWhoLine task={x} hideClient />
                       <div className="card__meta">{new Date(x.scheduledAt).toLocaleString()}</div>
                     </div>
                     <StatusPill status={x.status} />
@@ -56,6 +58,7 @@ export function PortalScreen() {
               {past.map((x) => (
                 <div key={x.id} className="card">
                   <div className="card__title">{x.title}</div>
+                  <TaskWhoLine task={x} hideClient />
                   <div className="card__meta">{new Date(x.scheduledAt).toLocaleDateString()}</div>
                   {x.extraWork.length > 0 ? (
                     <div style={{ marginTop: 12 }}>

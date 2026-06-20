@@ -4,10 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
+import { useDirectory } from '@/app/providers/DirectoryContext';
 
 export function ClientNewScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const directory = useDirectory();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -26,6 +28,7 @@ export function ClientNewScreen() {
         address: address || null,
       }).select('id').single();
       if (error) throw error;
+      await directory.refresh();
       navigate(`/clients/${data!.id}`, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

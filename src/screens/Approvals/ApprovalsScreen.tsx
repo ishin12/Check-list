@@ -5,6 +5,7 @@ import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { StatusPill } from '@/components/StatusPill';
 import { listTasks } from '@/services/data/tasks';
+import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
 
 export function ApprovalsScreen() {
@@ -30,6 +31,7 @@ export function ApprovalsScreen() {
               <Link key={x.id} to={`/tasks/${x.id}`} className="card card--tap">
                 <div style={{ flex: 1 }}>
                   <div className="card__title">{x.title}</div>
+                  <TaskWhoLine task={x} />
                   <div className="card__meta">{new Date(x.scheduledAt).toLocaleString()}</div>
                 </div>
                 <StatusPill status={x.status} />

@@ -3,12 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
+import { useDirectory } from '@/app/providers/DirectoryContext';
 import type { AppUser, Role } from '@/domain/models/ops';
 
 interface ClientOpt { id: string; name: string }
 
 export function UsersScreen() {
   const { t } = useTranslation();
+  const directory = useDirectory();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [clients, setClients] = useState<ClientOpt[]>([]);
   const [email, setEmail] = useState('');
@@ -57,6 +59,7 @@ export function UsersScreen() {
       setStatus('ok');
       setEmail(''); setFullName(''); setClientId('');
       await load();
+      await directory.refresh();
     } catch (err) {
       setStatus('error');
       setError(err instanceof Error ? err.message : String(err));
@@ -66,6 +69,7 @@ export function UsersScreen() {
   async function toggleActive(u: AppUser) {
     await getSupabase().from('profiles').update({ active: !u.active }).eq('id', u.id);
     await load();
+    await directory.refresh();
   }
 
   return (

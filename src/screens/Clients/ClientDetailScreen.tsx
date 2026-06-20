@@ -8,6 +8,7 @@ import { getSupabase } from '@/services/supabase/client';
 import { listTasks } from '@/services/data/tasks';
 import type { Client, ClientNote, FieldTask } from '@/domain/models/ops';
 import { NoteComposer, resolveNote } from '@/components/NoteComposer';
+import { TaskWhoLine } from '@/components/TaskWhoLine';
 
 export function ClientDetailScreen() {
   const { t } = useTranslation();
@@ -99,6 +100,7 @@ export function ClientDetailScreen() {
                 <Link key={x.id} to={`/tasks/${x.id}`} className="card card--tap">
                   <div style={{ flex: 1 }}>
                     <div className="card__title">{x.title}</div>
+                    <TaskWhoLine task={x} hideClient />
                     <div className="card__meta">{new Date(x.scheduledAt).toLocaleString()}</div>
                   </div>
                   <StatusPill status={x.status} />
@@ -119,6 +121,7 @@ export function ClientDetailScreen() {
                   <span className="timeline__dot" />
                   <div style={{ flex: 1 }}>
                     <div className="card__title">{x.title}</div>
+                    <TaskWhoLine task={x} hideClient />
                     <div className="card__meta">{new Date(x.scheduledAt).toLocaleDateString()}</div>
                   </div>
                   <StatusPill status={x.status} />

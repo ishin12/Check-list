@@ -7,6 +7,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/app/providers/AuthContext';
 import { listTasks } from '@/services/data/tasks';
 import { dailySummary, timeOnTaskMinutes } from '@/domain/job/taskFlow';
+import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
 
 function startOfDay(d = new Date()): string {
@@ -81,6 +82,7 @@ export function TodayScreen() {
                 <StatusPill status={next.status} />
               </div>
               <div className="card__title">{next.title}</div>
+              <TaskWhoLine task={next} hideWorker={user?.role === 'worker'} />
               <div className="card__meta">
                 {new Date(next.scheduledAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                 {next.startedAt ? ` · ${timeOnTaskMinutes(next)} min` : null}
@@ -97,6 +99,7 @@ export function TodayScreen() {
                 <Link key={x.id} to={`/tasks/${x.id}`} className="card card--tap">
                   <div style={{ flex: 1 }}>
                     <div className="card__title">{x.title}</div>
+                    <TaskWhoLine task={x} hideWorker={user?.role === 'worker'} />
                     <div className="card__meta">
                       {new Date(x.scheduledAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                     </div>
