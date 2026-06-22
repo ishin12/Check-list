@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "Check-list",
-    "tagline": "Job checklists, signed and sent."
+    "name": "Ghsoon Najd",
+    "tagline": "Field operations, signed and shared."
   },
   "nav": {
     "home": "Home",
@@ -92,7 +92,7 @@
     "english": "English",
     "arabic": "العربية",
     "about": "About",
-    "aboutDesc": "Check-list works offline. Data is stored on this device only.",
+    "aboutDesc": "Ghsoon Najd works offline. Data syncs when you’re back online.",
     "install": "Install app",
     "installHint": "On iPhone: tap Share, then \"Add to Home Screen\"."
   },

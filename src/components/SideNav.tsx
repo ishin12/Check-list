@@ -12,8 +12,18 @@ export function SideNav({ role }: { role: Role }) {
   return (
     <aside className="side-nav" aria-label="Primary">
       <div className="side-nav__brand">
-        <span className="side-nav__brand-mark" aria-hidden>◎</span>
-        <span className="side-nav__brand-name">{t('app.name', 'Check-list')}</span>
+        <span className="side-nav__brand-mark" aria-hidden>
+          <svg viewBox="0 0 64 64" width="36" height="36">
+            <rect width="64" height="64" rx="10" fill="var(--color-ink)"/>
+            <g transform="translate(32 34)" fill="var(--color-brand)">
+              <path d="M -2 -2 C -16 -4 -22 -16 -14 -24 C -6 -16 -2 -10 -2 -2 Z"/>
+              <path d="M 2 -2 C 16 -4 22 -16 14 -24 C 6 -16 2 -10 2 -2 Z"/>
+              <rect x="-1.6" y="-3" width="3.2" height="22" rx="1.6"/>
+            </g>
+            <path d="M 22 56 Q 32 50 42 56" fill="none" stroke="var(--color-gold)" strokeWidth="3" strokeLinecap="round"/>
+          </svg>
+        </span>
+        <span className="side-nav__brand-name">{t('app.name', 'Ghsoon Najd')}</span>
       </div>
 
       {role === 'manager' ? (

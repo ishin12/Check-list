@@ -1,17 +1,17 @@
 :root {
-  --color-bg: #f1f5f9;
+  --color-bg: #f6f7f4;
   --color-surface: #ffffff;
-  --color-surface-2: #f8fafc;
-  --color-border: #e2e8f0;
-  --color-text: #0f172a;
-  --color-text-muted: #64748b;
-  --color-primary: #0ea5e9;
-  --color-primary-strong: #0284c7;
-  --color-primary-soft: #e0f2fe;
-  --color-success: #16a34a;
-  --color-success-soft: #dcfce7;
-  --color-danger: #dc2626;
-  --color-danger-soft: #fee2e2;
+  --color-surface-2: #f1f4ee;
+  --color-border: #dde2d8;
+  --color-text: #003C1B;
+  --color-text-muted: #4a6357;
+  --color-primary: #00C481;
+  --color-primary-strong: #00A66E;
+  --color-primary-soft: #D4F3E5;
+  --color-success: #00C481;
+  --color-success-soft: #D4F3E5;
+  --color-danger: #B23A3A;
+  --color-danger-soft: #F7E0E0;
 
   --radius-sm: 8px;
   --radius: 14px;
@@ -24,28 +24,29 @@
   --space-5: 24px;
   --space-6: 32px;
 
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
+  --shadow-sm: 0 1px 2px rgba(0, 60, 27, 0.06);
+  --shadow: 0 4px 16px rgba(0, 60, 27, 0.08);
+  --shadow-lg: 0 12px 32px rgba(0, 60, 27, 0.12);
 
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-ar: 'Cairo', system-ui, sans-serif;
 
-  /* Field-ops brand: deep ink + signal orange + warm sand.
-     Layered on top of the existing tokens — legacy screens keep working. */
-  --color-ink: #0E1116;
-  --color-ink-soft: #2A2F3A;
-  --color-sand: #F6F1EA;
-  --color-brand: #FF6A1A;
-  --color-brand-strong: #E55310;
-  --color-brand-soft: #FFE8D9;
+  /* Ghsoon Najd brand — extracted from the company profile deck. */
+  --color-ink: #003C1B;            /* deep forest */
+  --color-ink-soft: #0E4624;       /* slightly lifted forest */
+  --color-sand: #F0E0C1;           /* warm cream surface */
+  --color-brand: #00C481;          /* emerald primary (82× in deck) */
+  --color-brand-strong: #00A66E;
+  --color-brand-soft: #D4F3E5;
+  --color-gold: #D7CE6D;           /* olive-gold accent */
+  --color-gold-soft: #F1ECC2;
 
-  /* Status palette (non-traffic-light) */
-  --status-not_started-bg: #E2E8F0;  --status-not_started-fg: #475569;
-  --status-in_progress-bg: #FEF3C7;  --status-in_progress-fg: #92400E;
-  --status-submitted-bg:   #E0E7FF;  --status-submitted-fg:   #3730A3;
-  --status-approved-bg:    #DCFCE7;  --status-approved-fg:    #15803D;
-  --status-rejected-bg:    #FEE2E2;  --status-rejected-fg:    #B91C1C;
+  /* Status palette (on-brand: greens for approved/in-progress, gold for submitted) */
+  --status-not_started-bg: #E4E9E0;  --status-not_started-fg: #4a6357;
+  --status-in_progress-bg: #F1ECC2;  --status-in_progress-fg: #6e6614;
+  --status-submitted-bg:   #D4F3E5;  --status-submitted-fg:   #00754F;
+  --status-approved-bg:    #00A66E;  --status-approved-fg:    #ffffff;
+  --status-rejected-bg:    #F7E0E0;  --status-rejected-fg:    #8a2828;
 }
 
 * {
@@ -693,6 +694,21 @@ html[dir='rtl'] .demo-account__arrow { transform: scaleX(-1); }
   white-space: nowrap;
 }
 
+/* Hero brand row on login -------------------------------------------------- */
+.hero__brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  position: relative;
+}
+.hero__brand-name {
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+
 /* Task who-line ------------------------------------------------------------ */
 .who-line { display: inline-flex; align-items: center; gap: 6px; }
 .who-line__sep { opacity: 0.5; }
@@ -1056,12 +1072,8 @@ html[dir='rtl'] .demo-account__arrow { transform: scaleX(-1); }
     align-items: center;
     justify-content: center;
     width: 36px; height: 36px;
-    border-radius: 10px;
-    background: var(--color-ink);
-    color: var(--color-brand);
-    font-size: 1.25rem;
-    font-weight: 800;
   }
+  .side-nav__brand-mark svg { display: block; }
   .side-nav__brand-name {
     font-size: 1.0625rem;
     font-weight: 800;

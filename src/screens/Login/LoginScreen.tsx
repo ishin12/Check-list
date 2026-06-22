@@ -65,6 +65,18 @@ export function LoginScreen() {
           </div>
         ) : null}
         <div className="hero hero--brand">
+          <div className="hero__brand-row">
+            <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden>
+              <rect width="64" height="64" rx="12" fill="#003C1B"/>
+              <g transform="translate(32 34)" fill="#00C481">
+                <path d="M -2 -2 C -16 -4 -22 -16 -14 -24 C -6 -16 -2 -10 -2 -2 Z"/>
+                <path d="M 2 -2 C 16 -4 22 -16 14 -24 C 6 -16 2 -10 2 -2 Z"/>
+                <rect x="-1.6" y="-3" width="3.2" height="22" rx="1.6"/>
+              </g>
+              <path d="M 22 56 Q 32 50 42 56" fill="none" stroke="#D7CE6D" strokeWidth="3" strokeLinecap="round"/>
+            </svg>
+            <div className="hero__brand-name">{t('app.name', 'Ghsoon Najd')}</div>
+          </div>
           <div className="hero__title">{t('auth.welcome', 'Welcome back')}</div>
           <div className="hero__desc">
             {demo
