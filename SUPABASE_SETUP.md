@@ -36,60 +36,99 @@ The free tier is plenty for this scale (<10 workers, <50 clients, <500 tasks/mo)
    VITE_SUPABASE_ANON_KEY=eyJ...
    ```
 
-## 2. Run the migration
-1. Open the **SQL Editor** in the Supabase dashboard.
-2. Paste the contents of `supabase/migrations/0001_init.sql` and run it.
-   This creates every table, RLS policy, audit trigger, and the
-   `task.assigned` / `task.submitted` notification triggers.
+## 2. Run the migrations (in order)
+Open the **SQL Editor** and run each file's contents, in this order:
+1. `supabase/migrations/0001_init.sql` — core tables, RLS, audit + notification triggers.
+2. `supabase/migrations/0002_recurrence.sql` — recurring tasks.
+3. `supabase/migrations/0003_extra_work.sql` — the worker "extra work done" log.
+4. `supabase/migrations/0004_signing.sql` — WhatsApp signing links, `app_settings`,
+   `approval_method`, and the two public sign RPCs.
 
 ## 3. Create the storage bucket
-1. Go to **Storage → New bucket**.
-2. Name it `proofs`. Leave it **private** (uncheck "public bucket").
-3. Add a policy: `authenticated` users can `insert` / `select` objects whose
-   path begins with a `task_id` they own (worker on assigned tasks, manager
-   always). The simplest start is to enable RLS on the bucket and use the
-   default "auth.uid() is not null" policy — RLS on `task_proofs` already gates
-   what shows up in the UI.
+1. **Storage → New bucket** → name `proofs`, **private** (uncheck "public bucket").
+2. Enable RLS; the default "auth.uid() is not null" insert/select policy is enough
+   — RLS on `task_proofs` already controls what shows in the UI.
 
 ## 4. Make yourself the first manager
-After you sign in for the first time (magic link), a row gets inserted into
-`auth.users` but **not** into `public.profiles`. Open the SQL Editor and run:
+Email/password users are created by the `invite-user` function, but you need a
+first manager to bootstrap. Create a user in **Authentication → Users → Add user**
+(set a password), then in SQL Editor:
 ```sql
 insert into public.profiles (id, role, full_name, email, active)
 values ('<your-auth.uid>', 'manager', 'Your Name', 'you@example.com', true);
 ```
-You can find your `auth.uid()` in **Authentication → Users**.
 
-## 5. (Optional) Email notifications via Resend
-The in-app inbox works out of the box via the `notifications` table + Realtime.
-For email, deploy the `notify` Edge Function:
+## 5. Deploy the Edge Functions
 ```
 supabase functions deploy notify --no-verify-jwt
-supabase secrets set RESEND_API_KEY=re_xxx
-supabase secrets set RESEND_FROM='Check-list <noreply@your-domain.com>'
-```
-Then in **Database → Webhooks**, create a webhook on `notifications` for
-INSERT events pointing at the `notify` function. Now every in-app notification
-also fans out to email.
-
-## 6. (Optional) Invite-from-the-app via Edge Function
-The manager's `/users` screen calls a small Edge Function to invite workers
-and clients without dropping into SQL:
-```
 supabase functions deploy invite-user
-supabase secrets set APP_URL=https://your-app-url.example
+supabase functions deploy set-password
+supabase functions deploy send-sign-link
+supabase functions deploy send-reminder --no-verify-jwt
+supabase functions deploy expire-signing --no-verify-jwt
 ```
-Once deployed, you can invite team members straight from **Settings → Team & clients**.
+Secrets (set once):
+```
+supabase secrets set RESEND_API_KEY=re_xxx
+supabase secrets set RESEND_FROM='Ghsoon Najd <noreply@your-domain.com>'
+supabase secrets set APP_URL=https://app.ghsoonnajd.com    # or the Pages URL
+supabase secrets set WHATSAPP_TOKEN=<permanent token>
+supabase secrets set WHATSAPP_PHONE_NUMBER_ID=<phone number id>
+```
+> No `WHATSAPP_TEMPLATE_NAMESPACE` — the Cloud API identifies templates by
+> name + language code only.
 
-## 7. Run the app
+Create a **Database Webhook** on `notifications` (INSERT) → `notify` so in-app
+notifications also email.
+
+## 6. Schedule the cron sweeps (pg_cron)
+In SQL Editor (enable `pg_cron` + `pg_net` extensions first under Database → Extensions):
+```sql
+select cron.schedule('expire-signing', '0 * * * *', $$
+  select net.http_post(
+    url := 'https://<project-ref>.functions.supabase.co/expire-signing',
+    headers := '{"Authorization":"Bearer <service-role-key>"}'::jsonb
+  );$$);
+select cron.schedule('send-reminder', '15 * * * *', $$
+  select net.http_post(
+    url := 'https://<project-ref>.functions.supabase.co/send-reminder',
+    headers := '{"Authorization":"Bearer <service-role-key>"}'::jsonb
+  );$$);
 ```
-npm install
-npm run dev
+
+## 7. WhatsApp templates
+Submit and get approved (WhatsApp Manager → Message Templates):
+- `ghsoon_najd_sign_request` — UTILITY, body has `{{1}}` name, `{{2}}` visit,
+  `{{3}}` days; single **dynamic URL button** with base `https://<host>/sign/`
+  and `{{1}}` = token. **No link in the body.**
+- `ghsoon_najd_sign_reminder` — UTILITY, body `{{1}}` visit, `{{2}}` hours; same
+  dynamic URL button.
+
+## 8. Deploy the frontend
+Set in `.env.production` (or the GitHub Pages build env):
 ```
+VITE_DEMO_MODE=0
+VITE_SUPABASE_URL=https://<project>.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
+```
+The GitHub Pages action builds and publishes. The `public/404.html` SPA
+fallback makes the real `/sign/<token>` path resolve on refresh.
 
 ## Roles in this app
-- **Manager** — full access; created by inserting a `profiles` row with `role='manager'`.
-- **Worker** — sees only their own tasks; create by inviting via the dashboard,
-  then inserting `role='worker'` into `profiles` once they appear in `auth.users`.
-- **Client** — read-only portal; create a `clients` row first, then a
-  `profiles` row with `role='client'` and `client_id` pointing at it.
+- **Manager** — full access; first one inserted by hand (step 4), the rest invited
+  from **Settings → Team & clients** (emails a temporary password).
+- **Worker** — sees only their own tasks; invited from the Users screen.
+- **Client** — read-only portal; create a `clients` row (with a WhatsApp phone),
+  then invite with `role='client'` linked to that client.
+
+## Signing flow at a glance
+1. Worker submits a task → `send-sign-link` creates a `signing_links` row and
+   sends `ghsoon_najd_sign_request` to the client's WhatsApp.
+2. Client taps the link → `/sign/<token>` → signs → task becomes **approved**
+   with `approval_method = 'client_signature'`.
+3. If no signature within `app_settings.signing_expiry_days` (default 3, editable
+   in **Settings → Client signing window**), the hourly `expire-signing` cron
+   auto-approves it with `approval_method = 'auto_no_response'` — rendered
+   distinctly (gold "no response" pill, gold report band) so it's never mistaken
+   for a real signature.
+4. 24h before expiry, `send-reminder` sends `ghsoon_najd_sign_reminder` once.

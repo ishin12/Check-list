@@ -48,12 +48,16 @@ export interface FieldTask {
   finishedAt?: string;
   decisionAt?: string;
   decisionNote?: string;
+  /** How the task reached 'approved' — drives a distinct UI/report treatment. */
+  approvalMethod?: ApprovalMethod;
   results: TaskResult[];
   signature?: Signature;
   recurrence: Recurrence;
   seriesId?: string;
   extraWork: ExtraWorkEntry[];
 }
+
+export type ApprovalMethod = 'manager' | 'client_signature' | 'auto_no_response';
 
 export interface ExtraWorkEntry {
   id: string;

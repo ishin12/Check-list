@@ -15,8 +15,9 @@ const ROLE_BLURB: Record<DemoProfile['role'], string> = {
 
 export function LoginScreen() {
   const { t } = useTranslation();
-  const { user, signInWithEmail, configured } = useAuth();
+  const { user, signInWithEmail, signInWithPassword, configured } = useAuth();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [demoProfiles, setDemoProfiles] = useState<DemoProfile[]>([]);
@@ -36,8 +37,15 @@ export function LoginScreen() {
     setStatus('sending');
     setError(null);
     try {
-      await signInWithEmail(email.trim());
-      setStatus('sent');
+      if (demo) {
+        // Demo: magic-link path signs you in immediately.
+        await signInWithEmail(email.trim());
+        setStatus('sent');
+      } else {
+        // Production: email + password.
+        await signInWithPassword(email.trim(), password);
+        setStatus('idle');
+      }
     } catch (err) {
       setStatus('error');
       setError(err instanceof Error ? err.message : String(err));
@@ -129,12 +137,29 @@ export function LoginScreen() {
               disabled={status === 'sending' || !configured}
             />
           </div>
+          {!demo ? (
+            <div className="field">
+              <label className="field__label" htmlFor="password">{t('auth.password', 'Password')}</label>
+              <input
+                id="password"
+                className="input"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={status === 'sending' || !configured}
+              />
+            </div>
+          ) : null}
           <button
             className="btn btn--primary btn--block btn--lg"
             type="submit"
-            disabled={!email || status === 'sending' || !configured}
+            disabled={!email || (!demo && !password) || status === 'sending' || !configured}
           >
-            {status === 'sending' ? t('auth.sending', 'Sending…') : t('auth.sendLink', 'Send magic link')}
+            {status === 'sending'
+              ? t('auth.sending', 'Signing in…')
+              : demo ? t('auth.sendLink', 'Send magic link') : t('auth.signIn', 'Sign in')}
           </button>
 
           {status === 'sent' ? (

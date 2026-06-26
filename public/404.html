@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ghsoon Najd</title>
+    <script type="text/javascript">
+      // SPA fallback for GitHub Pages. A request for /Check-list/sign/<token>
+      // 404s on Pages (no such file), Pages serves THIS page, and we rewrite the
+      // URL into a query string that index.html decodes back into the real path.
+      // pathSegmentsToKeep = 1 keeps the '/Check-list' project base.
+      var pathSegmentsToKeep = 1;
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>

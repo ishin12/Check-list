@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
+import { invokeFunction } from '@/services/data/functions';
 import { useDirectory } from '@/app/providers/DirectoryContext';
 import type { AppUser, Role } from '@/domain/models/ops';
 
@@ -19,6 +20,31 @@ export function UsersScreen() {
   const [clientId, setClientId] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
+  // Per-user password reset.
+  const [pwTarget, setPwTarget] = useState<AppUser | null>(null);
+  const [pwValue, setPwValue] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  function setPasswordFor(u: AppUser) {
+    setPwTarget(u); setPwValue(''); setPwMsg(null);
+  }
+
+  async function savePassword() {
+    if (!pwTarget || pwValue.length < 8) return;
+    setPwSaving(true); setPwMsg(null);
+    try {
+      const res = await invokeFunction('set-password', { user_id: pwTarget.id, password: pwValue });
+      if (!res.ok) {
+        setPwMsg({ ok: false, text: res.error ?? t('users.passwordFailed', 'Couldn’t set password.') });
+      } else {
+        setPwMsg({ ok: true, text: t('users.passwordSet', 'Password updated.') });
+        setPwValue('');
+      }
+    } finally {
+      setPwSaving(false);
+    }
+  }
 
   async function load() {
     const sb = getSupabase();
@@ -119,10 +145,37 @@ export function UsersScreen() {
                   <div className="card__title">{u.fullName ?? u.email ?? u.id}</div>
                   <div className="card__meta">{u.role}{u.active ? '' : ' · inactive'}</div>
                 </div>
-                <button className="btn btn--ghost" onClick={() => toggleActive(u)}>
-                  {u.active ? t('users.deactivate', 'Deactivate') : t('users.activate', 'Activate')}
-                </button>
+                <div className="row" style={{ gap: 6 }}>
+                  {u.role !== 'client' ? (
+                    <button className="btn btn--ghost" onClick={() => setPasswordFor(u)}>
+                      {t('users.setPassword', 'Set password')}
+                    </button>
+                  ) : null}
+                  <button className="btn btn--ghost" onClick={() => toggleActive(u)}>
+                    {u.active ? t('users.deactivate', 'Deactivate') : t('users.activate', 'Activate')}
+                  </button>
+                </div>
               </div>
+              {pwTarget?.id === u.id ? (
+                <div className="stack" style={{ marginTop: 10 }}>
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder={t('users.newPassword', 'New password (min 8 chars)') ?? ''}
+                    value={pwValue}
+                    onChange={(e) => setPwValue(e.target.value)}
+                  />
+                  <div className="row" style={{ gap: 6 }}>
+                    <button className="btn btn--primary" disabled={pwValue.length < 8 || pwSaving} onClick={savePassword}>
+                      {pwSaving ? t('common.saving', 'Saving…') : t('users.savePassword', 'Save')}
+                    </button>
+                    <button className="btn btn--ghost" onClick={() => { setPwTarget(null); setPwValue(''); }}>
+                      {t('common.cancel', 'Cancel')}
+                    </button>
+                  </div>
+                  {pwMsg ? <div className={`banner banner--${pwMsg.ok ? 'success' : 'error'}`}>{pwMsg.text}</div> : null}
+                </div>
+              ) : null}
             </div>
           ))}
         </div>

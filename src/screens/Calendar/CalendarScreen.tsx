@@ -117,7 +117,7 @@ export function CalendarScreen() {
                         {new Date(x.scheduledAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
-                    <StatusPill status={x.status} />
+                    <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
                   </Link>
                 ))}
               </div>

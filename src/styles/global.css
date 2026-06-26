@@ -653,6 +653,83 @@ textarea {
 .status-pill--approved    { background: var(--status-approved-bg);    color: var(--status-approved-fg);    }
 .status-pill--rejected    { background: var(--status-rejected-bg);    color: var(--status-rejected-fg);    }
 
+/* Auto-approved (no client response): outlined gold so it never reads as a
+   real signature. */
+.status-pill--auto {
+  background: transparent;
+  color: #6e6614;
+  border: 1.5px dashed var(--color-gold);
+}
+.status-pill--auto::before { background: var(--color-gold); opacity: 1; }
+
+/* Approval subtitle line on TaskDetail ------------------------------------- */
+.approval-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.875rem;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+.approval-line__icon { line-height: 1.4; }
+.approval-line--signed  { background: var(--color-brand-soft); color: var(--color-brand-strong); }
+.approval-line--manager { background: var(--color-surface-2); color: var(--color-text-muted); }
+.approval-line--auto    { background: var(--color-gold-soft); color: #6e6614; border: 1px dashed var(--color-gold); }
+
+/* Public sign page --------------------------------------------------------- */
+.sign-page {
+  min-height: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-4);
+  background: var(--color-sand);
+}
+.sign-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: var(--space-5);
+  margin-block: var(--space-5);
+}
+.sign-card--center { text-align: center; }
+.sign-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 1.0625rem;
+  color: var(--color-ink);
+  margin-bottom: var(--space-4);
+}
+.sign-card--center .sign-brand { justify-content: center; }
+.sign-title { font-size: 1.25rem; font-weight: 800; margin-bottom: var(--space-2); }
+.sign-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  margin-block: var(--space-3);
+}
+.sign-row { display: flex; justify-content: space-between; gap: 12px; font-size: 0.9375rem; }
+.sign-row__label { color: var(--color-text-muted); }
+.sign-row__value { font-weight: 600; text-align: end; }
+.sign-check {
+  width: 64px; height: 64px;
+  margin: var(--space-3) auto;
+  border-radius: 999px;
+  background: var(--color-brand);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; font-weight: 800;
+}
+
 /* Demo account picker on login -------------------------------------------- */
 .demo-account {
   align-items: center;

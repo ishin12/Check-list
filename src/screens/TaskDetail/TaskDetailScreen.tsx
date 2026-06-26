@@ -6,6 +6,7 @@ import { AppShell } from '@/components/AppShell';
 import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/app/providers/AuthContext';
 import { createNextOccurrence, getTask, updateTaskStatus } from '@/services/data/tasks';
+import { invokeFunction } from '@/services/data/functions';
 import { getSupabase } from '@/services/supabase/client';
 import { availableActions, canTransition, proofRequirements, timeOnTaskMinutes } from '@/domain/job/taskFlow';
 import { recurrenceLabel } from '@/domain/job/recurrence';
@@ -15,6 +16,7 @@ import { ProofMedia } from '@/components/ProofMedia';
 import { TemplateRunner } from '@/components/TemplateRunner';
 import { ExtraWorkLog } from '@/components/ExtraWorkLog';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
+import { ApprovalBadge } from '@/components/ApprovalBadge';
 
 export function TaskDetailScreen() {
   const { t } = useTranslation();
@@ -27,6 +29,8 @@ export function TaskDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [decisionNote, setDecisionNote] = useState('');
   const [requiredItems, setRequiredItems] = useState<{ id: string; label: string }[]>([]);
+  const [sendingLink, setSendingLink] = useState(false);
+  const [linkResult, setLinkResult] = useState<{ ok: boolean; message: string; url?: string } | null>(null);
 
   async function load() {
     if (!id) return;
@@ -110,13 +114,40 @@ export function TaskDetailScreen() {
     if (action === 'approve' || action === 'reject') {
       patch.decision_at = now;
       patch.decision_note = decisionNote || null;
+      if (action === 'approve') patch.approval_method = 'manager';
     }
     await updateTaskStatus(task.id, patch);
+    if (action === 'submit') {
+      // Send the WhatsApp signing link to the client (awaited — surface failures).
+      await sendSigningLink();
+    }
     if (action === 'approve' && task.recurrence !== 'none') {
       // Auto-schedule the next visit in this recurring series.
       await createNextOccurrence({ ...task, status: next });
     }
     await load();
+  }
+
+  async function sendSigningLink() {
+    if (!task) return;
+    setSendingLink(true);
+    setLinkResult(null);
+    try {
+      const res = await invokeFunction<{ ok: boolean; sign_url?: string; whatsapp_status?: string; reason?: string }>(
+        'send-sign-link', { task_id: task.id },
+      );
+      if (!res.ok) {
+        setLinkResult({ ok: false, message: res.error ?? 'send failed' });
+      } else if (res.data?.reason === 'no_phone') {
+        setLinkResult({ ok: false, message: t('sign.noPhone', 'No WhatsApp number on file for this client.') });
+      } else if (res.data?.whatsapp_status === 'failed') {
+        setLinkResult({ ok: false, message: t('sign.deliveryFailed', 'Couldn’t deliver the signing link on WhatsApp.'), url: res.data?.sign_url });
+      } else {
+        setLinkResult({ ok: true, message: t('sign.linkSent', 'Signing link sent to the client.'), url: res.data?.sign_url });
+      }
+    } finally {
+      setSendingLink(false);
+    }
   }
 
   return (
@@ -136,11 +167,35 @@ export function TaskDetailScreen() {
               const lbl = recurrenceLabel(task.recurrence);
               return <span className="repeat-pill">↻ {t(lbl.i18n, lbl.fallback)}</span>;
             })() : null}
-            <StatusPill status={task.status} />
+            {task.status === 'approved'
+              ? <ApprovalBadge approvalMethod={task.approvalMethod} pill />
+              : <StatusPill status={task.status} />}
           </div>
         </div>
         <TaskWhoLine task={task} linkClient />
 
+        {task.status === 'approved'
+          ? <ApprovalBadge approvalMethod={task.approvalMethod} decidedAt={task.decisionAt} note={task.decisionNote} />
+          : null}
+
+        {/* Signing-link delivery result after Submit. */}
+        {linkResult ? (
+          <div className={`banner banner--${linkResult.ok ? 'info' : 'error'}`}>
+            <div>{linkResult.message}</div>
+            {!linkResult.ok ? (
+              <div className="row" style={{ gap: 8, marginTop: 8 }}>
+                <button className="btn btn--ghost" disabled={sendingLink} onClick={sendSigningLink}>
+                  {t('sign.resend', 'Resend link')}
+                </button>
+                {linkResult.url ? (
+                  <button className="btn btn--ghost" onClick={() => navigator.clipboard?.writeText(linkResult.url!)}>
+                    {t('sign.copyLink', 'Copy link')}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {openNotes.length > 0 ? (
           <section>

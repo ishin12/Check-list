@@ -24,6 +24,7 @@ interface TaskRow {
   recurrence: Recurrence | null;
   series_id: string | null;
   extra_work: ExtraWorkEntry[] | null;
+  approval_method: FieldTask['approvalMethod'] | null;
 }
 
 function rowToTask(r: TaskRow): FieldTask {
@@ -49,6 +50,7 @@ function rowToTask(r: TaskRow): FieldTask {
     recurrence: r.recurrence ?? 'none',
     seriesId: r.series_id ?? undefined,
     extraWork: r.extra_work ?? [],
+    approvalMethod: r.approval_method ?? undefined,
   };
 }
 
@@ -81,10 +83,29 @@ export async function getTask(id: string): Promise<FieldTask | null> {
 
 export async function updateTaskStatus(
   id: string,
-  patch: Partial<Pick<TaskRow, 'status' | 'started_at' | 'finished_at' | 'decision_at' | 'decision_note'>>,
+  patch: Partial<Pick<TaskRow, 'status' | 'started_at' | 'finished_at' | 'decision_at' | 'decision_note' | 'approval_method'>>,
 ): Promise<void> {
   const { error } = await getSupabase().from('tasks').update(patch).eq('id', id);
   if (error) throw error;
+}
+
+export interface SigningLinkRow {
+  id: string;
+  task_id: string;
+  token: string;
+  expires_at: string;
+  signed_at: string | null;
+  auto_approved_at: string | null;
+  whatsapp_status: 'queued' | 'sent' | 'failed';
+  whatsapp_error: unknown;
+}
+
+/** Latest signing link for a task, if any. */
+export async function getSigningLink(taskId: string): Promise<SigningLinkRow | null> {
+  const { data } = await getSupabase()
+    .from('signing_links').select('*').eq('task_id', taskId)
+    .order('created_at', { ascending: false }).limit(1).maybeSingle();
+  return (data as SigningLinkRow) ?? null;
 }
 
 export interface CreateTaskInput {

@@ -18,6 +18,33 @@ interface InviteBody {
   client_id?: string;
 }
 
+function tempPassword(): string {
+  // 12-char random temp password, emailed to the new user.
+  const bytes = crypto.getRandomValues(new Uint8Array(9));
+  return 'Gn' + btoa(String.fromCharCode(...bytes)).replace(/[^a-zA-Z0-9]/g, '').slice(0, 10);
+}
+
+async function sendWelcomeEmail(to: string, name: string, password: string): Promise<void> {
+  const key = Deno.env.get('RESEND_API_KEY');
+  if (!key) return;
+  const appUrl = Deno.env.get('APP_URL') ?? '';
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: Deno.env.get('RESEND_FROM') ?? 'Ghsoon Najd <onboarding@resend.dev>',
+      to,
+      subject: 'Your Ghsoon Najd account',
+      html: `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:auto;padding:24px;color:#003C1B">
+        <h1 style="font-size:20px">Welcome${name ? ', ' + name : ''}</h1>
+        <p>An account was created for you. Sign in and change your password right away.</p>
+        <p><strong>Email:</strong> ${to}<br/><strong>Temporary password:</strong> ${password}</p>
+        <p><a href="${appUrl}" style="display:inline-block;background:#00C481;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600">Open the app</a></p>
+      </div>`,
+    }),
+  });
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors(new Response(null, { status: 204 }));
   if (req.method !== 'POST') return cors(new Response('Method not allowed', { status: 405 }));
@@ -47,14 +74,19 @@ Deno.serve(async (req: Request) => {
       return cors(new Response('Forbidden', { status: 403 }));
     }
 
-    // Send the invite (admin API uses service-role key).
+    // Create the user with a temporary password (admin API, service-role key).
     const admin = createClient(url, serviceKey);
-    const redirectTo = `${Deno.env.get('APP_URL') ?? ''}#/auth/callback`;
-    const { data: invited, error: invErr } = await admin.auth.admin.inviteUserByEmail(body.email, {
-      redirectTo,
-      data: { full_name: body.full_name ?? null },
+    const password = tempPassword();
+    const { data: invited, error: invErr } = await admin.auth.admin.createUser({
+      email: body.email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: body.full_name ?? null, must_change_password: true },
     });
-    if (invErr) return cors(new Response(`invite failed: ${invErr.message}`, { status: 500 }));
+    if (invErr || !invited?.user) {
+      return cors(new Response(`create failed: ${invErr?.message ?? 'unknown'}`, { status: 500 }));
+    }
+    await sendWelcomeEmail(body.email, body.full_name ?? '', password);
 
     // Upsert the profile row so the role is set the moment they sign in.
     const profileRow = {

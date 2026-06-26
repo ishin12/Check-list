@@ -1,4 +1,4 @@
-import { createHashRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { HomeScreen } from '@/screens/Home/HomeScreen';
 import { TemplateListScreen } from '@/screens/TemplateList/TemplateListScreen';
 import { TemplateEditorScreen } from '@/screens/TemplateEditor/TemplateEditorScreen';
@@ -23,11 +23,18 @@ import { NotificationsScreen } from '@/screens/Notifications/NotificationsScreen
 import { PortalScreen } from '@/screens/Portal/PortalScreen';
 import { RoleGate } from '@/components/RoleGate';
 import { RootRedirect } from '@/screens/Home/RootRedirect';
+import { SignScreen } from '@/screens/Sign/SignScreen';
 
-export const router = createHashRouter([
+// BASE_URL is '/Check-list/' in production builds, '/' in dev. Browser router
+// needs the basename without the trailing slash.
+const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
+
+export const router = createBrowserRouter([
   { path: '/', element: <RootRedirect /> },
   { path: '/login', element: <LoginScreen /> },
   { path: '/auth/callback', element: <AuthCallbackScreen /> },
+  // Public, unauthenticated signing page (reached from the WhatsApp link).
+  { path: '/sign/:token', element: <SignScreen /> },
 
   // Worker + manager surfaces
   { path: '/today',          element: <RoleGate roles={['worker', 'manager']}><TodayScreen /></RoleGate> },
@@ -59,4 +66,4 @@ export const router = createHashRouter([
   { path: '/settings',       element: <RoleGate roles={['worker', 'manager', 'client']}><SettingsScreen /></RoleGate> },
 
   { path: '*', element: <Navigate to="/" replace /> },
-]);
+], { basename });

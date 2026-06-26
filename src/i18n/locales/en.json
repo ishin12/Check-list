@@ -94,7 +94,16 @@
     "about": "About",
     "aboutDesc": "Ghsoon Najd works offline. Data syncs when you’re back online.",
     "install": "Install app",
-    "installHint": "On iPhone: tap Share, then \"Add to Home Screen\"."
+    "installHint": "On iPhone: tap Share, then \"Add to Home Screen\".",
+    "changePassword": "Change my password",
+    "updatePassword": "Update password",
+    "passwordChanged": "Password changed.",
+    "signingWindow": "Client signing window",
+    "signingWindowDesc": "How long the client has to sign before the task auto-approves.",
+    "expiryDays": "Days to sign",
+    "reminderHours": "Reminder before expiry (hours)",
+    "saveWindow": "Save",
+    "windowSaved": "Saved. Applies to new signing links."
   },
   "tabs": {
     "today": "Today",
@@ -110,10 +119,39 @@
     "welcome": "Welcome back",
     "magicLinkHint": "Enter your email — we'll send a one-tap sign-in link.",
     "email": "Email",
-    "sending": "Sending…",
+    "password": "Password",
+    "sending": "Signing in…",
     "sendLink": "Send magic link",
     "linkSent": "Check your email and tap the link to continue.",
     "notConfigured": "Supabase is not configured. See .env.example."
+  },
+  "sign": {
+    "heading": "Please review and sign",
+    "visit": "Visit",
+    "client": "Client",
+    "worker": "Technician",
+    "date": "Date",
+    "signHere": "Sign below",
+    "confirm": "Confirm signature",
+    "submitting": "Submitting…",
+    "expiresOn": "This link expires on {{date}}",
+    "invalidTitle": "This link is no longer active",
+    "invalidBody": "It may have expired or already been signed. Thank you.",
+    "thanksTitle": "Thank you!",
+    "thanksBody": "Your signature has been recorded.",
+    "linkSent": "Signing link sent to the client.",
+    "deliveryFailed": "Couldn’t deliver the signing link on WhatsApp.",
+    "noPhone": "No WhatsApp number on file for this client.",
+    "resend": "Resend link",
+    "copyLink": "Copy link"
+  },
+  "approval": {
+    "signedShort": "Signed",
+    "autoShort": "Approved · no response",
+    "autoFull": "Auto-approved — client did not respond",
+    "signedLine": "Signed by client on {{when}}",
+    "autoLine": "Auto-approved on {{when}} — client did not respond in time. No signature provided.",
+    "managerLine": "Approved by manager on {{when}}"
   },
   "today": {
     "title": "Today",
@@ -259,7 +297,12 @@
     "inviteSent": "Invite sent.",
     "everyone": "Everyone",
     "deactivate": "Deactivate",
-    "activate": "Activate"
+    "activate": "Activate",
+    "setPassword": "Set password",
+    "newPassword": "New password (min 8 chars)",
+    "savePassword": "Save",
+    "passwordSet": "Password updated.",
+    "passwordFailed": "Couldn’t set password."
   },
   "common": {
     "save": "Save",
@@ -277,6 +320,7 @@
     "copy": "Copy",
     "yes": "Yes",
     "no": "No",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "loading": "Loading…"
   }
 }

@@ -34,7 +34,7 @@ export function ApprovalsScreen() {
                   <TaskWhoLine task={x} />
                   <div className="card__meta">{new Date(x.scheduledAt).toLocaleString()}</div>
                 </div>
-                <StatusPill status={x.status} />
+                <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
               </Link>
             ))}
           </div>

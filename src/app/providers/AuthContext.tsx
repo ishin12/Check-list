@@ -6,7 +6,12 @@ interface AuthState {
   loading: boolean;
   user: AppUser | null;
   configured: boolean;
+  /** Magic-link sign-in (demo + optional). */
   signInWithEmail: (email: string) => Promise<void>;
+  /** Email + password sign-in (production). */
+  signInWithPassword: (email: string, password: string) => Promise<void>;
+  /** Change the signed-in user's own password. */
+  updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -78,11 +83,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithEmail = useCallback(async (email: string) => {
     const sb = getSupabase();
+    const base = `${location.origin}${import.meta.env.BASE_URL}`.replace(/\/$/, '');
     const { error } = await sb.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${location.origin}${location.pathname}#/auth/callback` },
+      options: { emailRedirectTo: `${base}/auth/callback` },
     });
     if (error) throw error;
+  }, []);
+
+  const signInWithPassword = useCallback(async (email: string, password: string) => {
+    const sb = getSupabase();
+    const { error } = await (sb.auth as unknown as {
+      signInWithPassword: (a: { email: string; password: string }) => Promise<{ error: { message: string } | null }>;
+    }).signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
+  }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    const sb = getSupabase();
+    const { error } = await (sb.auth as unknown as {
+      updateUser: (a: { password: string }) => Promise<{ error: { message: string } | null }>;
+    }).updateUser({ password });
+    if (error) throw new Error(error.message);
   }, []);
 
   const signOut = useCallback(async () => {
@@ -92,8 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ loading, user, configured, signInWithEmail, signOut, refresh }),
-    [loading, user, configured, signInWithEmail, signOut, refresh],
+    () => ({ loading, user, configured, signInWithEmail, signInWithPassword, updatePassword, signOut, refresh }),
+    [loading, user, configured, signInWithEmail, signInWithPassword, updatePassword, signOut, refresh],
   );
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;

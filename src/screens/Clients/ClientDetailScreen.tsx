@@ -103,7 +103,7 @@ export function ClientDetailScreen() {
                     <TaskWhoLine task={x} hideClient />
                     <div className="card__meta">{new Date(x.scheduledAt).toLocaleString()}</div>
                   </div>
-                  <StatusPill status={x.status} />
+                  <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
                 </Link>
               ))}
             </div>
@@ -124,7 +124,7 @@ export function ClientDetailScreen() {
                     <TaskWhoLine task={x} hideClient />
                     <div className="card__meta">{new Date(x.scheduledAt).toLocaleDateString()}</div>
                   </div>
-                  <StatusPill status={x.status} />
+                  <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
                 </Link>
               ))}
             </div>

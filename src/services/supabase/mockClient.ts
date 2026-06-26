@@ -28,6 +28,8 @@ const TABLES = [
   'client_notes',
   'notifications',
   'audit_log',
+  'signing_links',
+  'app_settings',
 ] as const;
 type Table = typeof TABLES[number];
 
@@ -46,6 +48,8 @@ const state: Record<Table, Row[]> = {
   client_notes: [],
   notifications: [],
   audit_log: [],
+  signing_links: [],
+  app_settings: [],
 };
 const blobs: Map<string, Blob> = new Map();
 
@@ -78,7 +82,7 @@ async function loadAll(): Promise<void> {
     if (v) blobs.set(String(k), v);
   }
   const seeded = await conn.get('meta', 'seeded');
-  if (seeded !== 'v4') await seedDemo();
+  if (seeded !== 'v5') await seedDemo();
   const u = await conn.get('meta', 'activeUserId');
   if (typeof u === 'string') activeUserId = u;
 }
@@ -418,9 +422,16 @@ function withDefaults(table: Table, row: Row): Row {
 export interface MockClient {
   auth: {
     getSession(): Promise<{ data: { session: ReturnType<typeof currentSession> } }>;
+    getUser(): Promise<{ data: { user: { id: string; email: string | null } | null } }>;
     onAuthStateChange(cb: AuthCallback): { data: { subscription: { unsubscribe(): void } } };
     signInWithOtp(args: { email: string; options?: unknown }): Promise<{ error: null }>;
+    signInWithPassword(args: { email: string; password: string }): Promise<{ error: { message: string } | null }>;
+    updateUser(args: { password?: string }): Promise<{ error: null }>;
     signOut(): Promise<void>;
+  };
+  rpc(fn: string, args: Record<string, unknown>): Promise<{ data: any; error: { message: string } | null }>;
+  functions: {
+    invoke(name: string, opts: { body: unknown }): Promise<{ data: unknown; error: { message: string } | null }>;
   };
   from(table: Table): Query;
   storage: {
@@ -447,6 +458,11 @@ export function getMockClient(): MockClient {
         await ensureReady();
         return { data: { session: currentSession() } };
       },
+      async getUser() {
+        await ensureReady();
+        const s = currentSession();
+        return { data: { user: s?.user ?? null } };
+      },
       onAuthStateChange(cb: AuthCallback) {
         authSubs.add(cb);
         void ensureReady().then(() => cb('INITIAL_SESSION', currentSession()));
@@ -459,11 +475,33 @@ export function getMockClient(): MockClient {
         if (profile) await setActiveUser(profile.id);
         return { error: null };
       },
+      async signInWithPassword({ email }) {
+        await ensureReady();
+        // Demo ignores the password and signs in by matching the email.
+        const profile = state.profiles.find((p) => p.email === email);
+        if (!profile) return { error: { message: 'Invalid login credentials' } };
+        await setActiveUser(profile.id);
+        return { error: null };
+      },
+      async updateUser() {
+        await ensureReady();
+        return { error: null };
+      },
       async signOut() {
         activeUserId = '';
         const conn = await db();
         await conn.put('meta', '', 'activeUserId');
         emitAuth('SIGNED_OUT');
+      },
+    },
+    async rpc(fn: string, args: Record<string, unknown>) {
+      await ensureReady();
+      return runRpc(fn, args);
+    },
+    functions: {
+      async invoke(name: string, opts: { body: unknown }) {
+        await ensureReady();
+        return runFunction(name, (opts.body ?? {}) as Record<string, unknown>);
       },
     },
     from(table: Table) { return new Query(table); },
@@ -521,6 +559,115 @@ function parseFilterString(s: string | undefined): Subscription['filter'] {
   const m = /^(\w+)=eq\.(.+)$/.exec(s);
   if (!m) return undefined;
   return { col: m[1], val: m[2] };
+}
+
+// ---------------------------------------------------------------------------
+// Simulated Postgres RPCs (mirror 0004_signing.sql security-definer functions)
+// ---------------------------------------------------------------------------
+
+function runRpc(fn: string, args: Record<string, unknown>): { data: any; error: { message: string } | null } {
+  if (fn === 'get_signing_task') {
+    const token = String(args.p_token ?? '');
+    const link = state.signing_links.find((l) => l.token === token);
+    if (!link || link.signed_at || link.auto_approved_at || new Date(link.expires_at) <= new Date()) {
+      return { data: [], error: null };
+    }
+    const task = state.tasks.find((t) => t.id === link.task_id);
+    if (!task) return { data: [], error: null };
+    const client = state.clients.find((c) => c.id === task.client_id);
+    const worker = state.profiles.find((p) => p.id === task.assigned_worker_id);
+    return {
+      data: [{
+        task_title: task.title,
+        client_name: client?.name ?? '',
+        worker_name: worker?.full_name ?? '',
+        scheduled_at: task.scheduled_at,
+        expires_at: link.expires_at,
+      }],
+      error: null,
+    };
+  }
+  if (fn === 'complete_signing') {
+    const token = String(args.p_token ?? '');
+    const signature = String(args.p_signature ?? '');
+    const link = state.signing_links.find((l) => l.token === token);
+    if (!link || link.signed_at || link.auto_approved_at || new Date(link.expires_at) <= new Date()) {
+      return { data: false, error: null };
+    }
+    link.signed_at = new Date().toISOString();
+    link.signature_data_url = signature;
+    void persist('signing_links');
+    const task = state.tasks.find((t) => t.id === link.task_id);
+    if (task) {
+      const prev = { ...task };
+      Object.assign(task, {
+        status: 'approved',
+        approval_method: 'client_signature',
+        decision_at: new Date().toISOString(),
+        decision_note: 'Signed by client',
+        signature: { dataUrl: signature, signedAt: new Date().toISOString() },
+      });
+      onTaskUpdate(prev, task);
+      void persist('tasks');
+    }
+    return { data: true, error: null };
+  }
+  return { data: null, error: { message: `unknown rpc ${fn}` } };
+}
+
+// ---------------------------------------------------------------------------
+// Simulated Edge Functions
+// ---------------------------------------------------------------------------
+
+function runFunction(name: string, body: Record<string, unknown>): { data: unknown; error: { message: string } | null } {
+  if (name === 'send-sign-link') {
+    const taskId = String(body.task_id ?? '');
+    const task = state.tasks.find((t) => t.id === taskId);
+    if (!task) return { data: null, error: { message: 'task not found' } };
+    const client = state.clients.find((c) => c.id === task.client_id);
+    if (!client?.phone) {
+      return { data: { ok: false, reason: 'no_phone' }, error: null };
+    }
+    const settings = state.app_settings[0];
+    const days = settings?.signing_expiry_days ?? 3;
+    const token = (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, '').slice(0, 40);
+    const row: Row = {
+      id: crypto.randomUUID(),
+      task_id: taskId,
+      token,
+      expires_at: new Date(Date.now() + days * 86400000).toISOString(),
+      signed_at: null,
+      signature_data_url: null,
+      auto_approved_at: null,
+      reminder_sent_at: null,
+      whatsapp_message_id: `demo-${token.slice(0, 8)}`,
+      whatsapp_status: 'sent',
+      whatsapp_error: null,
+      created_at: new Date().toISOString(),
+    };
+    state.signing_links.unshift(row);
+    void persist('signing_links');
+    audit('task.sign_link_sent', 'task', taskId, { status: 'sent' });
+    // In demo there's no real WhatsApp — the link is shown to the manager directly.
+    const signUrl = `${location.origin}${import.meta.env.BASE_URL}sign/${token}`.replace(/([^:]\/)\/+/g, '$1');
+    return { data: { ok: true, sign_url: signUrl, whatsapp_status: 'sent' }, error: null };
+  }
+  if (name === 'set-password') {
+    return { data: { ok: true }, error: null };
+  }
+  if (name === 'invite-user') {
+    // Minimal simulation: create a profile + (optionally) a client link.
+    const email = String(body.email ?? '');
+    const role = String(body.role ?? 'worker');
+    const id = crypto.randomUUID();
+    state.profiles.push({
+      id, role, full_name: body.full_name ?? null, email,
+      phone: body.phone ?? null, client_id: body.client_id ?? null, active: true,
+    });
+    void persist('profiles');
+    return { data: { user_id: id }, error: null };
+  }
+  return { data: null, error: { message: `unknown function ${name}` } };
 }
 
 // ---------------------------------------------------------------------------
@@ -600,13 +747,14 @@ async function seedDemo(): Promise<void> {
     mkTask('k-4', 'Filter change',                 'u-wa', 'c-2', day(-1, 10),'submitted',   { started_at: day(-1, 10, 5), finished_at: day(-1, 10, 55), extra_work: [
       { id: 'ew-1', body: 'Tightened a loose mounting bracket on the return duct.', addedAt: day(-1, 10, 40), addedBy: 'u-wa', addedByName: 'Ahmed' },
     ] }),
-    mkTask('k-5', 'Tile sealing',                  'u-wb', 'c-1', day(-1, 15),'approved',    { started_at: day(-1, 15, 5), finished_at: day(-1, 16, 30), decision_at: day(-1, 17), decision_note: '', extra_work: [
+    mkTask('k-5', 'Tile sealing',                  'u-wb', 'c-1', day(-1, 15),'approved',    { started_at: day(-1, 15, 5), finished_at: day(-1, 16, 30), decision_at: day(-1, 17), decision_note: 'Signed by client', approval_method: 'client_signature', extra_work: [
       { id: 'ew-2', body: 'Replaced cracked grout near the drain.',                addedAt: day(-1, 15, 55), addedBy: 'u-wb', addedByName: 'Sara' },
       { id: 'ew-3', body: 'Customer asked about water heater — flagged for next visit.', addedAt: day(-1, 16, 20), addedBy: 'u-wb', addedByName: 'Sara' },
     ] }),
     mkTask('k-6', 'Leak inspection',               'u-wa', 'c-3', day(-2, 13),'rejected',    { started_at: day(-2, 13, 10), finished_at: day(-2, 14, 0), decision_at: day(-2, 15), decision_note: 'Photos unclear — please re-shoot.' }),
     mkTask('k-7', 'Follow-up AC',                  'u-wb', 'c-1', day(1, 9),  'not_started', { recurrence: 'monthly', series_id: 's-7' }),
     mkTask('k-8', 'Quote walk-through',            'u-wa', 'c-3', day(1, 13), 'not_started'),
+    mkTask('k-9', 'Garden upkeep',                 'u-wb', 'c-2', day(-4, 10),'approved',    { started_at: day(-4, 10, 5), finished_at: day(-4, 11, 0), decision_at: day(-1, 3), decision_note: 'Auto-approved after 3 days — client did not respond', approval_method: 'auto_no_response' }),
   ];
 
   state.client_notes = [
@@ -653,12 +801,27 @@ async function seedDemo(): Promise<void> {
     });
   }
 
+  // Configurable signing window (single row). id is the boolean singleton key
+  // in Postgres; the mock stores it as the string 'true' so eq('id', true) and
+  // eq('id', 'true') both match (the query stringifies both sides).
+  state.app_settings = [{ id: 'true', signing_expiry_days: 3, signing_reminder_hours: 24, updated_at: day(-30, 9) }];
+
+  // An active, awaiting-signature link on the submitted task k-4 so the manager
+  // can open the demo sign page.
+  state.signing_links = [{
+    id: 'sl-1', task_id: 'k-4', token: 'demoSignToken000000000000000000000000a1',
+    expires_at: day(2, 10), signed_at: null, signature_data_url: null,
+    auto_approved_at: null, reminder_sent_at: null,
+    whatsapp_message_id: 'demo-k4', whatsapp_status: 'sent', whatsapp_error: null,
+    created_at: day(-1, 11),
+  }];
+
   for (const t of TABLES) await persist(t);
   const conn = await db();
   // Persist blob seeds.
   for (const [path, blob] of blobs.entries()) await conn.put('blobs', blob, path);
   // Re-seed when the value here changes (bump on each schema-affecting change).
-  await conn.put('meta', 'v4', 'seeded');
+  await conn.put('meta', 'v5', 'seeded');
   await conn.put('meta', activeUserId, 'activeUserId');
 }
 
@@ -687,6 +850,7 @@ function mkTask(
     results: [], signature: null,
     recurrence: 'none', series_id: id,
     extra_work: [],
+    approval_method: null,
     ...extra,
   };
 }
