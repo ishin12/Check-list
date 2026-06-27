@@ -26,6 +26,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          # Live Ghsoon Najd Supabase project. The publishable (anon) key is
+          # public by design — RLS protects the data, not key secrecy.
+          VITE_DEMO_MODE: '0'
+          VITE_SUPABASE_URL: https://qyznhoimffltdigickjl.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_8GlzwxVm3OTezLF18jmWyQ_UtI924W4
       - uses: actions/configure-pages@v5
         with:
           enablement: true
