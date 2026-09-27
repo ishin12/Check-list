@@ -6,6 +6,8 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useStorage } from '@/app/providers/StorageContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { duplicateTemplate, templateTitle } from '@/domain/template/template';
+import { useFieldData } from '@/app/providers/FieldDataContext';
+import { configText } from '@/lib/configText';
 import type { Template } from '@/domain/models/types';
 
 export function TemplateListScreen() {
@@ -13,6 +15,7 @@ export function TemplateListScreen() {
   const navigate = useNavigate();
   const storage = useStorage();
   const { language } = useLanguage();
+  const fd = useFieldData();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [pendingDelete, setPendingDelete] = useState<Template | null>(null);
 
@@ -57,6 +60,8 @@ export function TemplateListScreen() {
                     </div>
                     <div className="card__meta">
                       {t('templates.tasksCount', { count: template.tasks.length })}
+                      {template.projectTypeId ? ` · ${configText(fd.type(template.projectTypeId)?.name, language)}` : ''}
+                      {template.stageId ? ` · ${configText(fd.stage(template.stageId)?.name, language)}` : ''}
                     </div>
                   </div>
                 </div>

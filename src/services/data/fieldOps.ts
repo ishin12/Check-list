@@ -402,11 +402,12 @@ export async function dayLoads(from: string, to: string): Promise<Map<string, nu
 }
 
 /** One statement → all rows or none (BR-004, TC-03). */
-export async function insertCrew(rows: Pick<LaborAllocation, 'workDate' | 'employeeId' | 'projectId' | 'visitId' | 'duration' | 'supervisorId'>[]): Promise<void> {
+export async function insertCrew(rows: (Pick<LaborAllocation, 'workDate' | 'employeeId' | 'projectId' | 'visitId' | 'duration' | 'supervisorId'> & { changeReason?: string })[]): Promise<void> {
   if (rows.length === 0) return;
   check(await sb().from('labor_allocations').insert(rows.map((r) => ({
     work_date: r.workDate, employee_id: r.employeeId, project_id: r.projectId, visit_id: r.visitId ?? null,
     duration: r.duration, supervisor_id: r.supervisorId,
+    ...(r.changeReason ? { change_reason: r.changeReason } : {}),
   }))));
 }
 

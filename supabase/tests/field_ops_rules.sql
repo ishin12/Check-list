@@ -332,6 +332,22 @@ select pg_temp.ok('Visit completion rolls the recurring item',
 select pg_temp.expect_fail('After the visit completes, Done is final', $$
   update public.project_tasks set status = 'open' where id = '50000000-0000-0000-0000-000000000005' $$, 'cannot be reopened');
 
+-- Finance adds to a closed month (with reason) but not to an open one
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000d');
+select pg_temp.expect_fail('Finance cannot add labor to an open month', $$
+  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+  values ('2026-10-15', '30000000-0000-0000-0000-000000000007', '20000000-0000-0000-0000-000000000001', 1.0,
+          '00000000-0000-0000-0000-00000000000c') $$, 'row-level security');
+select pg_temp.expect_fail('Finance adding to a closed month needs a reason', $$
+  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+  values ('2026-09-15', '30000000-0000-0000-0000-000000000007', '20000000-0000-0000-0000-000000000001', 1.0,
+          '00000000-0000-0000-0000-00000000000c') $$, 'BR-010');
+insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, change_reason)
+values ('2026-09-15', '30000000-0000-0000-0000-000000000007', '20000000-0000-0000-0000-000000000001', 1.0,
+        '00000000-0000-0000-0000-00000000000c', 'Missed on the day');
+select pg_temp.ok('Finance adds a missing allocation to a closed month with a reason',
+  (select count(*) = 1 from public.labor_allocations where work_date = '2026-09-15'));
+
 select pg_temp.act_as(null);
 \o
 \echo 'All field-ops rule checks passed.'

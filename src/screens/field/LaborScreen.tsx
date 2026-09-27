@@ -1,0 +1,206 @@
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useSearchParams } from 'react-router-dom';
+import { AppHeader } from '@/components/AppHeader';
+import { AppShell } from '@/components/AppShell';
+import { useFieldData } from '@/app/providers/FieldDataContext';
+import { useLanguage } from '@/app/providers/LanguageContext';
+import { dayLoads, insertCrew, listLabor, listMonthCloses, updateLabor, voidLabor } from '@/services/data/fieldOps';
+import { isMonthClosed } from '@/domain/labor/allocation';
+import type { LaborAllocation, LaborDuration } from '@/domain/models/ops';
+import { formatDate, localToday, monthEnd, monthStart } from '@/lib/dates';
+import { friendlyError } from '@/lib/ruleErrors';
+import { useAsync } from '@/lib/useAsync';
+import { useNames, useRoles } from './common';
+
+/**
+ * Labor ledger (§6, §23): the single record of allocations used by finance
+ * (§24). Supervisors correct their own rows before month close; after close
+ * only finance can change a row, with a reason, and the change is audited
+ * (BR-009/010). Rows are voided, never deleted (BR-014).
+ */
+export function LaborScreen() {
+  const { t } = useTranslation();
+  const { language } = useLanguage();
+  const [params, setParams] = useSearchParams();
+  const fd = useFieldData();
+  const names = useNames();
+  const { user, isManager, isFinance } = useRoles();
+  const today = localToday();
+
+  const from = params.get('from') || monthStart(today);
+  const to = params.get('to') || monthEnd(today);
+  const projectId = params.get('project') || '';
+  const employeeId = params.get('worker') || '';
+  const [showVoided, setShowVoided] = useState(false);
+  const set = (k: string, v: string) => { const n = new URLSearchParams(params); if (v) n.set(k, v); else n.delete(k); setParams(n, { replace: true }); };
+
+  const { data, error, reload } = useAsync(async () => {
+    const [rows, closes] = await Promise.all([
+      listLabor({ from, to, projectId: projectId || undefined, employeeId: employeeId || undefined, includeVoided: true }),
+      listMonthCloses(),
+    ]);
+    return { rows, closes };
+  }, [from, to, projectId, employeeId]);
+
+  const rows = useMemo(() => (data?.rows ?? []).filter((r) => showVoided || !r.voidedAt), [data, showVoided]);
+  const total = rows.filter((r) => !r.voidedAt).reduce((s, r) => s + r.duration, 0);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+
+  return (
+    <AppShell>
+      <AppHeader title={t('fo.labor.title', 'Labor')} action={isManager || isFinance ? (
+        <button type="button" className="btn btn--primary" onClick={() => setAdding((x) => !x)}>＋ {t('fo.add', 'Add')}</button>
+      ) : undefined} />
+      <main className="app-main">
+        <div className="toolbar">
+          <div className="field"><label className="field__label" htmlFor="l-from">{t('audit.from', 'From')}</label>
+            <input id="l-from" className="input" type="date" value={from} onChange={(e) => set('from', e.target.value)} /></div>
+          <div className="field"><label className="field__label" htmlFor="l-to">{t('audit.to', 'To')}</label>
+            <input id="l-to" className="input" type="date" value={to} onChange={(e) => set('to', e.target.value)} /></div>
+          <div className="field"><label className="field__label" htmlFor="l-proj">{t('fo.report.project', 'Project / site')}</label>
+            <select id="l-proj" className="input" value={projectId} onChange={(e) => set('project', e.target.value)}>
+              <option value="">{t('fo.all', 'All')}</option>
+              {[...fd.projects].sort((a, b) => a.name.localeCompare(b.name)).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select></div>
+          <div className="field"><label className="field__label" htmlFor="l-emp">{t('fo.labor.worker', 'Worker')}</label>
+            <select id="l-emp" className="input" value={employeeId} onChange={(e) => set('worker', e.target.value)}>
+              <option value="">{t('fo.all', 'All')}</option>
+              {fd.employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+            </select></div>
+        </div>
+        <label className="checkbox-row"><input type="checkbox" checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />{t('fo.labor.showVoided', 'Show voided rows')}</label>
+
+        {adding ? <AddAllocation closes={data?.closes ?? []} onDone={async () => { setAdding(false); await reload(); }} /> : null}
+        {error ? <div className="banner banner--error">{error}</div> : null}
+
+        <div className="card__meta">{t('fo.labor.summary', '{{count}} row(s) · {{days}} day(s)', { count: rows.filter((r) => !r.voidedAt).length, days: total })}</div>
+        <div className="stack">
+          {rows.map((r) => {
+            const closed = isMonthClosed(r.workDate, data?.closes ?? []);
+            const own = r.supervisorId === user?.id;
+            const canEdit = !r.voidedAt && (closed ? isFinance : (isManager || own || isFinance));
+            return (
+              <div key={r.id} className="card" style={r.voidedAt ? { opacity: 0.6 } : undefined}>
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div className="grow">
+                    <div className="card__title" style={{ fontSize: '1rem' }}>{names.employee(r.employeeId)} · {r.duration === 1 ? t('fo.crew.full', 'Full') : t('fo.crew.half', 'Half')}</div>
+                    <div className="card__meta">
+                      {formatDate(r.workDate, language, { weekday: 'short', day: 'numeric', month: 'short' })}
+                      {' · '}<Link to={`/projects/${r.projectId}`}>{names.project(r.projectId)}</Link>
+                      {r.visitId ? <> · <Link to={`/visits/${r.visitId}`}>{t('fo.visit.title', 'Visit')}</Link></> : null}
+                      {' · '}{names.person(r.supervisorId)}
+                    </div>
+                    {r.notes ? <div className="card__meta">📝 {r.notes}</div> : null}
+                    {r.changeReason ? <div className="card__meta">✎ {t('fo.labor.reason', 'Reason')}: {r.changeReason}</div> : null}
+                    {r.voidedAt ? <div className="card__meta">⊘ {t('fo.labor.voided', 'Voided')}: {r.voidReason}</div> : null}
+                  </div>
+                  {closed ? <span className="tag">🔒 {t('fo.labor.closed', 'Month closed')}</span> : null}
+                </div>
+                {canEdit ? (
+                  editing === r.id
+                    ? <EditAllocation row={r} closed={closed} onDone={async () => { setEditing(null); await reload(); }} onCancel={() => setEditing(null)} />
+                    : <button type="button" className="btn btn--ghost" style={{ marginTop: 8 }} onClick={() => setEditing(r.id)}>{t('common.edit', 'Edit')}</button>
+                ) : null}
+              </div>
+            );
+          })}
+          {data && rows.length === 0 ? <p className="hint">{t('fo.rep.noLabor', 'No labor recorded in this period.')}</p> : null}
+        </div>
+      </main>
+    </AppShell>
+  );
+}
+
+function EditAllocation({ row, closed, onDone, onCancel }: { row: LaborAllocation; closed: boolean; onDone: () => Promise<void>; onCancel: () => void }) {
+  const { t } = useTranslation();
+  const [duration, setDuration] = useState<LaborDuration>(row.duration);
+  const [notes, setNotes] = useState(row.notes ?? '');
+  const [reason, setReason] = useState('');
+  const [voidReason, setVoidReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function act(fn: () => Promise<unknown>) {
+    setBusy(true); setError(null);
+    try { await fn(); await onDone(); } catch (e) { setError(friendlyError(e, t)); } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="stack" style={{ marginTop: 10, background: 'var(--color-surface-2)', padding: 12, borderRadius: 12 }}>
+      {closed ? <div className="banner banner--info">{t('fo.labor.closedHint', 'This month is closed. Your change needs a reason and is recorded in the audit log.')}</div> : null}
+      <div className="dur" role="group">
+        <button type="button" className={duration === 1 ? 'dur--on' : ''} onClick={() => setDuration(1)}>{t('fo.crew.full', 'Full')}</button>
+        <button type="button" className={duration === 0.5 ? 'dur--on' : ''} onClick={() => setDuration(0.5)}>{t('fo.crew.half', 'Half')}</button>
+      </div>
+      <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('fo.rep.note', 'Note') ?? ''} />
+      {closed ? <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('fo.labor.reasonRequired', 'Reason for the change (required)') ?? ''} /> : null}
+      <div className="row wrap" style={{ gap: 8 }}>
+        <button type="button" className="btn btn--primary" disabled={busy || (closed && !reason.trim())}
+          onClick={() => void act(() => updateLabor(row.id, { duration, notes, ...(closed ? { changeReason: reason } : {}) }))}>{t('common.save', 'Save')}</button>
+        <button type="button" className="btn btn--ghost" onClick={onCancel}>{t('common.cancel', 'Cancel')}</button>
+      </div>
+      <div className="row wrap" style={{ gap: 8 }}>
+        <input className="input grow" value={voidReason} onChange={(e) => setVoidReason(e.target.value)} placeholder={t('fo.labor.voidReason', 'Why void this row?') ?? ''} />
+        <button type="button" className="btn btn--danger" disabled={busy || !voidReason.trim() || (closed && !reason.trim())}
+          onClick={() => void act(() => voidLabor(row.id, voidReason, closed ? reason : undefined))}>{t('fo.labor.void', 'Void')}</button>
+      </div>
+      {error ? <div className="banner banner--error">{error}</div> : null}
+    </div>
+  );
+}
+
+/** Manager/finance adds an allocation outside a visit (e.g. a correction). */
+function AddAllocation({ closes, onDone }: { closes: { month: string }[]; onDone: () => Promise<void> }) {
+  const { t } = useTranslation();
+  const fd = useFieldData();
+  const { user, isManager } = useRoles();
+  const [date, setDate] = useState(localToday());
+  const [employeeId, setEmployeeId] = useState('');
+  const [projectId, setProjectId] = useState('');
+  const [duration, setDuration] = useState<LaborDuration>(1);
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const project = fd.project(projectId);
+  const closed = isMonthClosed(date, closes);
+  const load = useAsync(async () => (employeeId ? (await dayLoads(date, date)).get(`${employeeId}|${date}`) ?? 0 : 0), [employeeId, date]);
+
+  return (
+    <div className="card stack">
+      <div className="card__title">{t('fo.labor.add', 'Add labor')}</div>
+      <div className="toolbar">
+        <div className="field"><label className="field__label">{t('fo.start.date', 'Visit date')}</label>
+          <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+        <div className="field"><label className="field__label">{t('fo.labor.worker', 'Worker')}</label>
+          <select className="input" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
+            <option value="">—</option>
+            {fd.employees.filter((e) => e.status === 'active').map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+          </select></div>
+        <div className="field"><label className="field__label">{t('fo.report.project', 'Project / site')}</label>
+          <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+            <option value="">—</option>
+            {fd.projects.filter((p) => p.status === 'active' || p.status === 'on_hold').map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select></div>
+      </div>
+      <div className="dur" role="group">
+        <button type="button" className={duration === 1 ? 'dur--on' : ''} onClick={() => setDuration(1)}>{t('fo.crew.full', 'Full')}</button>
+        <button type="button" className={duration === 0.5 ? 'dur--on' : ''} onClick={() => setDuration(0.5)}>{t('fo.crew.half', 'Half')}</button>
+      </div>
+      {!closed && !isManager ? <div className="banner banner--info">{t('fo.labor.financeOpenMonth', 'Finance can add labor only to closed months. In an open month the supervisor records it on the visit.')}</div> : null}
+      {employeeId ? <div className="card__meta">{t('fo.labor.booked', 'Already booked that day: {{days}}', { days: load.data ?? 0 })}</div> : null}
+      {closed ? <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('fo.labor.reasonRequired', 'Reason for the change (required)') ?? ''} /> : null}
+      <button type="button" className="btn btn--primary" disabled={busy || !employeeId || !projectId || (closed && !reason.trim()) || (!closed && !isManager)} onClick={async () => {
+        setBusy(true); setError(null);
+        try {
+          // In a closed month the reason lets the database accept and audit it (BR-010).
+          await insertCrew([{ workDate: date, employeeId, projectId, duration, supervisorId: project?.supervisorId ?? user!.id,
+            ...(closed ? { changeReason: reason } : {}) }]);
+          await onDone();
+        } catch (e) { setError(friendlyError(e, t)); } finally { setBusy(false); }
+      }}>{t('common.save', 'Save')}</button>
+      {error ? <div className="banner banner--error">{error}</div> : null}
+    </div>
+  );
+}

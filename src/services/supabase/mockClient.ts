@@ -755,6 +755,7 @@ function runFunction(name: string, body: Record<string, unknown>): { data: unkno
     state.profiles.push({
       id, role, full_name: body.full_name ?? null, email,
       phone: body.phone ?? null, client_id: body.client_id ?? null, active: true,
+      finance_access: role === 'manager' && body.finance_access === true,
     });
     void persist('profiles');
     return { data: { user_id: id }, error: null };

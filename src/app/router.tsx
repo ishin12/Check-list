@@ -28,6 +28,14 @@ import { FieldHomeScreen } from '@/screens/field/FieldHomeScreen';
 import { StartVisitScreen } from '@/screens/field/StartVisitScreen';
 import { VisitScreen } from '@/screens/field/VisitScreen';
 import { VisitReportScreen } from '@/screens/field/VisitReportScreen';
+import { ProjectsScreen } from '@/screens/field/ProjectsScreen';
+import { ProjectEditScreen } from '@/screens/field/ProjectEditScreen';
+import { ProjectDetailScreen } from '@/screens/field/ProjectDetailScreen';
+import { EmployeesScreen } from '@/screens/field/EmployeesScreen';
+import { ConfigScreen } from '@/screens/field/ConfigScreen';
+import { ReportsScreen } from '@/screens/field/ReportsScreen';
+import { LaborScreen } from '@/screens/field/LaborScreen';
+import { MonthCloseScreen } from '@/screens/field/MonthCloseScreen';
 import type { Role } from '@/domain/models/ops';
 
 const FIELD: Role[] = ['supervisor', 'worker', 'manager'];
@@ -49,6 +57,15 @@ export const router = createBrowserRouter([
   { path: '/visits/start',       element: <RoleGate roles={FIELD}><StartVisitScreen /></RoleGate> },
   { path: '/visits/:id',         element: <RoleGate roles={FIELD} finance><VisitScreen /></RoleGate> },
   { path: '/visits/:id/report',  element: <RoleGate roles={FIELD} finance><VisitReportScreen /></RoleGate> },
+  { path: '/projects',           element: <RoleGate roles={FIELD} finance><ProjectsScreen /></RoleGate> },
+  { path: '/projects/new',       element: <RoleGate roles={['manager']}><ProjectEditScreen /></RoleGate> },
+  { path: '/projects/:id',       element: <RoleGate roles={FIELD} finance><ProjectDetailScreen /></RoleGate> },
+  { path: '/projects/:id/edit',  element: <RoleGate roles={['manager']}><ProjectEditScreen /></RoleGate> },
+  { path: '/employees',          element: <RoleGate roles={['manager']}><EmployeesScreen /></RoleGate> },
+  { path: '/config',             element: <RoleGate roles={['manager']}><ConfigScreen /></RoleGate> },
+  { path: '/reports',            element: <RoleGate roles={FIELD} finance><ReportsScreen /></RoleGate> },
+  { path: '/labor',              element: <RoleGate roles={FIELD} finance><LaborScreen /></RoleGate> },
+  { path: '/month-close',        element: <RoleGate roles={['finance', 'manager']} finance><MonthCloseScreen /></RoleGate> },
 
   // Worker + manager surfaces (older task system)
   { path: '/today',          element: <RoleGate roles={LEGACY}><TodayScreen /></RoleGate> },
@@ -63,7 +80,7 @@ export const router = createBrowserRouter([
   { path: '/clients/new',    element: <RoleGate roles={['manager']}><ClientNewScreen /></RoleGate> },
   { path: '/clients/:id',    element: <RoleGate roles={['manager']}><ClientDetailScreen /></RoleGate> },
   { path: '/approvals',      element: <RoleGate roles={['manager']}><ApprovalsScreen /></RoleGate> },
-  { path: '/audit',          element: <RoleGate roles={['manager']}><AuditScreen /></RoleGate> },
+  { path: '/audit',          element: <RoleGate roles={['manager']} finance><AuditScreen /></RoleGate> },
   { path: '/users',          element: <RoleGate roles={['manager']}><UsersScreen /></RoleGate> },
 
   // Client portal

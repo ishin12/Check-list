@@ -9,6 +9,8 @@ import { listTasks } from '@/services/data/tasks';
 import type { Client, ClientNote, FieldTask } from '@/domain/models/ops';
 import { NoteComposer, resolveNote } from '@/components/NoteComposer';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
+import { FieldStatusPill } from '@/components/field/FieldStatusPill';
+import { useFieldData } from '@/app/providers/FieldDataContext';
 
 export function ClientDetailScreen() {
   const { t } = useTranslation();
@@ -16,6 +18,7 @@ export function ClientDetailScreen() {
   const [client, setClient] = useState<Client | null>(null);
   const [tasks, setTasks] = useState<FieldTask[]>([]);
   const [notes, setNotes] = useState<ClientNote[]>([]);
+  const fd = useFieldData();
 
   async function load() {
     if (!id) return;
@@ -90,8 +93,22 @@ export function ClientDetailScreen() {
           </div>
         </section>
 
+        <section className="stack">
+          <div className="row" style={{ justifyContent: 'space-between' }}>
+            <span className="section-title">{t('fo.projects.title', 'Projects')}</span>
+            <Link to={`/projects/new?client=${client.id}`} className="btn btn--ghost">＋ {t('fo.projects.new', 'New')}</Link>
+          </div>
+          {fd.projects.filter((p) => p.clientId === client.id).length === 0 ? <p className="hint">{t('fo.projects.none', 'No projects match.')}</p> : null}
+          {fd.projects.filter((p) => p.clientId === client.id).map((p) => (
+            <Link key={p.id} to={`/projects/${p.id}`} className="card card--tap">
+              <div className="grow"><div className="card__title">{p.name}</div><div className="card__meta">{p.code ?? ''}</div></div>
+              <FieldStatusPill status={p.status} />
+            </Link>
+          ))}
+        </section>
+
         <section>
-          <div className="section-title">{t('clients.upcoming', 'Upcoming visits')}</div>
+          <div className="section-title">{t('clients.upcoming', 'Upcoming visits')} · {t('fo.legacy', 'older task list')}</div>
           {upcoming.length === 0 ? (
             <p className="hint">{t('clients.noUpcoming', 'Nothing scheduled.')}</p>
           ) : (

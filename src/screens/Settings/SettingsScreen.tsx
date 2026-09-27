@@ -146,8 +146,18 @@ export function SettingsScreen() {
 
         {user?.role === 'manager' ? (
           <div className="stack">
-            <Link to="/templates" className="card card--tap"><div className="card__title">{t('nav.templates', 'Templates')}</div></Link>
+            <Link to="/employees" className="card card--tap"><div className="card__title">☺ {t('fo.emp.title', 'Workers')}</div></Link>
+            <Link to="/clients" className="card card--tap"><div className="card__title">⌖ {t('tabs.clients', 'Clients')}</div></Link>
+            <Link to="/templates" className="card card--tap"><div className="card__title">☑ {t('fo.config.checklists', 'Checklists & frequencies')}</div></Link>
+            <Link to="/config" className="card card--tap"><div className="card__title">⚙ {t('fo.config.title', 'Setup')}</div></Link>
             <Link to="/users" className="card card--tap"><div className="card__title">{t('users.title', 'Team & clients')}</div></Link>
+            <Link to="/audit" className="card card--tap"><div className="card__title">{t('audit.title', 'Audit log')}</div></Link>
+            <Link to="/today" className="card card--tap"><div className="card__title">{t('fo.home.legacy', 'Open the older task list')}</div></Link>
+          </div>
+        ) : null}
+        {user && (user.role === 'finance' || user.financeAccess) ? (
+          <div className="stack">
+            <Link to="/month-close" className="card card--tap"><div className="card__title">▣ {t('tabs.monthClose', 'Month close')}</div></Link>
             <Link to="/audit" className="card card--tap"><div className="card__title">{t('audit.title', 'Audit log')}</div></Link>
           </div>
         ) : null}

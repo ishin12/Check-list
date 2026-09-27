@@ -148,3 +148,8 @@ $$;
 
 create trigger trg_visits_roll_recurring after update on public.visits
   for each row execute function public.roll_recurring_on_visit();
+
+-- Finance may add a missing allocation to a CLOSED month only (§29 "edit after
+-- close" = finance). The guard trigger still requires a reason and audits it.
+create policy "labor finance insert closed" on public.labor_allocations for insert
+  with check (public.has_finance() and public.is_month_closed(work_date));

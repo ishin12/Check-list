@@ -15,7 +15,7 @@ interface Row {
   actor?: { full_name: string | null; email: string | null }[] | null;
 }
 
-const ENTITY_OPTIONS = ['all', 'task', 'client_note', 'task_proofs', 'client', 'profile'] as const;
+const ENTITY_OPTIONS = ['all', 'labor_allocations', 'month_closes', 'projects', 'visits', 'project_tasks', 'employees', 'task', 'client_note', 'task_proofs', 'client', 'profile'] as const;
 
 function startOfDayInput(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -115,6 +115,13 @@ export function AuditScreen() {
                 <div className="card__meta">
                   {r.actor?.[0]?.full_name ?? r.actor?.[0]?.email ?? r.actor_id ?? 'system'} · {r.entity}
                 </div>
+                {changes(r.payload).length ? (
+                  <ul className="card__meta" style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>
+                    {changes(r.payload).map(([k, from, to]) => (
+                      <li key={k}><strong>{k}</strong>: {from} → {to}</li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
             ))}
           </div>
@@ -122,4 +129,17 @@ export function AuditScreen() {
       </main>
     </AppShell>
   );
+}
+
+const NOISE = new Set(['updated_at', 'updated_by', 'created_at', 'created_by', 'id']);
+
+/** Field-level old → new for audit rows written by 0006's audit_row() (§30). */
+function changes(payload: Record<string, unknown>): [string, string, string][] {
+  const oldRow = payload?.old as Record<string, unknown> | null | undefined;
+  const newRow = payload?.new as Record<string, unknown> | null | undefined;
+  if (!oldRow || !newRow) return [];
+  const show = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v));
+  return Object.keys(newRow)
+    .filter((k) => !NOISE.has(k) && JSON.stringify(oldRow[k]) !== JSON.stringify(newRow[k]))
+    .map((k) => [k, show(oldRow[k]), show(newRow[k])]);
 }
