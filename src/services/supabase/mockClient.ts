@@ -27,7 +27,7 @@ import {
 
 const DB_NAME = 'checklist-demo';
 // Re-seed when this changes (bump on each schema-affecting change).
-const SEED_VERSION = 'v6';
+const SEED_VERSION = 'v8';
 const DB_VERSION = 2; // 2: field-ops tables (0006)
 
 const TABLES = [
@@ -261,6 +261,15 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
     this.filters.push((r) => String(r[col] ?? '') === String(val ?? ''));
     return this;
   }
+  neq(col: string, val: unknown): this {
+    this.filters.push((r) => String(r[col] ?? '') !== String(val ?? ''));
+    return this;
+  }
+  in(col: string, vals: unknown[]): this {
+    const set = new Set(vals.map((v) => String(v ?? '')));
+    this.filters.push((r) => set.has(String(r[col] ?? '')));
+    return this;
+  }
   gte(col: string, val: unknown): this {
     this.filters.push((r) => (r[col] ?? '') >= (val as any));
     return this;
@@ -372,7 +381,7 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
             if (fieldOps) fieldOpsAfter(this.table, 'UPDATE', prevs[i], row, guardCtx());
           });
           void persist(this.table);
-          if (this.table === 'project_tasks') void persist('project_recurring_items');
+          if (this.table === 'project_tasks' || this.table === 'visits') void persist('project_recurring_items');
           return formatResult(updated, this.singleMode);
         }
         case 'upsert': {
@@ -681,6 +690,20 @@ function runRpc(fn: string, args: Record<string, unknown>): { data: any; error: 
     }
     return { data: true, error: null };
   }
+  if (fn === 'employee_day_load') {
+    // Mirrors 0007: non-voided day totals across all projects.
+    const from = String(args.p_from), to = String(args.p_to);
+    const totals = new Map<string, { employee_id: string; work_date: string; total: number }>();
+    for (const a of state.labor_allocations) {
+      const d = String(a.work_date).slice(0, 10);
+      if (a.voided_at || d < from || d > to) continue;
+      const key = `${a.employee_id}|${d}`;
+      const cur = totals.get(key) ?? { employee_id: a.employee_id, work_date: d, total: 0 };
+      cur.total += Number(a.duration);
+      totals.set(key, cur);
+    }
+    return { data: [...totals.values()], error: null };
+  }
   return { data: null, error: { message: `unknown rpc ${fn}` } };
 }
 
@@ -790,8 +813,9 @@ async function seedDemo(): Promise<void> {
 
   state.profiles = [
     { id: 'u-mgr', role: 'manager', full_name: 'Faisal (Manager)', email: 'faisal@demo.com', phone: null, client_id: null, active: true, finance_access: true },
-    { id: 'u-wa', role: 'worker',  full_name: 'Ahmed',            email: 'ahmed@demo.com',   phone: null, client_id: null, active: true },
-    { id: 'u-wb', role: 'worker',  full_name: 'Sara',             email: 'sara@demo.com',    phone: null, client_id: null, active: true },
+    { id: 'u-wa', role: 'supervisor', full_name: 'Ahmed (Supervisor)', email: 'ahmed@demo.com', phone: null, client_id: null, active: true },
+    { id: 'u-wb', role: 'supervisor', full_name: 'Sara (Supervisor)',  email: 'sara@demo.com',  phone: null, client_id: null, active: true },
+    { id: 'u-fin', role: 'finance',   full_name: 'Noura (Finance)',    email: 'noura@demo.com', phone: null, client_id: null, active: true },
     { id: 'u-cli', role: 'client', full_name: 'Khaled Al-Saud',   email: 'khaled@demo.com',  phone: null, client_id: 'c-1', active: true },
   ];
 
@@ -873,7 +897,7 @@ async function seedDemo(): Promise<void> {
   // Configurable signing window (single row). id is the boolean singleton key
   // in Postgres; the mock stores it as the string 'true' so eq('id', true) and
   // eq('id', 'true') both match (the query stringifies both sides).
-  state.app_settings = [{ id: 'true', signing_expiry_days: 3, signing_reminder_hours: 24, updated_at: day(-30, 9) }];
+  state.app_settings = [{ id: 'true', signing_expiry_days: 3, signing_reminder_hours: 24, work_days: [0, 1, 2, 3, 4, 6], updated_at: day(-30, 9) }];
 
   // An active, awaiting-signature link on the submitted task k-4 so the manager
   // can open the demo sign page.

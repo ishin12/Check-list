@@ -1,13 +1,13 @@
 import { NavLink, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { Role } from '@/domain/models/ops';
 import { useAuth } from '@/app/providers/AuthContext';
-import { tabsForRole } from './navTabs';
+import { tabsFor } from './navTabs';
 
-export function SideNav({ role }: { role: Role }) {
+export function SideNav() {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
-  const visible = tabsForRole(role);
+  const visible = user ? tabsFor(user, 'side') : [];
+  const role = user?.role;
 
   return (
     <aside className="side-nav" aria-label="Primary">
@@ -26,10 +26,10 @@ export function SideNav({ role }: { role: Role }) {
         <span className="side-nav__brand-name">{t('app.name', 'Ghsoon Najd')}</span>
       </div>
 
-      {role === 'manager' ? (
-        <Link to="/tasks/new" className="btn btn--primary side-nav__cta">
+      {role === 'manager' || role === 'supervisor' || role === 'worker' ? (
+        <Link to="/visits/start" className="btn btn--primary side-nav__cta">
           <span aria-hidden>+</span>
-          <span>{t('calendar.add', 'Add task')}</span>
+          <span>{t('fo.home.startVisit', 'Start visit')}</span>
         </Link>
       ) : null}
 
@@ -50,7 +50,7 @@ export function SideNav({ role }: { role: Role }) {
         <div className="side-nav__footer">
           <div className="side-nav__who">
             <div className="side-nav__name">{user.fullName ?? user.email}</div>
-            <div className="side-nav__role">{user.role}</div>
+            <div className="side-nav__role">{t(`fo.role.${user.role}`, user.role)}{user.financeAccess && user.role !== 'finance' ? ` + ${t('fo.role.finance', 'finance')}` : ''}</div>
           </div>
           <button type="button" className="icon-btn" onClick={signOut} aria-label={t('auth.signOut', 'Sign out')}>
             ↩

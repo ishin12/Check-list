@@ -7,7 +7,7 @@
  * machines, recurring roll-forward). RLS is not emulated.
  */
 import { checkAllocation, isMonthClosed } from '@/domain/labor/allocation';
-import { canMoveProject, canMoveTask, canMoveVisit, nextDueDate } from '@/domain/fieldops/fieldOps';
+import { canCorrectCompleted, canMoveProject, canMoveTask, canMoveVisit, nextDueDate } from '@/domain/fieldops/fieldOps';
 import type { LaborAllocation } from '@/domain/models/ops';
 
 export const FIELD_OPS_TABLES = [
@@ -81,6 +81,7 @@ export function fieldOpsDefaults(table: string, row: Row, actorId: string, state
       r.status ??= 'open';
       r.source ??= 'manual';
       r.photo_required ??= false;
+      r.required ??= true;
       break;
     case 'project_recurring_items':
       r.active ??= true;
@@ -147,7 +148,15 @@ export function fieldOpsBefore(table: string, op: Op, prev: Row | null, next: Ro
         return;
       }
       if (op === 'UPDATE' && prev!.status !== next!.status) {
-        if (prev!.status === 'completed') fail('A completed task cannot be reopened');
+        if (prev!.status === 'completed') {
+          const visit = ctx.state.visits.find((v) => v.id === prev!.completed_in_visit_id);
+          if (!canCorrectCompleted({ status: 'completed', completedInVisitId: prev!.completed_in_visit_id ?? undefined }, visit?.status)) {
+            fail('A completed task cannot be reopened');
+          }
+          next!.completed_at = null;
+          next!.completed_in_visit_id = null;
+          return;
+        }
         if (!canMoveTask(prev!.status, next!.status)) fail('A follow-up task cannot go back to open');
         if (next!.status === 'completed') next!.completed_at ??= new Date().toISOString();
       }
@@ -207,14 +216,24 @@ export function fieldOpsAfter(table: string, op: Op, prev: Row | null, next: Row
       new: op === 'DELETE' ? null : next,
     });
   }
-  if (table === 'project_tasks' && op === 'UPDATE' && next!.recurring_item_id
+  const roll = (itemId: string, completedAt: string | null) => {
+    const item = ctx.state.project_recurring_items.find((r) => r.id === itemId);
+    if (!item) return;
+    const done = String(completedAt ?? new Date().toISOString()).slice(0, 10);
+    item.last_done_on = done;
+    item.next_due_on = nextDueDate(done, item.recurrence);
+    item.updated_at = new Date().toISOString();
+  };
+  // Completed outside a visit: roll at once. During a visit: when it completes.
+  if (table === 'project_tasks' && op === 'UPDATE' && next!.recurring_item_id && !next!.completed_in_visit_id
       && next!.status === 'completed' && prev!.status !== 'completed') {
-    const item = ctx.state.project_recurring_items.find((r) => r.id === next!.recurring_item_id);
-    if (item) {
-      const done = String(next!.completed_at ?? new Date().toISOString()).slice(0, 10);
-      item.last_done_on = done;
-      item.next_due_on = nextDueDate(done, item.recurrence);
-      item.updated_at = new Date().toISOString();
+    roll(next!.recurring_item_id, next!.completed_at);
+  }
+  if (table === 'visits' && op === 'UPDATE' && next!.status === 'completed' && prev!.status !== 'completed') {
+    for (const t of ctx.state.project_tasks) {
+      if (t.completed_in_visit_id === next!.id && t.status === 'completed' && t.recurring_item_id) {
+        roll(t.recurring_item_id, t.completed_at);
+      }
     }
   }
 }
@@ -229,6 +248,30 @@ export function isFieldOpsTable(t: string): boolean {
 
 export function seedFieldOps(state: State, day: (offset: number, hour?: number, min?: number) => string): void {
   const date = (offset: number) => day(offset).slice(0, 10);
+
+  // Checklist templates scoped to a project type or stage (mirrors 0006's seed,
+  // with a few frequencies set so the demo shows periodic items).
+  const item = (id: string, order: number, en: string, ar: string, extra: Partial<Row> = {}) =>
+    ({ id, order, required: false, label: { en, ar }, ...extra });
+  state.templates.push(
+    { id: 't-mnt', title: { en: 'Maintenance — standard', ar: 'صيانة — القائمة الأساسية' }, project_type_id: 'pt-mnt', stage_id: null, active: true, version: 1,
+      created_by: 'u-mgr', created_at: day(-90), updated_at: day(-90), tasks: [
+        item('m-irr',   0, 'Irrigation network check', 'فحص شبكة الري', { recurrence: 'weekly' }),
+        item('m-plant', 1, 'Plant and general condition check', 'فحص النباتات والحالة العامة', { required: true }),
+        item('m-prune', 2, 'Pruning', 'التقليم'),
+        item('m-fert',  3, 'Fertilizing', 'التسميد', { recurrence: 'monthly' }),
+        item('m-spray', 4, 'Spraying / pest control', 'الرش / المكافحة', { recurrence: 'monthly' }),
+        item('m-weed',  5, 'Weeding', 'إزالة الحشائش'),
+        item('m-clean', 6, 'Cleaning', 'النظافة', { required: true, photoRequired: true }),
+        item('m-pump',  7, 'Pumps / site equipment check', 'فحص المضخات أو المعدات المرتبطة بالموقع'),
+      ] },
+    { id: 't-irr', title: { en: 'Irrigation network — stage checklist', ar: 'شبكة الري — قائمة المرحلة' }, project_type_id: 'pt-est', stage_id: 'st-irrigation', active: true, version: 1,
+      created_by: 'u-mgr', created_at: day(-90), updated_at: day(-90), tasks: [
+        item('i-test',  0, 'Pressure-test irrigation lines', 'اختبار ضغط خطوط الري', { required: true, photoRequired: true }),
+        item('i-drip',  1, 'Check drip emitters at each basin', 'فحص النقاطات عند كل حوض', { required: true }),
+        item('i-notes', 2, 'Record defects and fixes needed', 'تسجيل الملاحظات والمعالجات المطلوبة', { required: true }),
+      ] },
+  );
 
   state.project_types = [
     { id: 'pt-est', code: 'establishment', name: { en: 'Establishment / Execution', ar: 'تأسيس / تنفيذ' }, uses_stages: true,  sort_order: 1, active: true },
@@ -272,20 +315,22 @@ export function seedFieldOps(state: State, day: (offset: number, hour?: number, 
 
   const t = (id: string, project_id: string, description: string, status: string, extra: Partial<Row> = {}): Row => ({
     id, project_id, visit_id: null, source: 'manual', template_id: null, template_item_id: null, recurring_item_id: null,
-    description, status, photo_required: false, note: null, completed_at: null, completed_in_visit_id: null,
+    description, status, photo_required: false, required: true, note: null, completed_at: null, completed_in_visit_id: null,
     last_visit_id: null, created_by: 'u-mgr', created_at: day(-2), updated_at: day(-2), updated_by: null, ...extra,
   });
   state.project_tasks = [
     t('pt-1', 'pr-1', 'Fertilizing', 'needs_follow_up', { visit_id: 'vi-1', last_visit_id: 'vi-1', note: 'Fertilizer not delivered yet' }),
     t('pt-2', 'pr-1', 'Pruning', 'completed', { visit_id: 'vi-1', completed_at: day(-1, 11), completed_in_visit_id: 'vi-1' }),
-    t('pt-3', 'pr-1', 'Irrigation network check', 'open', { source: 'recurring', recurring_item_id: 'ri-1' }),
-    t('pt-4', 'pr-2', 'Pressure-test irrigation lines', 'open', { source: 'stage', visit_id: 'vi-2', photo_required: true }),
-    t('pt-5', 'pr-2', 'Check drip emitters at each basin', 'open', { source: 'stage', visit_id: 'vi-2' }),
+    t('pt-3', 'pr-1', 'Irrigation network check', 'open', { source: 'recurring', recurring_item_id: 'ri-1', template_id: 't-mnt', template_item_id: 'm-irr' }),
+    t('pt-4', 'pr-2', 'Pressure-test irrigation lines', 'open', { source: 'stage', visit_id: 'vi-2', photo_required: true, template_id: 't-irr', template_item_id: 'i-test' }),
+    t('pt-5', 'pr-2', 'Check drip emitters at each basin', 'open', { source: 'stage', visit_id: 'vi-2', template_id: 't-irr', template_item_id: 'i-drip' }),
+    t('pt-6', 'pr-2', 'Record defects and fixes needed', 'open', { source: 'stage', visit_id: 'vi-2', template_id: 't-irr', template_item_id: 'i-notes' }),
   ];
 
   state.project_recurring_items = [
-    { id: 'ri-1', project_id: 'pr-1', template_id: null, template_item_id: null, description: 'Irrigation network check', recurrence: 'weekly',  last_done_on: date(-8),  next_due_on: date(-1), photo_required: false, active: true, created_by: 'u-mgr', created_at: day(-60), updated_at: day(-8), updated_by: null },
-    { id: 'ri-2', project_id: 'pr-1', template_id: null, template_item_id: null, description: 'Spraying / pest control',  recurrence: 'monthly', last_done_on: date(-12), next_due_on: nextDueDate(date(-12), 'monthly'), photo_required: false, active: true, created_by: 'u-mgr', created_at: day(-60), updated_at: day(-12), updated_by: null },
+    { id: 'ri-1', project_id: 'pr-1', template_id: 't-mnt', template_item_id: 'm-irr', description: 'Irrigation network check', recurrence: 'weekly',  last_done_on: date(-8),  next_due_on: date(-1), photo_required: false, active: true, created_by: 'u-mgr', created_at: day(-60), updated_at: day(-8), updated_by: null },
+    { id: 'ri-2', project_id: 'pr-1', template_id: 't-mnt', template_item_id: 'm-spray', description: 'Spraying / pest control',  recurrence: 'monthly', last_done_on: date(-12), next_due_on: nextDueDate(date(-12), 'monthly'), photo_required: false, active: true, created_by: 'u-mgr', created_at: day(-60), updated_at: day(-12), updated_by: null },
+    { id: 'ri-3', project_id: 'pr-1', template_id: 't-mnt', template_item_id: 'm-fert', description: 'Fertilizing', recurrence: 'monthly', last_done_on: date(-10), next_due_on: nextDueDate(date(-10), 'monthly'), photo_required: false, active: true, created_by: 'u-mgr', created_at: day(-60), updated_at: day(-40), updated_by: null },
   ];
 
   state.task_photos = [];
@@ -305,7 +350,7 @@ export function seedFieldOps(state: State, day: (offset: number, hour?: number, 
   ];
 
   state.visit_reports = [
-    { id: 'vr-1', visit_id: 'vi-1', report_number: 1, signature_status: 'unsigned', signer_name: null, signature: null, signed_at: null, generated_at: day(-1, 13), created_by: 'u-wa' },
+    { id: 'vr-1', visit_id: 'vi-1', report_number: 1, signature_status: 'unsigned', signer_name: null, signature: null, signed_at: null, content: null, generated_at: day(-1, 13), created_by: 'u-wa' },
   ];
 }
 

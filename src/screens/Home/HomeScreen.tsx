@@ -60,7 +60,7 @@ export function HomeScreen() {
                   </span>
                 </span>
                 <span style={{ color: 'var(--color-text-muted)' }}>
-                  {language === 'ar' ? '‹' : '›'}
+                  {language === 'en' ? '›' : '‹'}
                 </span>
               </button>
             ))}

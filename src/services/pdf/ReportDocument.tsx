@@ -28,11 +28,13 @@ interface Props {
  */
 export const ReportDocument = forwardRef<HTMLDivElement, Props>(
   ({ job, language, labels }, ref) => {
-    const dir = language === 'ar' ? 'rtl' : 'ltr';
+    const dir = language === 'en' ? 'ltr' : 'rtl';
     const fontFamily =
-      language === 'ar'
-        ? "'Cairo', system-ui, sans-serif"
-        : "'Inter', system-ui, sans-serif";
+      language === 'ur'
+        ? "'Noto Naskh Arabic', 'Cairo', system-ui, sans-serif"
+        : language === 'ar'
+          ? "'Cairo', system-ui, sans-serif"
+          : "'Inter', system-ui, sans-serif";
     const tasks = job.templateSnapshot.tasks;
     const resultFor = (taskId: string) =>
       job.results.find((r) => r.taskId === taskId);

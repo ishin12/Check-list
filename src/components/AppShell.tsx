@@ -11,12 +11,12 @@ interface Props {
 
 export function AppShell({ children, bare }: Props) {
   const { user } = useAuth();
-  const showNav = !bare && user && (user.role === 'worker' || user.role === 'manager');
+  const showNav = !bare && user && user.role !== 'client';
   return (
     <div className={`app-shell${showNav ? ' app-shell--with-nav' : ''}`}>
-      {showNav ? <SideNav role={user!.role} /> : null}
+      {showNav ? <SideNav /> : null}
       <div className="app-shell__main">{children}</div>
-      {showNav ? <BottomTabBar role={user!.role} /> : null}
+      {showNav ? <BottomTabBar user={user!} /> : null}
     </div>
   );
 }

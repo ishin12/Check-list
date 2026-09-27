@@ -12,6 +12,8 @@ interface TemplateRow {
   version: number;
   created_at: string;
   updated_at: string;
+  project_type_id?: string | null;
+  stage_id?: string | null;
 }
 
 function rowToTemplate(r: TemplateRow): Template {
@@ -22,6 +24,8 @@ function rowToTemplate(r: TemplateRow): Template {
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     version: r.version,
+    projectTypeId: r.project_type_id ?? undefined,
+    stageId: r.stage_id ?? undefined,
   };
 }
 
@@ -51,6 +55,8 @@ export class SupabaseStorageProvider implements StorageProvider {
       title: template.title,
       tasks: template.tasks,
       version: template.version,
+      project_type_id: template.projectTypeId ?? null,
+      stage_id: template.stageId ?? null,
       updated_at: new Date().toISOString(),
     };
     const { error } = await getSupabase().from('templates').upsert(row);

@@ -9,6 +9,7 @@ import {
   nextDueDate,
   projectCloseBlockers,
   rollRecurringItem,
+  skippedOptionalItems,
   tasksForVisit,
   visitCompletionCheck,
 } from '@/domain/fieldops/fieldOps';
@@ -16,7 +17,7 @@ import { can, hasFinance } from '@/domain/auth/permissions';
 import type { ProjectTask } from '@/domain/models/ops';
 
 function task(p: Partial<ProjectTask> & Pick<ProjectTask, 'id' | 'status'>): ProjectTask {
-  return { projectId: 'P1', source: 'manual', description: p.id, photoRequired: false, createdAt: '2026-09-01', ...p };
+  return { projectId: 'P1', source: 'manual', description: p.id, photoRequired: false, required: true, createdAt: '2026-09-01', ...p };
 }
 
 describe('state machines (§27)', () => {
@@ -52,27 +53,46 @@ describe('visits and follow-up', () => {
   it('TC-04 follow-up stays open after the visit and shows on the next one', () => {
     const tasks = [
       task({ id: 'fertilize', status: 'needs_follow_up', lastVisitId: 'v1' }),
-      task({ id: 'prune', status: 'completed', completedInVisitId: 'v1' }),
+      task({ id: 'prune', status: 'completed', completedInVisitId: 'v1', lastVisitId: 'v1' }),
     ];
-    const check = visitCompletionCheck(tasksForVisit('P1', 'v1', tasks), new Set(), 3);
+    const check = visitCompletionCheck('v1', tasksForVisit('P1', 'v1', tasks), new Set(), 3);
     expect(canCompleteVisit(check)).toBe(true);
     expect(tasksForVisit('P1', 'v2', tasks).map((t) => t.id)).toEqual(['fertilize']);
   });
 
-  it('open items, missing required photos and no crew block completion', () => {
+  it('"not done" is an answer: the task stays open and carries over', () => {
+    const tasks = [task({ id: 'weed', status: 'open', lastVisitId: 'v1', note: 'No access' })];
+    expect(canCompleteVisit(visitCompletionCheck('v1', tasks, new Set(), 1))).toBe(true);
+    expect(tasksForVisit('P1', 'v2', tasks).map((t) => t.id)).toEqual(['weed']);
+    // On the next visit it must be answered again.
+    expect(visitCompletionCheck('v2', tasks, new Set(), 1).undecided).toEqual(['weed']);
+  });
+
+  it('unanswered required items, missing required photos and no crew block completion', () => {
     const tasks = [
       task({ id: 'a', status: 'open' }),
-      task({ id: 'b', status: 'completed', photoRequired: true }),
-      task({ id: 'c', status: 'completed', photoRequired: true }),
+      task({ id: 'b', status: 'completed', photoRequired: true, completedInVisitId: 'v1' }),
+      task({ id: 'c', status: 'completed', photoRequired: true, completedInVisitId: 'v1' }),
+      task({ id: 'd', status: 'open', required: false }),
     ];
-    const check = visitCompletionCheck(tasks, new Set(['c']), 0);
+    const check = visitCompletionCheck('v1', tasks, new Set(['c']), 0);
     expect(check).toEqual({ undecided: ['a'], missingPhotos: ['b'], noCrew: true });
     expect(canCompleteVisit(check)).toBe(false);
   });
 
   it('BR-012 photos are not needed unless configured', () => {
-    const check = visitCompletionCheck([task({ id: 'a', status: 'completed' })], new Set(), 1);
+    const check = visitCompletionCheck('v1', [task({ id: 'a', status: 'completed', completedInVisitId: 'v1' })], new Set(), 1);
     expect(canCompleteVisit(check)).toBe(true);
+  });
+
+  it('untouched optional checklist items are dropped at completion', () => {
+    const tasks = [
+      task({ id: 'opt', status: 'open', source: 'checklist', required: false, visitId: 'v1' }),
+      task({ id: 'optDone', status: 'open', source: 'checklist', required: false, visitId: 'v1', lastVisitId: 'v1' }),
+      task({ id: 'req', status: 'open', source: 'checklist', required: true, visitId: 'v1' }),
+      task({ id: 'older', status: 'open', source: 'checklist', required: false, visitId: 'v0' }),
+    ];
+    expect(skippedOptionalItems('v1', tasks)).toEqual(['opt']);
   });
 });
 

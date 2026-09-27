@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/app/providers/LanguageContext';
+import { dirFor } from '@/i18n';
 import { LanguageToggle } from './LanguageToggle';
 import { DemoSwitcher } from './DemoSwitcher';
 
@@ -17,7 +18,7 @@ export function AppHeader({ title, showBack, showLanguage, action, children }: P
   const { t } = useTranslation();
   const { language } = useLanguage();
   // In RTL the "back" chevron should point the other way.
-  const backIcon = language === 'ar' ? '›' : '‹';
+  const backIcon = dirFor(language) === 'rtl' ? '›' : '‹';
 
   return (
     <header className="app-header">

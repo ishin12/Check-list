@@ -274,6 +274,64 @@ select pg_temp.expect_fail('Completed project cannot be reopened', $$
 select pg_temp.ok('Completed project stays searchable',
   (select count(*) = 1 from public.projects where status = 'completed' and name ilike '%project 2%'));
 
+-- ---------------------------------------------------------------------------
+-- 0007: supervisor task inserts, day-load RPC, staff directory
+-- ---------------------------------------------------------------------------
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');  -- supervises P1 and P2 now
+select pg_temp.expect_fail('Supervisor cannot add manual tasks', $$
+  insert into public.project_tasks (project_id, description, source)
+  values ('20000000-0000-0000-0000-000000000001', 'Something new', 'manual') $$, 'row-level security');
+insert into public.project_tasks (id, project_id, description, source, required)
+values ('50000000-0000-0000-0000-000000000009', '20000000-0000-0000-0000-000000000001', 'Weeding', 'checklist', false);
+select pg_temp.ok('Supervisor adds checklist tasks from templates',
+  (select count(*) = 1 from public.project_tasks where id = '50000000-0000-0000-0000-000000000009'));
+delete from public.project_tasks where id = '50000000-0000-0000-0000-000000000009';
+select pg_temp.ok('Supervisor removes an untouched optional checklist item',
+  (select count(*) = 0 from public.project_tasks where id = '50000000-0000-0000-0000-000000000009'));
+
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');  -- supervises nothing now
+select pg_temp.ok('Day load shows bookings on projects the supervisor cannot see',
+  (select total = 1.0 from public.employee_day_load('2026-09-03', '2026-09-03')
+   where employee_id = '30000000-0000-0000-0000-000000000001'));
+select pg_temp.ok('Staff can read colleague names',
+  (select count(*) >= 4 from public.profiles));
+
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');
+insert into public.visits (id, project_id, visit_date, supervisor_id)
+values ('40000000-0000-0000-0000-000000000009', '20000000-0000-0000-0000-000000000001', '2026-10-20',
+        '00000000-0000-0000-0000-00000000000c');
+delete from public.visits where id = '40000000-0000-0000-0000-000000000009';
+select pg_temp.ok('Supervisor removes a planned visit with no labor',
+  (select count(*) = 0 from public.visits where id = '40000000-0000-0000-0000-000000000009'));
+
+-- Same-visit correction and roll-on-visit-completion
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
+insert into public.project_recurring_items (id, project_id, description, recurrence, next_due_on)
+values ('60000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', 'Weekly check', 'weekly', '2026-10-20');
+insert into public.visits (id, project_id, visit_date, supervisor_id, status)
+values ('40000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000001', '2026-10-21',
+        '00000000-0000-0000-0000-00000000000c', 'planned');
+update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000005';
+insert into public.project_tasks (id, project_id, visit_id, source, recurring_item_id, description)
+values ('50000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000001',
+        '40000000-0000-0000-0000-000000000005', 'recurring', '60000000-0000-0000-0000-000000000002', 'Weekly check');
+update public.project_tasks set status = 'completed', completed_in_visit_id = '40000000-0000-0000-0000-000000000005',
+  completed_at = '2026-10-21 09:00+00' where id = '50000000-0000-0000-0000-000000000005';
+select pg_temp.ok('Recurring item waits for the visit to complete',
+  (select last_done_on is null from public.project_recurring_items where id = '60000000-0000-0000-0000-000000000002'));
+update public.project_tasks set status = 'needs_follow_up' where id = '50000000-0000-0000-0000-000000000005';
+select pg_temp.ok('A Done tap can be corrected while the visit is in progress',
+  (select status = 'needs_follow_up' and completed_in_visit_id is null and completed_at is null
+   from public.project_tasks where id = '50000000-0000-0000-0000-000000000005'));
+update public.project_tasks set status = 'completed', completed_in_visit_id = '40000000-0000-0000-0000-000000000005',
+  completed_at = '2026-10-21 09:30+00' where id = '50000000-0000-0000-0000-000000000005';
+update public.visits set status = 'completed' where id = '40000000-0000-0000-0000-000000000005';
+select pg_temp.ok('Visit completion rolls the recurring item',
+  (select last_done_on = '2026-10-21' and next_due_on = '2026-10-28'
+   from public.project_recurring_items where id = '60000000-0000-0000-0000-000000000002'));
+select pg_temp.expect_fail('After the visit completes, Done is final', $$
+  update public.project_tasks set status = 'open' where id = '50000000-0000-0000-0000-000000000005' $$, 'cannot be reopened');
+
 select pg_temp.act_as(null);
 \o
 \echo 'All field-ops rule checks passed.'

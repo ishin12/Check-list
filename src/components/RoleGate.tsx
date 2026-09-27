@@ -5,10 +5,12 @@ import type { Role } from '@/domain/models/ops';
 
 interface Props {
   roles: Role[];
+  /** Also allow anyone holding finance (role or grant). */
+  finance?: boolean;
   children: ReactNode;
 }
 
-export function RoleGate({ roles, children }: Props) {
+export function RoleGate({ roles, finance, children }: Props) {
   const { loading, user, configured } = useAuth();
   const location = useLocation();
 
@@ -36,7 +38,8 @@ export function RoleGate({ roles, children }: Props) {
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
-  if (!roles.includes(user.role)) {
+  const financeOk = finance && user.active && (user.role === 'finance' || user.financeAccess === true);
+  if (!roles.includes(user.role) && !financeOk) {
     return <Navigate to="/" replace />;
   }
   return <>{children}</>;

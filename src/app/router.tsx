@@ -24,6 +24,14 @@ import { PortalScreen } from '@/screens/Portal/PortalScreen';
 import { RoleGate } from '@/components/RoleGate';
 import { RootRedirect } from '@/screens/Home/RootRedirect';
 import { SignScreen } from '@/screens/Sign/SignScreen';
+import { FieldHomeScreen } from '@/screens/field/FieldHomeScreen';
+import { StartVisitScreen } from '@/screens/field/StartVisitScreen';
+import { VisitScreen } from '@/screens/field/VisitScreen';
+import { VisitReportScreen } from '@/screens/field/VisitReportScreen';
+import type { Role } from '@/domain/models/ops';
+
+const FIELD: Role[] = ['supervisor', 'worker', 'manager'];
+const LEGACY: Role[] = ['worker', 'supervisor', 'manager'];
 
 // BASE_URL is '/Check-list/' in production builds, '/' in dev. Browser router
 // needs the basename without the trailing slash.
@@ -36,13 +44,19 @@ export const router = createBrowserRouter([
   // Public, unauthenticated signing page (reached from the WhatsApp link).
   { path: '/sign/:token', element: <SignScreen /> },
 
-  // Worker + manager surfaces
-  { path: '/today',          element: <RoleGate roles={['worker', 'manager']}><TodayScreen /></RoleGate> },
-  { path: '/calendar',       element: <RoleGate roles={['worker', 'manager']}><CalendarScreen /></RoleGate> },
+  // Field operations (Master Spec v2.1)
+  { path: '/field',              element: <RoleGate roles={FIELD}><FieldHomeScreen /></RoleGate> },
+  { path: '/visits/start',       element: <RoleGate roles={FIELD}><StartVisitScreen /></RoleGate> },
+  { path: '/visits/:id',         element: <RoleGate roles={FIELD} finance><VisitScreen /></RoleGate> },
+  { path: '/visits/:id/report',  element: <RoleGate roles={FIELD} finance><VisitReportScreen /></RoleGate> },
+
+  // Worker + manager surfaces (older task system)
+  { path: '/today',          element: <RoleGate roles={LEGACY}><TodayScreen /></RoleGate> },
+  { path: '/calendar',       element: <RoleGate roles={LEGACY}><CalendarScreen /></RoleGate> },
   { path: '/tasks/new',      element: <RoleGate roles={['manager']}><TaskNewScreen /></RoleGate> },
-  { path: '/tasks/:id',      element: <RoleGate roles={['worker', 'manager']}><TaskDetailScreen /></RoleGate> },
-  { path: '/tasks/:id/capture/:kind', element: <RoleGate roles={['worker', 'manager']}><MediaCaptureScreen /></RoleGate> },
-  { path: '/notifications',  element: <RoleGate roles={['worker', 'manager']}><NotificationsScreen /></RoleGate> },
+  { path: '/tasks/:id',      element: <RoleGate roles={LEGACY}><TaskDetailScreen /></RoleGate> },
+  { path: '/tasks/:id/capture/:kind', element: <RoleGate roles={LEGACY}><MediaCaptureScreen /></RoleGate> },
+  { path: '/notifications',  element: <RoleGate roles={LEGACY}><NotificationsScreen /></RoleGate> },
 
   // Manager-only
   { path: '/clients',        element: <RoleGate roles={['manager']}><ClientsScreen /></RoleGate> },
@@ -60,10 +74,10 @@ export const router = createBrowserRouter([
   { path: '/templates',      element: <RoleGate roles={['manager']}><TemplateListScreen /></RoleGate> },
   { path: '/templates/new',  element: <RoleGate roles={['manager']}><TemplateEditorScreen /></RoleGate> },
   { path: '/templates/:id',  element: <RoleGate roles={['manager']}><TemplateEditorScreen /></RoleGate> },
-  { path: '/job',            element: <RoleGate roles={['worker', 'manager']}><JobRunnerScreen /></RoleGate> },
-  { path: '/signature',      element: <RoleGate roles={['worker', 'manager']}><SignatureCaptureScreen /></RoleGate> },
-  { path: '/report',         element: <RoleGate roles={['worker', 'manager']}><ReportPreviewScreen /></RoleGate> },
-  { path: '/settings',       element: <RoleGate roles={['worker', 'manager', 'client']}><SettingsScreen /></RoleGate> },
+  { path: '/job',            element: <RoleGate roles={LEGACY}><JobRunnerScreen /></RoleGate> },
+  { path: '/signature',      element: <RoleGate roles={LEGACY}><SignatureCaptureScreen /></RoleGate> },
+  { path: '/report',         element: <RoleGate roles={LEGACY}><ReportPreviewScreen /></RoleGate> },
+  { path: '/settings',       element: <RoleGate roles={[...LEGACY, 'finance', 'client']}><SettingsScreen /></RoleGate> },
 
   { path: '*', element: <Navigate to="/" replace /> },
 ], { basename });

@@ -18,6 +18,14 @@ export function LanguageToggle() {
       >
         ع
       </button>
+      <button
+        type="button"
+        className={language === 'ur' ? 'active' : ''}
+        onClick={() => setLanguage('ur')}
+        lang="ur"
+      >
+        اردو
+      </button>
     </div>
   );
 }

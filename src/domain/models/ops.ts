@@ -194,6 +194,8 @@ export interface ProjectTask {
   recurringItemId?: string;
   description: string;
   status: TaskItemStatus;
+  /** Must be answered (done / not done / follow-up) on the visit. */
+  required: boolean;
   photoRequired: boolean;
   note?: string;
   completedAt?: string;
@@ -263,4 +265,32 @@ export interface VisitReport {
   signerName?: string;
   signedAt?: string;
   generatedAt: string;
+  /** Frozen at completion so later visits never change an issued report. */
+  content?: VisitReportContent;
+}
+
+export interface VisitReportTaskLine {
+  taskId: string;
+  description: string;
+  status: TaskItemStatus;
+  note?: string;
+  photos: { id: string; kind?: PhotoKind; storagePath: string; mime: string }[];
+}
+
+export interface VisitReportContent {
+  reportNumber?: number;
+  projectName: string;
+  projectCode?: string;
+  clientName: string;
+  visitDate: string;
+  supervisorName: string;
+  completedAt?: string;
+  /** Everything that was on the visit. */
+  required: VisitReportTaskLine[];
+  /** Done on this visit. */
+  done: VisitReportTaskLine[];
+  /** Needs follow-up or not done — carried to the next visit. */
+  followUp: VisitReportTaskLine[];
+  crew: { name: string; duration: number }[];
+  clientRepName?: string;
 }

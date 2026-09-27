@@ -1,8 +1,12 @@
 import type { Recurrence } from '@/domain/job/recurrence';
 
-export type Language = 'en' | 'ar';
+export type Language = 'en' | 'ar' | 'ur';
 
-export type LocalizedText = Record<Language, string>;
+/** Right-to-left languages (Arabic, Urdu). */
+export const RTL_LANGUAGES: readonly Language[] = ['ar', 'ur'];
+
+/** English and Arabic are always entered; Urdu is optional and falls back. */
+export type LocalizedText = { en: string; ar: string; ur?: string };
 
 export interface Task {
   id: string;

@@ -90,6 +90,14 @@ export function SettingsScreen() {
             >
               {t('settings.arabic')}
             </button>
+            <button
+              type="button"
+              className={`btn btn--block ${language === 'ur' ? 'btn--primary' : 'btn--ghost'}`}
+              onClick={() => setLanguage('ur')}
+              lang="ur"
+            >
+              اردو
+            </button>
           </div>
         </div>
 

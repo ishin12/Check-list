@@ -36,6 +36,17 @@ export function canMoveTask(from: TaskItemStatus, to: TaskItemStatus): boolean {
   return from === to || TASK_NEXT[from].includes(to);
 }
 
+/**
+ * A "Done" tap may be corrected only while the visit it was made on is still
+ * in progress (0007). After that, completed is final.
+ */
+export function canCorrectCompleted(
+  task: Pick<ProjectTask, 'status' | 'completedInVisitId'>,
+  visitStatus: VisitStatus | undefined,
+): boolean {
+  return task.status === 'completed' && !!task.completedInVisitId && visitStatus === 'in_progress';
+}
+
 /** Terminal project states cannot change; the rest move freely between each other. */
 export function canMoveProject(from: ProjectStatus, to: ProjectStatus): boolean {
   if (from === to) return true;
@@ -77,7 +88,7 @@ export function tasksForVisit<T extends Pick<ProjectTask, 'projectId' | 'status'
 }
 
 export interface CompletionCheck {
-  /** Tasks still OPEN — the supervisor must mark each done or follow-up. */
+  /** Required tasks not yet answered on this visit (done / not done / follow-up). */
   undecided: string[];
   /** Tasks completed without the photo their configuration requires (BR-012). */
   missingPhotos: string[];
@@ -85,22 +96,46 @@ export interface CompletionCheck {
   noCrew: boolean;
 }
 
+/** True when the supervisor answered this task during the visit. */
+export function answeredOnVisit(
+  t: Pick<ProjectTask, 'status' | 'lastVisitId' | 'completedInVisitId'>,
+  visitId: string,
+): boolean {
+  return t.lastVisitId === visitId || t.completedInVisitId === visitId;
+}
+
 /**
- * What stops a visit from being completed (§5 step 7). NEEDS_FOLLOW_UP never
- * blocks and is never closed by completing the visit (BR-005).
+ * What stops a visit from being completed (§5 step 7). "Not done" is a valid
+ * answer: the task stays OPEN and carries over. NEEDS_FOLLOW_UP never blocks
+ * and is never closed by completing the visit (BR-005).
  */
 export function visitCompletionCheck(
-  visitTasks: Pick<ProjectTask, 'id' | 'status' | 'photoRequired'>[],
+  visitId: string,
+  visitTasks: Pick<ProjectTask, 'id' | 'status' | 'photoRequired' | 'required' | 'lastVisitId' | 'completedInVisitId'>[],
   photoTaskIds: Set<string>,
   crewCount: number,
 ): CompletionCheck {
   return {
-    undecided: visitTasks.filter((t) => t.status === 'open').map((t) => t.id),
+    undecided: visitTasks.filter((t) => t.required && !answeredOnVisit(t, visitId)).map((t) => t.id),
     missingPhotos: visitTasks
       .filter((t) => t.status === 'completed' && t.photoRequired && !photoTaskIds.has(t.id))
       .map((t) => t.id),
     noCrew: crewCount === 0,
   };
+}
+
+/**
+ * Optional checklist items created for this visit and never touched. They are
+ * removed when the visit completes instead of piling up as open work.
+ */
+export function skippedOptionalItems(
+  visitId: string,
+  tasks: Pick<ProjectTask, 'id' | 'source' | 'required' | 'status' | 'visitId' | 'lastVisitId' | 'completedInVisitId'>[],
+): string[] {
+  return tasks
+    .filter((t) => t.source === 'checklist' && !t.required && t.status === 'open'
+      && t.visitId === visitId && !answeredOnVisit(t, visitId))
+    .map((t) => t.id);
 }
 
 export function canCompleteVisit(c: CompletionCheck): boolean {

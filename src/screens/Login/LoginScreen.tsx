@@ -5,12 +5,14 @@ import { AppHeader } from '@/components/AppHeader';
 import { useAuth } from '@/app/providers/AuthContext';
 import { isDemoMode } from '@/services/supabase/client';
 
-interface DemoProfile { id: string; full_name: string; email: string; role: 'manager' | 'worker' | 'client' }
+interface DemoProfile { id: string; full_name: string; email: string; role: 'manager' | 'supervisor' | 'finance' | 'worker' | 'client' }
 
 const ROLE_BLURB: Record<DemoProfile['role'], string> = {
-  manager: 'Full access — calendar, approvals, clients, audit',
-  worker:  'Sees only own tasks · capture proof · submit',
-  client:  'Read-only portal — visits & approved proof',
+  manager:    'Projects, checklists, workers, reports — plus finance in the demo',
+  supervisor: 'Start visits, pick the crew, record work and photos',
+  finance:    'Labor reports, Excel export, month close',
+  worker:     'Older task list · capture proof · submit',
+  client:     'Read-only portal — visits & approved proof',
 };
 
 export function LoginScreen() {

@@ -5,7 +5,7 @@ export function nowIso(): string {
 }
 
 export function formatDateTime(iso: string, language: Language): string {
-  const locale = language === 'ar' ? 'ar' : 'en-GB';
+  const locale = language === 'en' ? 'en-GB' : language;
   try {
     return new Intl.DateTimeFormat(locale, {
       dateStyle: 'medium',
