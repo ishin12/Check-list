@@ -27,7 +27,7 @@ import {
 
 const DB_NAME = 'checklist-demo';
 // Re-seed when this changes (bump on each schema-affecting change).
-const SEED_VERSION = 'v9';
+const SEED_VERSION = 'v10';
 const DB_VERSION = 2; // 2: field-ops tables (0006)
 
 const TABLES = [

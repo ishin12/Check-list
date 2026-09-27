@@ -16,6 +16,11 @@
 alter table public.project_tasks
   add column required boolean not null default true;
 
+-- Set once a task has been marked NEEDS_FOLLOW_UP, so correcting a later
+-- "Done" tap can never send it back to OPEN (§27).
+alter table public.project_tasks
+  add column was_follow_up boolean not null default false;
+
 alter table public.visit_reports
   add column content jsonb;
 
@@ -90,6 +95,9 @@ begin
       end if;
       new.completed_at = null;
       new.completed_in_visit_id = null;
+      if new.status = 'open' and old.was_follow_up then
+        new.status = 'needs_follow_up';
+      end if;
       return new;
     end if;
     if old.status = 'needs_follow_up' and new.status = 'open' then
@@ -97,6 +105,9 @@ begin
     end if;
     if new.status = 'completed' then
       new.completed_at = coalesce(new.completed_at, now());
+    end if;
+    if new.status = 'needs_follow_up' then
+      new.was_follow_up = true;
     end if;
   end if;
   return new;
@@ -180,10 +191,10 @@ where s.code = v.code and not (s.name ? 'ur');
 
 -- Standard maintenance list: add Urdu labels by matching the English label.
 update public.templates tpl set tasks = (
-  select jsonb_agg(
+  select coalesce(jsonb_agg(
     case when item->'label' ? 'ur' or m.ur is null then item
          else jsonb_set(item, '{label,ur}', to_jsonb(m.ur)) end
-    order by ord)
+    order by ord), '[]'::jsonb)
   from jsonb_array_elements(tpl.tasks) with ordinality as e(item, ord)
   left join (values
     ('Irrigation network check',           'آبپاشی کے نظام کا معائنہ'),
@@ -198,3 +209,72 @@ update public.templates tpl set tasks = (
   ) as m(en, ur) on m.en = item->'label'->>'en'
 )
 where tpl.title->>'en' = 'Maintenance — standard';
+
+
+-- ---------------------------------------------------------------------------
+-- Tighter writes (review fixes)
+-- ---------------------------------------------------------------------------
+
+-- Finance may change labor only in a CLOSED month (§29: before close finance
+-- reviews; after close it corrects with a reason). Managers keep full access.
+drop policy if exists "labor finance update" on public.labor_allocations;
+create policy "labor finance update" on public.labor_allocations for update
+  using (public.has_finance() and public.is_month_closed(work_date))
+  with check (public.has_finance() and public.is_month_closed(work_date));
+
+-- New tasks start OPEN unless a manager creates them otherwise.
+create or replace function public.project_tasks_insert_guard() returns trigger
+language plpgsql as $$
+begin
+  if not public.is_manager() and auth.uid() is not null then
+    new.status = 'open';
+    new.completed_at = null;
+    new.completed_in_visit_id = null;
+  end if;
+  new.was_follow_up = (new.status = 'needs_follow_up');
+  return new;
+end;
+$$;
+
+create trigger trg_project_tasks_insert_guard before insert on public.project_tasks
+  for each row execute function public.project_tasks_insert_guard();
+
+-- Visits: a supervisor may take a visit over (supervisor_id = self) and set
+-- the date only while it is planned; a completed visit is read-only to them.
+create or replace function public.visits_supervisor_guard() returns trigger
+language plpgsql as $$
+begin
+  if auth.uid() is null or public.is_manager() then
+    return new;
+  end if;
+  if old.status = 'completed' then
+    raise exception 'A completed visit cannot be changed' using errcode = 'P0001';
+  end if;
+  if new.supervisor_id is distinct from old.supervisor_id and new.supervisor_id <> auth.uid() then
+    raise exception 'A supervisor can only assign a visit to themselves' using errcode = 'P0001';
+  end if;
+  if new.visit_date is distinct from old.visit_date and old.status <> 'planned' then
+    raise exception 'The date of a started visit cannot be changed' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_visits_supervisor_guard before update on public.visits
+  for each row execute function public.visits_supervisor_guard();
+
+-- An issued report's content is frozen (§12, §30); the client representative
+-- is kept in signer_name. Only a manager may regenerate content.
+create or replace function public.visit_reports_guard() returns trigger
+language plpgsql as $$
+begin
+  if old.content is not null and new.content is distinct from old.content
+     and auth.uid() is not null and not public.is_manager() then
+    raise exception 'An issued report cannot be rewritten' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_visit_reports_guard before update on public.visit_reports
+  for each row execute function public.visit_reports_guard();

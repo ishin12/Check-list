@@ -55,6 +55,11 @@ function toAllocation(r: Row): LaborAllocation & { changeReason?: string } {
   };
 }
 
+function actorIsManager(ctx: GuardContext): boolean {
+  const p = ctx.state.profiles.find((x) => x.id === ctx.actorId);
+  return !!p && p.active && p.role === 'manager';
+}
+
 function actorHasFinance(ctx: GuardContext): boolean {
   const p = ctx.state.profiles.find((x) => x.id === ctx.actorId);
   return !!p && p.active && (p.role === 'finance' || p.finance_access === true);
@@ -140,11 +145,34 @@ export function fieldOpsBefore(table: string, op: Op, prev: Row | null, next: Ro
         if (next!.status === 'in_progress') next!.started_at ??= now;
         if (next!.status === 'completed') next!.completed_at ??= now;
       }
+      // 0007 visits_supervisor_guard (runs after trg_visits_guard, as in Postgres)
+      if (op === 'UPDATE' && !actorIsManager(ctx)) {
+        if (prev!.status === 'completed') fail('A completed visit cannot be changed');
+        if (next!.supervisor_id !== prev!.supervisor_id && next!.supervisor_id !== ctx.actorId) {
+          fail('A supervisor can only assign a visit to themselves');
+        }
+        if (String(next!.visit_date) !== String(prev!.visit_date) && prev!.status !== 'planned') {
+          fail('The date of a started visit cannot be changed');
+        }
+      }
       return;
     }
     case 'project_tasks': {
       if (op === 'DELETE') {
         if (prev!.status === 'completed') fail('BR-014: a completed task cannot be deleted');
+        if (ctx.state.task_photos.some((ph) => ph.task_id === prev!.id)) {
+          fail('update or delete on table "project_tasks" violates foreign key constraint "task_photos_task_id_fkey"');
+        }
+        return;
+      }
+      if (op === 'INSERT') {
+        // 0007 project_tasks_insert_guard
+        if (!actorIsManager(ctx)) {
+          next!.status = 'open';
+          next!.completed_at = null;
+          next!.completed_in_visit_id = null;
+        }
+        next!.was_follow_up = next!.status === 'needs_follow_up';
         return;
       }
       if (op === 'UPDATE' && prev!.status !== next!.status) {
@@ -155,10 +183,19 @@ export function fieldOpsBefore(table: string, op: Op, prev: Row | null, next: Ro
           }
           next!.completed_at = null;
           next!.completed_in_visit_id = null;
+          if (next!.status === 'open' && prev!.was_follow_up) next!.status = 'needs_follow_up';
           return;
         }
         if (!canMoveTask(prev!.status, next!.status)) fail('A follow-up task cannot go back to open');
         if (next!.status === 'completed') next!.completed_at ??= new Date().toISOString();
+        if (next!.status === 'needs_follow_up') next!.was_follow_up = true;
+      }
+      return;
+    }
+    case 'visit_reports': {
+      // 0007 visit_reports_guard: issued content is frozen for non-managers.
+      if (op === 'UPDATE' && prev!.content && JSON.stringify(next!.content) !== JSON.stringify(prev!.content) && !actorIsManager(ctx)) {
+        fail('An issued report cannot be rewritten');
       }
       return;
     }
@@ -316,7 +353,8 @@ export function seedFieldOps(state: State, day: (offset: number, hour?: number, 
   const t = (id: string, project_id: string, description: string, status: string, extra: Partial<Row> = {}): Row => ({
     id, project_id, visit_id: null, source: 'manual', template_id: null, template_item_id: null, recurring_item_id: null,
     description, status, photo_required: false, required: true, note: null, completed_at: null, completed_in_visit_id: null,
-    last_visit_id: null, created_by: 'u-mgr', created_at: day(-2), updated_at: day(-2), updated_by: null, ...extra,
+    last_visit_id: null, created_by: 'u-mgr', created_at: day(-2), updated_at: day(-2), updated_by: null,
+    was_follow_up: status === 'needs_follow_up', ...extra,
   });
   state.project_tasks = [
     t('pt-1', 'pr-1', 'Fertilizing', 'needs_follow_up', { visit_id: 'vi-1', last_visit_id: 'vi-1', note: 'Fertilizer not delivered yet' }),

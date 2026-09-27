@@ -79,8 +79,10 @@ export function LaborScreen() {
         <div className="stack">
           {rows.map((r) => {
             const closed = isMonthClosed(r.workDate, data?.closes ?? []);
-            const own = r.supervisorId === user?.id;
-            const canEdit = !r.voidedAt && (closed ? isFinance : (isManager || own || isFinance));
+            // Open month: managers, or the supervisor who recorded it while still on the project.
+            // Closed month: finance only, with a reason (§29, BR-009/010).
+            const own = r.supervisorId === user?.id && fd.project(r.projectId)?.supervisorId === user?.id;
+            const canEdit = !r.voidedAt && (closed ? isFinance : (isManager || own));
             return (
               <div key={r.id} className="card" style={r.voidedAt ? { opacity: 0.6 } : undefined}>
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>

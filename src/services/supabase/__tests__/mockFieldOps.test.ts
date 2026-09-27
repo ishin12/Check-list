@@ -121,3 +121,29 @@ describe('demo backend mirrors the field-ops rules', () => {
     expect(item.next_due_on > today).toBe(true);
   });
 });
+
+describe('review fixes mirrored in the demo backend', () => {
+  it('a Done correction on a follow-up stays a follow-up', async () => {
+    const { data: v } = await sb.from('visits').insert({ project_id: 'pr-1', visit_date: '2026-10-22', supervisor_id: 'u-wa' }).select().single();
+    await sb.from('visits').update({ status: 'in_progress' }).eq('id', v.id);
+    await sb.from('project_tasks').update({ status: 'completed', completed_in_visit_id: v.id }).eq('id', 'pt-1');
+    await sb.from('project_tasks').update({ status: 'open' }).eq('id', 'pt-1');
+    const { data } = await sb.from('project_tasks').select('*').eq('id', 'pt-1').single();
+    expect(data.status).toBe('needs_follow_up');
+  });
+
+  it('a task with photos cannot be deleted', async () => {
+    await sb.from('task_photos').insert({ task_id: 'pt-5', project_id: 'pr-2', storage_path: 'x', mime: 'image/png', captured_at: new Date().toISOString() });
+    const { error } = await sb.from('project_tasks').delete().eq('id', 'pt-5');
+    expect(error?.message).toMatch(/foreign key/);
+  });
+
+  it('supervisors cannot hand visits to others or rewrite issued reports', async () => {
+    expect((await sb.from('visits').update({ supervisor_id: 'u-wb' }).eq('id', 'vi-1')).error?.message).toMatch(/completed visit/);
+    const { data: v } = await sb.from('visits').insert({ project_id: 'pr-1', visit_date: '2026-10-23', supervisor_id: 'u-wa' }).select().single();
+    expect((await sb.from('visits').update({ supervisor_id: 'u-wb' }).eq('id', v.id)).error?.message).toMatch(/themselves/);
+    await sb.from('visit_reports').update({ content: { done: [] } }).eq('id', 'vr-1');
+    expect((await sb.from('visit_reports').update({ content: { done: ['x'] } }).eq('id', 'vr-1')).error?.message).toMatch(/rewritten/);
+    expect((await sb.from('visit_reports').update({ signer_name: 'Khaled' }).eq('id', 'vr-1')).error).toBeNull();
+  });
+});

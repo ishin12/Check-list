@@ -93,6 +93,9 @@ describe('visits and follow-up', () => {
       task({ id: 'older', status: 'open', source: 'checklist', required: false, visitId: 'v0' }),
     ];
     expect(skippedOptionalItems('v1', tasks)).toEqual(['opt']);
+    // An item with a photo or a note was worked on: keep it.
+    expect(skippedOptionalItems('v1', tasks, new Set(['opt']))).toEqual([]);
+    expect(skippedOptionalItems('v1', [{ ...tasks[0], note: 'looked fine' }])).toEqual([]);
   });
 });
 

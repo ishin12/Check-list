@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { completeVisit, startVisit, syncVisitTasks } from '@/services/data/visitFlow';
 import {
   answerTask,
+  createVisit,
   getProject,
   getReportForVisit,
   getVisit,
@@ -96,4 +97,29 @@ describe('supervisor visit cycle (demo backend)', () => {
     expect(await listVisits({ projectId: 'pr-1', from: today, to: today })).toEqual([]);
     expect(await listLabor({ projectId: 'pr-1', from: today, to: today })).toEqual([]);
   });
+
+  it('a planned visit is started (and its crew booked) on the day it happens', async () => {
+    await window.__demo!.setActiveUser('u-mgr');
+    const project = (await getProject('pr-1'))!;
+    const planned = await createVisit({ projectId: 'pr-1', visitDate: '2099-01-15', supervisorId: 'u-wa' });
+    await window.__demo!.setActiveUser('u-wa');
+    const id = await startVisit({ project, supervisorId: 'u-wa', date: today, crew: [{ employeeId: 'em-5', duration: 1 }], plannedVisit: planned });
+    expect(id).toBe(planned.id);
+    expect((await getVisit(id))!.visitDate).toBe(today);
+    expect((await listLabor({ visitId: id }))[0].workDate).toBe(today);
+  });
+
+  it('completing keeps an optional item that has a photo', async () => {
+    const project = (await getProject('pr-1'))!;
+    const visitId = await startVisit({ project, supervisorId: 'u-wa', date: today, crew: [{ employeeId: 'em-5', duration: 1 }] });
+    const tasks = await listTasks({ projectId: 'pr-1' });
+    const optional = tasks.find((t) => t.visitId === visitId && !t.required)!;
+    await uploadTaskPhoto({ taskId: optional.id, visitId, projectId: 'pr-1', kind: 'before', file: new Blob(['x']), mime: 'image/png' });
+    for (const t of tasks.filter((x) => x.required && x.status !== 'completed')) {
+      await answerTask(t, visitId, 'not_done');
+    }
+    await completeVisit((await getVisit(visitId))!, names);
+    expect((await listTasks({ projectId: 'pr-1' })).some((t) => t.id === optional.id)).toBe(true);
+  });
 });
+

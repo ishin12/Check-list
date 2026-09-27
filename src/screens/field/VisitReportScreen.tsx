@@ -51,7 +51,10 @@ export function VisitReportScreen() {
     if (!visit) return null;
     const project = fd.project(visit.projectId);
     const report = await getReportForVisit(visit.id);
-    let content: VisitReportContent | undefined = report?.content;
+    // The issued content is frozen; the client representative lives in signer_name.
+    let content: VisitReportContent | undefined = report?.content
+      ? { ...report.content, clientRepName: report.signerName ?? report.content.clientRepName }
+      : undefined;
     if (!content) {
       content = await generateReportContent(visit, {
         projectName: project?.name ?? '—', projectCode: project?.code, clientName: names.client(project?.clientId),
@@ -108,7 +111,7 @@ export function VisitReportScreen() {
     if (!data?.report || rep === (data.content.clientRepName ?? '')) return;
     setSaveError(null);
     try {
-      await updateReport(data.report.id, { signerName: rep, content: { ...data.content, clientRepName: rep || undefined } });
+      await updateReport(data.report.id, { signerName: rep });
       await reload();
     } catch (e) {
       setSaveError(friendlyError(e, t));

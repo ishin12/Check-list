@@ -48,7 +48,8 @@ export interface BuildVisitInput {
   date: string;
   templates: ScopedTemplate[];
   /** All tasks of the project (any status). */
-  projectTasks: Pick<ProjectTask, 'templateId' | 'templateItemId' | 'recurringItemId' | 'status' | 'source'>[];
+  projectTasks: (Pick<ProjectTask, 'templateId' | 'templateItemId' | 'recurringItemId' | 'status' | 'source'>
+    & Partial<Pick<ProjectTask, 'visitId' | 'completedInVisitId'>>)[];
   recurringItems: ProjectRecurringItem[];
   newId: () => string;
 }
@@ -64,8 +65,12 @@ export interface BuildVisitInput {
 export function buildVisitTasks(input: BuildVisitInput): NewTask[] {
   const { project, visitId, date, templates, projectTasks, recurringItems, newId } = input;
   const out: NewTask[] = [];
+  // Already on this visit: created for it, or completed during it. Keeps
+  // "Refresh checklist" from adding a second copy of something just done.
+  const onThisVisit = (t: BuildVisitInput['projectTasks'][number]) => t.visitId === visitId || t.completedInVisitId === visitId;
   const hasTask = (templateId: string, itemId: string, openOnly: boolean) =>
-    projectTasks.some((t) => t.templateId === templateId && t.templateItemId === itemId && (!openOnly || isTaskOpen(t)));
+    projectTasks.some((t) => t.templateId === templateId && t.templateItemId === itemId
+      && (!openOnly || isTaskOpen(t) || onThisVisit(t)));
 
   for (const tpl of applicableTemplates(project, templates)) {
     const source: TaskItemSource = tpl.stageId ? 'stage' : 'checklist';
@@ -89,8 +94,9 @@ export function buildVisitTasks(input: BuildVisitInput): NewTask[] {
   }
 
   for (const r of dueRecurringItems(project.id, date, recurringItems)) {
-    const open = projectTasks.some((t) => t.recurringItemId === r.id && isTaskOpen(t));
-    if (open) continue;
+    // Open, or done on this visit (the item only rolls forward when the visit completes).
+    const covered = projectTasks.some((t) => t.recurringItemId === r.id && (isTaskOpen(t) || onThisVisit(t)));
+    if (covered) continue;
     out.push({
       id: newId(),
       projectId: project.id,

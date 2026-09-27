@@ -40,23 +40,25 @@ export interface StartVisitInput {
  * a visit created here is removed again so nothing half-saved is left.
  */
 export async function startVisit(input: StartVisitInput): Promise<string> {
-  const visit = input.plannedVisit ?? await createVisit({
+  let visit = input.plannedVisit ?? await createVisit({
     projectId: input.project.id, visitDate: input.date, supervisorId: input.supervisorId,
   });
+  // A planned visit is started on the day it actually happens (and by whoever starts it).
+  if (input.plannedVisit && (visit.visitDate !== input.date || visit.supervisorId !== input.supervisorId)) {
+    await updateVisit(visit.id, { visitDate: input.date, supervisorId: input.supervisorId });
+    visit = { ...visit, visitDate: input.date, supervisorId: input.supervisorId };
+  }
   try {
     await insertCrew(input.crew.map((c) => ({
-      workDate: visit.visitDate, employeeId: c.employeeId, projectId: input.project.id, visitId: visit.id,
+      workDate: input.date, employeeId: c.employeeId, projectId: input.project.id, visitId: visit.id,
       duration: c.duration, supervisorId: input.supervisorId,
     })));
   } catch (e) {
     if (!input.plannedVisit) await deletePlannedVisit(visit.id).catch(() => undefined);
     throw e;
   }
-  await updateVisit(visit.id, {
-    status: 'in_progress',
-    ...(visit.supervisorId !== input.supervisorId ? { supervisorId: input.supervisorId } : {}),
-  });
-  await syncVisitTasks(input.project, visit.id, visit.visitDate);
+  await updateVisit(visit.id, { status: 'in_progress' });
+  await syncVisitTasks(input.project, visit.id, input.date);
   return visit.id;
 }
 
@@ -112,11 +114,12 @@ export async function generateReportContent(visit: Visit, names: ReportNames, re
  * (follow-ups stay open — BR-005) and issues the report with frozen content.
  */
 export async function completeVisit(visit: Visit, names: ReportNames): Promise<VisitReport> {
-  const tasks = await listTasks({ projectId: visit.projectId });
-  await deleteTasks(skippedOptionalItems(visit.id, tasks));
+  const [tasks, photos] = await Promise.all([listTasks({ projectId: visit.projectId }), listPhotos({ visitId: visit.id })]);
+  await deleteTasks(skippedOptionalItems(visit.id, tasks, new Set(photos.map((p) => p.taskId))));
   await updateVisit(visit.id, { status: 'completed' });
   const closed: Visit = { ...visit, status: 'completed', completedAt: new Date().toISOString() };
   const existing = await getReportForVisit(visit.id);
+  if (existing?.content) return existing;   // issued reports are never rewritten
   if (existing) {
     const content = await generateReportContent(closed, names, existing.reportNumber, existing.signerName);
     await updateReport(existing.id, { content });

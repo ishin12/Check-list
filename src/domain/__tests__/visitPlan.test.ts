@@ -83,6 +83,31 @@ describe('buildVisitTasks', () => {
   });
 });
 
+describe('refreshing a visit does not duplicate done items', () => {
+  const project = { id: 'P1', projectTypeId: 'mnt' };
+  const recurring: ProjectRecurringItem[] = [
+    { id: 'r1', projectId: 'P1', description: 'Irrigation check', recurrence: 'weekly', nextDueOn: '2026-10-01', photoRequired: false, active: true },
+  ];
+  it('skips periodic and checklist items already completed on this visit', () => {
+    const rows = buildVisitTasks({
+      project, visitId: 'v1', date: '2026-10-05', templates: all, recurringItems: recurring, newId,
+      projectTasks: [
+        { recurringItemId: 'r1', status: 'completed', source: 'recurring', visitId: 'v1', completedInVisitId: 'v1' },
+        { templateId: 'maint', templateItemId: 'prune', status: 'completed', source: 'checklist', visitId: 'v1', completedInVisitId: 'v1' },
+        { templateId: 'maint', templateItemId: 'clean', status: 'open', source: 'checklist', visitId: 'v1' },
+      ],
+    });
+    expect(rows).toEqual([]);
+  });
+  it('still adds them on the next visit', () => {
+    const rows = buildVisitTasks({
+      project, visitId: 'v2', date: '2026-10-05', templates: all, recurringItems: recurring, newId,
+      projectTasks: [{ templateId: 'maint', templateItemId: 'prune', status: 'completed', source: 'checklist', visitId: 'v1', completedInVisitId: 'v1' }],
+    });
+    expect(rows.map((r) => r.templateItemId ?? r.recurringItemId)).toEqual(['prune', 'clean', 'r1']);
+  });
+});
+
 describe('recurringItemsFromTemplates', () => {
   it('creates tracked items for periodic template items only once', () => {
     const project = { id: 'P1', projectTypeId: 'mnt' };

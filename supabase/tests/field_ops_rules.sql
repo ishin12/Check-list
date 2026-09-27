@@ -348,6 +348,56 @@ values ('2026-09-15', '30000000-0000-0000-0000-000000000007', '20000000-0000-000
 select pg_temp.ok('Finance adds a missing allocation to a closed month with a reason',
   (select count(*) = 1 from public.labor_allocations where work_date = '2026-09-15'));
 
+-- Review fixes
+select pg_temp.act_as(null);
+insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+values ('2026-10-12', '30000000-0000-0000-0000-000000000008', '20000000-0000-0000-0000-000000000001', 1.0,
+        '00000000-0000-0000-0000-00000000000c');
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000d');   -- finance
+update public.labor_allocations set voided_at = now(), void_reason = 'test'
+where work_date = '2026-10-12';
+select pg_temp.ok('Finance cannot void labor in an open month',
+  (select count(*) = 1 from public.labor_allocations where work_date = '2026-10-12' and voided_at is null));
+
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');   -- manager
+insert into public.visits (id, project_id, visit_date, supervisor_id, status)
+values ('40000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000001', '2026-10-22',
+        '00000000-0000-0000-0000-00000000000c', 'planned');
+update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000006';
+insert into public.project_tasks (id, project_id, visit_id, description)
+values ('50000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000001',
+        '40000000-0000-0000-0000-000000000006', 'Mulching');
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');   -- supervisor of P1
+update public.project_tasks set status = 'needs_follow_up' where id = '50000000-0000-0000-0000-000000000006';
+update public.project_tasks set status = 'completed', completed_in_visit_id = '40000000-0000-0000-0000-000000000006'
+where id = '50000000-0000-0000-0000-000000000006';
+update public.project_tasks set status = 'open' where id = '50000000-0000-0000-0000-000000000006';
+select pg_temp.ok('Correcting Done on a follow-up keeps it as follow-up',
+  (select status = 'needs_follow_up' from public.project_tasks where id = '50000000-0000-0000-0000-000000000006'));
+
+insert into public.project_tasks (id, project_id, source, description, status, completed_in_visit_id)
+values ('50000000-0000-0000-0000-000000000007', '20000000-0000-0000-0000-000000000001', 'checklist', 'Edging',
+        'completed', '40000000-0000-0000-0000-000000000006');
+select pg_temp.ok('Supervisor-inserted tasks start open',
+  (select status = 'open' and completed_in_visit_id is null from public.project_tasks where id = '50000000-0000-0000-0000-000000000007'));
+
+select pg_temp.expect_fail('Supervisor cannot hand a visit to someone else', $$
+  update public.visits set supervisor_id = '00000000-0000-0000-0000-00000000000b'
+  where id = '40000000-0000-0000-0000-000000000006' $$, 'only assign a visit to themselves');
+select pg_temp.expect_fail('Supervisor cannot move the date of a started visit', $$
+  update public.visits set visit_date = '2026-10-01' where id = '40000000-0000-0000-0000-000000000006' $$, 'cannot be changed');
+update public.visits set status = 'completed' where id = '40000000-0000-0000-0000-000000000006';
+select pg_temp.expect_fail('A completed visit is read-only to supervisors', $$
+  update public.visits set notes = 'late edit' where id = '40000000-0000-0000-0000-000000000006' $$, 'completed visit cannot be changed');
+
+insert into public.visit_reports (id, visit_id, content)
+values ('70000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000006', '{"done":[]}');
+update public.visit_reports set signer_name = 'Khaled' where id = '70000000-0000-0000-0000-000000000001';
+select pg_temp.ok('Supervisor records the client representative',
+  (select signer_name = 'Khaled' from public.visit_reports where id = '70000000-0000-0000-0000-000000000001'));
+select pg_temp.expect_fail('An issued report cannot be rewritten', $$
+  update public.visit_reports set content = '{"done":["fake"]}' where id = '70000000-0000-0000-0000-000000000001' $$, 'cannot be rewritten');
+
 select pg_temp.act_as(null);
 \o
 \echo 'All field-ops rule checks passed.'

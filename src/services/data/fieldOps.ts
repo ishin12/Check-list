@@ -32,6 +32,17 @@ function check<T>(res: { data: T; error: { message: string } | null }): T {
 
 const sb = () => getSupabase();
 
+/**
+ * For updates/deletes: RLS filters rows silently (0 rows, no error). Treat
+ * "nothing changed" as a failure so the screen never shows a false save (§31).
+ */
+function changed<T>(res: { data: T[] | null; error: { message: string } | null }): void {
+  if (res.error) throw new Error(res.error.message);
+  if (!res.data || res.data.length === 0) {
+    throw new Error('permission denied: nothing was saved (row-level security or record not found)');
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Row mappers
 // ---------------------------------------------------------------------------
@@ -109,7 +120,7 @@ export async function listProjectTypes(): Promise<ProjectType[]> {
 
 export async function saveProjectType(t: { id?: string; code: string; name: ConfigText; usesStages: boolean; sortOrder: number; active: boolean }): Promise<void> {
   const row = { code: t.code, name: t.name, uses_stages: t.usesStages, sort_order: t.sortOrder, active: t.active };
-  if (t.id) check(await sb().from('project_types').update(row).eq('id', t.id));
+  if (t.id) changed(await sb().from('project_types').update(row).eq('id', t.id).select('id'));
   else check(await sb().from('project_types').insert(row));
 }
 
@@ -120,7 +131,7 @@ export async function listStages(): Promise<ProjectStage[]> {
 
 export async function saveStage(s: { id?: string; projectTypeId: string; code: string; name: ConfigText; sortOrder: number; active: boolean }): Promise<void> {
   const row = { project_type_id: s.projectTypeId, code: s.code, name: s.name, sort_order: s.sortOrder, active: s.active };
-  if (s.id) check(await sb().from('project_stages').update(row).eq('id', s.id));
+  if (s.id) changed(await sb().from('project_stages').update(row).eq('id', s.id).select('id'));
   else check(await sb().from('project_stages').insert(row));
 }
 
@@ -137,7 +148,7 @@ export async function getWorkDays(): Promise<number[]> {
 }
 
 export async function saveWorkDays(days: number[]): Promise<void> {
-  check(await sb().from('app_settings').update({ work_days: [...days].sort() }).eq('id', true));
+  changed(await sb().from('app_settings').update({ work_days: [...days].sort() }).eq('id', true).select('id'));
 }
 
 // ---------------------------------------------------------------------------
@@ -189,7 +200,7 @@ export async function updateProject(id: string, p: Partial<ProjectInput> & { sta
   if (p.supervisorId !== undefined) row.supervisor_id = p.supervisorId || null;
   if (p.notes !== undefined) row.notes = p.notes.trim() || null;
   if (p.status) row.status = p.status;
-  check(await sb().from('projects').update(row).eq('id', id));
+  changed(await sb().from('projects').update(row).eq('id', id).select('id'));
 }
 
 // ---------------------------------------------------------------------------
@@ -203,7 +214,7 @@ export async function listEmployees(): Promise<Employee[]> {
 
 export async function saveEmployee(e: { id?: string; code?: string; fullName: string; phone?: string; status: Employee['status']; notes?: string }): Promise<void> {
   const row = { code: e.code?.trim() || null, full_name: e.fullName.trim(), phone: e.phone?.trim() || null, status: e.status, notes: e.notes?.trim() || null };
-  if (e.id) check(await sb().from('employees').update(row).eq('id', e.id));
+  if (e.id) changed(await sb().from('employees').update(row).eq('id', e.id).select('id'));
   else check(await sb().from('employees').insert(row));
 }
 
@@ -241,11 +252,11 @@ export async function updateVisit(id: string, patch: { status?: Visit['status'];
   if (patch.supervisorId) row.supervisor_id = patch.supervisorId;
   if (patch.notes !== undefined) row.notes = patch.notes || null;
   if (patch.visitDate) row.visit_date = patch.visitDate;
-  check(await sb().from('visits').update(row).eq('id', id));
+  changed(await sb().from('visits').update(row).eq('id', id).select('id'));
 }
 
 export async function deletePlannedVisit(id: string): Promise<void> {
-  check(await sb().from('visits').delete().eq('id', id));
+  changed(await sb().from('visits').delete().eq('id', id).select('id'));
 }
 
 // ---------------------------------------------------------------------------
@@ -291,7 +302,7 @@ export async function answerTask(
   if (answer === 'follow_up') row.status = 'needs_follow_up';
   if (answer === 'not_done' && task.status === 'completed') row.status = 'open';
   if (note !== undefined) row.note = note.trim() || null;
-  check(await sb().from('project_tasks').update(row).eq('id', task.id));
+  changed(await sb().from('project_tasks').update(row).eq('id', task.id).select('id'));
 }
 
 /** The answer given on this visit, if any. */
@@ -302,7 +313,7 @@ export function answerOnVisit(t: Pick<ProjectTask, 'status' | 'lastVisitId' | 'c
 }
 
 export async function updateTaskNote(id: string, note: string): Promise<void> {
-  check(await sb().from('project_tasks').update({ note: note.trim() || null }).eq('id', id));
+  changed(await sb().from('project_tasks').update({ note: note.trim() || null }).eq('id', id).select('id'));
 }
 
 export async function deleteTasks(ids: string[]): Promise<void> {
@@ -339,7 +350,7 @@ export async function updateRecurring(id: string, patch: Partial<Pick<ProjectRec
   if (patch.nextDueOn) row.next_due_on = patch.nextDueOn;
   if (patch.photoRequired !== undefined) row.photo_required = patch.photoRequired;
   if (patch.active !== undefined) row.active = patch.active;
-  check(await sb().from('project_recurring_items').update(row).eq('id', id));
+  changed(await sb().from('project_recurring_items').update(row).eq('id', id).select('id'));
 }
 
 // ---------------------------------------------------------------------------
@@ -374,7 +385,7 @@ export async function uploadTaskPhoto(input: {
 }
 
 export async function voidPhoto(id: string, reason: string): Promise<void> {
-  check(await sb().from('task_photos').update({ voided_at: new Date().toISOString(), void_reason: reason }).eq('id', id));
+  changed(await sb().from('task_photos').update({ voided_at: new Date().toISOString(), void_reason: reason }).eq('id', id).select('id'));
 }
 
 // ---------------------------------------------------------------------------
@@ -419,13 +430,13 @@ export async function updateLabor(id: string, patch: { duration?: 0.5 | 1; notes
   if (patch.workDate) row.work_date = patch.workDate;
   if (patch.projectId) row.project_id = patch.projectId;
   if (patch.employeeId) row.employee_id = patch.employeeId;
-  check(await sb().from('labor_allocations').update(row).eq('id', id));
+  changed(await sb().from('labor_allocations').update(row).eq('id', id).select('id'));
 }
 
 export async function voidLabor(id: string, reason: string, changeReason?: string): Promise<void> {
-  check(await sb().from('labor_allocations').update({
+  changed(await sb().from('labor_allocations').update({
     voided_at: new Date().toISOString(), void_reason: reason, ...(changeReason ? { change_reason: changeReason } : {}),
-  }).eq('id', id));
+  }).eq('id', id).select('id'));
 }
 
 // ---------------------------------------------------------------------------
@@ -465,5 +476,5 @@ export async function updateReport(id: string, patch: { signerName?: string; con
   const row: Row = {};
   if (patch.signerName !== undefined) row.signer_name = patch.signerName || null;
   if (patch.content !== undefined) row.content = patch.content;
-  check(await sb().from('visit_reports').update(row).eq('id', id));
+  changed(await sb().from('visit_reports').update(row).eq('id', id).select('id'));
 }
