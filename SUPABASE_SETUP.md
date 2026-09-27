@@ -43,6 +43,19 @@ Open the **SQL Editor** and run each file's contents, in this order:
 3. `supabase/migrations/0003_extra_work.sql` — the worker "extra work done" log.
 4. `supabase/migrations/0004_signing.sql` — WhatsApp signing links, `app_settings`,
    `approval_method`, and the two public sign RPCs.
+5. `supabase/migrations/0005_roles.sql` — adds the `supervisor` and `finance` roles.
+   **Run it on its own and let it finish before step 6** (Postgres can't use a new
+   enum value in the same transaction that adds it).
+6. `supabase/migrations/0006_field_ops.sql` — projects, employees, visits, project
+   tasks, recurring items, task photos, labor allocation (≤ 1.0 day per worker,
+   enforced in the database), month close and visit reports.
+
+Test the migrations locally before running them on the live project:
+```
+PGHOST=... PGPORT=... PGUSER=postgres npm run test:db
+```
+This builds a throwaway database, applies every migration, and runs the
+business-rule and acceptance tests in `supabase/tests/`. Never point it at production.
 
 ## 3. Create the storage bucket
 1. **Storage → New bucket** → name `proofs`, **private** (uncheck "public bucket").
@@ -80,6 +93,11 @@ supabase secrets set WHATSAPP_PHONE_NUMBER_ID=<phone number id>
 
 Create a **Database Webhook** on `notifications` (INSERT) → `notify` so in-app
 notifications also email.
+
+WhatsApp client signing is **off** by default (`VITE_FEATURE_WHATSAPP_SIGNING=0`).
+While it's off, no signing links are sent, so `send-reminder` and `expire-signing`
+have nothing to act on and nothing is auto-approved. Set the flag to `1` in the
+build environment to turn it back on.
 
 ## 6. Schedule the cron sweeps (pg_cron)
 In SQL Editor (enable `pg_cron` + `pg_net` extensions first under Database → Extensions):

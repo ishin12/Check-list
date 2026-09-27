@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sb = getSupabase();
     const { data, error } = await sb
       .from('profiles')
-      .select('id, role, full_name, email, phone, client_id, active')
+      .select('*') // '*' so a build deployed before migration 0006 still loads
       .eq('id', userId)
       .maybeSingle();
     if (error || !data) {
@@ -46,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: data.email ?? undefined,
       phone: data.phone ?? undefined,
       clientId: data.client_id ?? undefined,
+      financeAccess: data.finance_access === true,
       active: data.active,
     };
   }, []);

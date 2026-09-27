@@ -1,3 +1,5 @@
+import type { Recurrence } from '@/domain/job/recurrence';
+
 export type Language = 'en' | 'ar';
 
 export type LocalizedText = Record<Language, string>;
@@ -7,6 +9,10 @@ export interface Task {
   label: LocalizedText;
   order: number;
   required: boolean;
+  /** Periodic maintenance item: shown when due rather than on every visit. */
+  recurrence?: Recurrence;
+  /** A photo must be attached before this item can be completed (BR-012). */
+  photoRequired?: boolean;
 }
 
 export interface Template {
@@ -16,6 +22,9 @@ export interface Template {
   createdAt: string;
   updatedAt: string;
   version: number;
+  /** Scope: which project type / stage this checklist belongs to. */
+  projectTypeId?: string;
+  stageId?: string;
 }
 
 export interface TaskResult {

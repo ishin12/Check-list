@@ -15,9 +15,20 @@
  * Exposes window.__demo for the role switcher and Settings reset button.
  */
 import { openDB, type IDBPDatabase } from 'idb';
+import {
+  FIELD_OPS_TABLES,
+  fieldOpsAfter,
+  fieldOpsBefore,
+  fieldOpsDefaults,
+  isFieldOpsTable,
+  seedFieldOps,
+  type GuardContext,
+} from './mockFieldOps';
 
 const DB_NAME = 'checklist-demo';
-const DB_VERSION = 1;
+// Re-seed when this changes (bump on each schema-affecting change).
+const SEED_VERSION = 'v6';
+const DB_VERSION = 2; // 2: field-ops tables (0006)
 
 const TABLES = [
   'profiles',
@@ -30,6 +41,7 @@ const TABLES = [
   'audit_log',
   'signing_links',
   'app_settings',
+  ...FIELD_OPS_TABLES,
 ] as const;
 type Table = typeof TABLES[number];
 
@@ -50,6 +62,17 @@ const state: Record<Table, Row[]> = {
   audit_log: [],
   signing_links: [],
   app_settings: [],
+  project_types: [],
+  project_stages: [],
+  projects: [],
+  employees: [],
+  visits: [],
+  project_tasks: [],
+  project_recurring_items: [],
+  task_photos: [],
+  month_closes: [],
+  labor_allocations: [],
+  visit_reports: [],
 };
 const blobs: Map<string, Blob> = new Map();
 
@@ -82,7 +105,7 @@ async function loadAll(): Promise<void> {
     if (v) blobs.set(String(k), v);
   }
   const seeded = await conn.get('meta', 'seeded');
-  if (seeded !== 'v5') await seedDemo();
+  if (seeded !== SEED_VERSION) await seedDemo();
   const u = await conn.get('meta', 'activeUserId');
   if (typeof u === 'string') activeUserId = u;
 }
@@ -202,6 +225,10 @@ function onTaskUpdate(prev: Row, next: Row): void {
   }
 }
 
+function guardCtx(): GuardContext {
+  return { state: state as Record<string, Row[]>, actorId: activeUserId, audit };
+}
+
 // ---------------------------------------------------------------------------
 // Query builder
 // ---------------------------------------------------------------------------
@@ -225,8 +252,8 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
     this.embeds = parseEmbeds(cols);
     return this;
   }
-  insert(data: Row | Row[]): this { this.op = 'insert'; this.payload = data; return this; }
-  update(data: Row): this { this.op = 'update'; this.payload = data; return this; }
+  insert(data: Partial<Row> | Partial<Row>[]): this { this.op = 'insert'; this.payload = data as Row | Row[]; return this; }
+  update(data: Partial<Row>): this { this.op = 'update'; this.payload = data as Row; return this; }
   upsert(data: Row | Row[]): this { this.op = 'upsert'; this.payload = data; return this; }
   delete(): this { this.op = 'delete'; return this; }
 
@@ -297,30 +324,63 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
         case 'insert': {
           const list = Array.isArray(this.payload) ? this.payload : [this.payload!];
           const inserted: Row[] = [];
-          for (const data of list) {
-            const row: Row = withDefaults(this.table, { ...data, id: data.id ?? crypto.randomUUID() });
-            state[this.table].push(row);
-            inserted.push(row);
-            void persist(this.table);
+          const fieldOps = isFieldOpsTable(this.table);
+          const before = state[this.table].length;
+          try {
+            for (const data of list) {
+              const row: Row = withDefaults(this.table, { ...data, id: data.id ?? crypto.randomUUID() });
+              // Checked one by one against earlier rows of the same batch, like
+              // row triggers in a single INSERT statement.
+              if (fieldOps) fieldOpsBefore(this.table, 'INSERT', null, row, guardCtx());
+              state[this.table].push(row);
+              inserted.push(row);
+            }
+          } catch (e) {
+            state[this.table].splice(before);   // statement is atomic
+            throw e;
+          }
+          void persist(this.table);
+          for (const row of inserted) {
             if (this.table === 'tasks') onTaskInsert(row);
+            if (fieldOps) fieldOpsAfter(this.table, 'INSERT', null, row, guardCtx());
           }
           return formatResult(inserted, this.singleMode);
         }
         case 'update': {
           const target = this.filterRows();
           const updated: Row[] = [];
-          for (const row of target) {
-            const prev = { ...row };
-            Object.assign(row, this.payload as Row, { updated_at: new Date().toISOString() });
-            updated.push(row);
-            if (this.table === 'tasks') onTaskUpdate(prev, row);
+          const fieldOps = isFieldOpsTable(this.table);
+          const prevs: Row[] = [];
+          try {
+            for (const row of target) {
+              const prev = { ...row };
+              const next: Row = { ...row, ...(this.payload as Row), updated_at: new Date().toISOString() };
+              if (fieldOps) {
+                next.updated_by = activeUserId;
+                fieldOpsBefore(this.table, 'UPDATE', prev, next, guardCtx());
+              }
+              Object.assign(row, next);
+              prevs.push(prev);
+              updated.push(row);
+            }
+          } catch (e) {
+            updated.forEach((row, i) => { for (const k of Object.keys(row)) delete row[k]; Object.assign(row, prevs[i]); });
+            throw e;
           }
+          updated.forEach((row, i) => {
+            if (this.table === 'tasks') onTaskUpdate(prevs[i], row);
+            if (fieldOps) fieldOpsAfter(this.table, 'UPDATE', prevs[i], row, guardCtx());
+          });
           void persist(this.table);
+          if (this.table === 'project_tasks') void persist('project_recurring_items');
           return formatResult(updated, this.singleMode);
         }
         case 'upsert': {
           const list = Array.isArray(this.payload) ? this.payload : [this.payload!];
           const out: Row[] = [];
+          if (isFieldOpsTable(this.table)) {
+            throw new Error(`upsert is not supported on ${this.table} in demo mode; use insert/update`);
+          }
           for (const data of list) {
             const idx = state[this.table].findIndex((r) => r.id === data.id);
             if (idx >= 0) {
@@ -336,9 +396,15 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
         }
         case 'delete': {
           const target = this.filterRows();
+          if (isFieldOpsTable(this.table)) {
+            for (const row of target) fieldOpsBefore(this.table, 'DELETE', row, null, guardCtx());
+          }
           const ids = new Set(target.map((r) => r.id));
           state[this.table] = state[this.table].filter((r) => !ids.has(r.id));
           void persist(this.table);
+          if (isFieldOpsTable(this.table)) {
+            for (const row of target) fieldOpsAfter(this.table, 'DELETE', row, null, guardCtx());
+          }
           return formatResult(target, this.singleMode);
         }
       }
@@ -405,6 +471,9 @@ function withDefaults(table: Table, row: Row): Row {
   if (table === 'task_proofs') {
     base.uploaded_at ??= now;
     base.uploaded_by ??= activeUserId;
+  }
+  if (isFieldOpsTable(table)) {
+    return fieldOpsDefaults(table, base, activeUserId, state as Record<string, Row[]>);
   }
   if (table === 'notifications') {
     base.created_at ??= now;
@@ -720,7 +789,7 @@ async function seedDemo(): Promise<void> {
   };
 
   state.profiles = [
-    { id: 'u-mgr', role: 'manager', full_name: 'Faisal (Manager)', email: 'faisal@demo.com', phone: null, client_id: null, active: true },
+    { id: 'u-mgr', role: 'manager', full_name: 'Faisal (Manager)', email: 'faisal@demo.com', phone: null, client_id: null, active: true, finance_access: true },
     { id: 'u-wa', role: 'worker',  full_name: 'Ahmed',            email: 'ahmed@demo.com',   phone: null, client_id: null, active: true },
     { id: 'u-wb', role: 'worker',  full_name: 'Sara',             email: 'sara@demo.com',    phone: null, client_id: null, active: true },
     { id: 'u-cli', role: 'client', full_name: 'Khaled Al-Saud',   email: 'khaled@demo.com',  phone: null, client_id: 'c-1', active: true },
@@ -816,12 +885,13 @@ async function seedDemo(): Promise<void> {
     created_at: day(-1, 11),
   }];
 
+  seedFieldOps(state as Record<string, Row[]>, day);
+
   for (const t of TABLES) await persist(t);
   const conn = await db();
   // Persist blob seeds.
   for (const [path, blob] of blobs.entries()) await conn.put('blobs', blob, path);
-  // Re-seed when the value here changes (bump on each schema-affecting change).
-  await conn.put('meta', 'v5', 'seeded');
+  await conn.put('meta', SEED_VERSION, 'seeded');
   await conn.put('meta', activeUserId, 'activeUserId');
 }
 

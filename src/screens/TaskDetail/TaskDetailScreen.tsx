@@ -7,6 +7,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/app/providers/AuthContext';
 import { createNextOccurrence, getTask, updateTaskStatus } from '@/services/data/tasks';
 import { invokeFunction } from '@/services/data/functions';
+import { features } from '@/config/features';
 import { getSupabase } from '@/services/supabase/client';
 import { availableActions, canTransition, proofRequirements, timeOnTaskMinutes } from '@/domain/job/taskFlow';
 import { recurrenceLabel } from '@/domain/job/recurrence';
@@ -117,7 +118,7 @@ export function TaskDetailScreen() {
       if (action === 'approve') patch.approval_method = 'manager';
     }
     await updateTaskStatus(task.id, patch);
-    if (action === 'submit') {
+    if (action === 'submit' && features.whatsappSigning) {
       // Send the WhatsApp signing link to the client (awaited — surface failures).
       await sendSigningLink();
     }

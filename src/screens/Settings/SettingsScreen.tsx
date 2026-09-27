@@ -7,6 +7,7 @@ import { useLanguage } from '@/app/providers/LanguageContext';
 import { useAuth } from '@/app/providers/AuthContext';
 import { isDemoMode } from '@/services/supabase/client';
 import { getAppSettings, saveAppSettings } from '@/services/data/appSettings';
+import { features } from '@/config/features';
 
 export function SettingsScreen() {
   const { t } = useTranslation();
@@ -111,8 +112,8 @@ export function SettingsScreen() {
           </div>
         ) : null}
 
-        {/* Signing window — manager only. */}
-        {user?.role === 'manager' ? (
+        {/* Signing window — manager only, and only while WhatsApp signing is on. */}
+        {user?.role === 'manager' && features.whatsappSigning ? (
           <div className="card stack">
             <div>
               <div className="card__title">{t('settings.signingWindow', 'Client signing window')}</div>

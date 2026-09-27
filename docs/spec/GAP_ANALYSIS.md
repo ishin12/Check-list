@@ -88,7 +88,17 @@ Section 22 says: do not add workflows not in the spec. These exist today and nee
 
 Auth (email/password + invite), Supabase/RLS pattern, demo backend, i18n + RTL, app shell/navigation, bilingual template editor, PDF generator, signature pad, camera capture + offline upload queue, recurrence date math, audit screen, users admin, PWA + GitHub Pages deploy. Roughly half the codebase survives; the domain model and main flows get rebuilt.
 
-## 6. Recommended plan
+## 6. Decisions log
+
+| Date | Decision | Effect |
+|---|---|---|
+| 2026-09-27 | Hide WhatsApp signing for now | `VITE_FEATURE_WHATSAPP_SIGNING` flag, off by default. Submit no longer sends a link; signing-window settings hidden; with no links, the reminder/auto-approve crons do nothing. Code and data kept. |
+| 2026-09-27 | Finance is a separate role and can also be granted to a manager | `finance` role + `profiles.finance_access`. Month close and post-close labor edits require finance; a manager without the grant cannot do them. |
+| 2026-09-27 | Supervisors are not counted as labor | Supervisors are app users; crew are `employees` (no login). Allocations reference employees only. |
+
+Still open (§36): who holds Month Close in production (default now: anyone with finance), in-app e-signature vs. PDF signature space, override for closing a project with open tasks (default now: blocked), final checklists per type/stage, maintenance frequencies, worker-cost policy. Also open: whether the client portal stays (untouched so far).
+
+## 7. Recommended plan
 
 Evolve this repo rather than rewrite: the infrastructure is solid and matches §33. Work in phases; each ends with something testable in demo mode.
 
@@ -96,7 +106,13 @@ Evolve this repo rather than rewrite: the infrastructure is solid and matches §
 - Owner answers the §36 questions, plus: keep/hide client portal and WhatsApp signing; is Finance a separate role in V1; do supervisors also appear as Employees for labor.
 - Confirm initial project types, stages and maintenance item lists (seed data only — all editable later).
 
-### Phase 1 — Data model (migration `0005_field_ops.sql` + mirror in `mockClient.ts`)
+### Phase 1 — Data model ✅ done (`0005_roles.sql`, `0006_field_ops.sql`, demo mirror, tests)
+
+Delivered: all tables below; BR-001/002/003 enforced by a DB trigger with a per-worker-per-day advisory lock (TC-12 verified with two concurrent sessions, and verified to fail without the lock); month close + finance override with reason and old/new audit; visit/task/project state machines; recurring roll-forward; no-delete guards; RLS so a replacement supervisor sees the whole project history. Business rules also live as pure TypeScript in `src/domain/labor`, `src/domain/fieldops`, `src/domain/auth`, shared by the UI and the demo backend. Tests: `npm test` (unit + demo backend) and `npm run test:db` (real Postgres).
+
+Deferred to Phase 2 on purpose: migrating existing `tasks` rows into visits (only once the new screens replace the old ones), renaming the `worker` role to `supervisor`, a `start_visit` RPC that builds the visit's task list server-side, and Urdu names in config rows (need a native speaker check).
+
+Original plan for reference:
 - `project_types`, `project_stages` (config tables).
 - `projects` (code, name, client_id, type_id, stage_id, status enum, supervisor_id, notes, created/updated_by).
 - `employees` (name, status, optional profile link) — separate from login users.
@@ -127,7 +143,7 @@ Worker report, project labor report, unallocated report, open/overdue tasks, vis
 ### Phase 5 — Hardening
 Urdu locale (`LocalizedText` → open map; Urdu is RTL), automated tests for BR-001…015 and TC-01…12 (DB-level tests for the allocation trigger), staging Supabase project, backup/restore check, clear save-failure UX, rework visit report PDF to the §12 contents.
 
-## 7. Risks / things to push back on
+## 8. Risks / things to push back on
 
 - **The demo backend doubles the work.** Every schema change must be reimplemented in `mockClient.ts`, including the 1.0/day rule and month-close lock. Worth keeping (it's how the owner tests), but budget for it.
 - **BR-001 cannot live only in the UI.** It must be a DB trigger/constraint with locking, or TC-12 fails.

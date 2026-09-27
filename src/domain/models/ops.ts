@@ -1,7 +1,12 @@
 import type { Signature, TaskResult } from './types';
 import type { Recurrence } from '@/domain/job/recurrence';
 
-export type Role = 'manager' | 'worker' | 'client';
+/**
+ * 'worker' is the legacy field role and is treated as a supervisor until the
+ * old task screens are replaced. 'finance' can also be granted to a manager
+ * through AppUser.financeAccess.
+ */
+export type Role = 'manager' | 'supervisor' | 'finance' | 'worker' | 'client';
 
 export interface AppUser {
   id: string;
@@ -10,6 +15,8 @@ export interface AppUser {
   email?: string;
   phone?: string;
   clientId?: string;
+  /** Finance permission granted on top of the role (manager + finance). */
+  financeAccess?: boolean;
   active: boolean;
 }
 
@@ -103,4 +110,157 @@ export interface AppNotification {
   readAt?: string;
   emailSentAt?: string;
   createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Field operations (Master Spec v2.1) — mirrors supabase/migrations/0006.
+// ---------------------------------------------------------------------------
+
+/** Display text keyed by language code; Urdu ('ur') is optional for now. */
+export type ConfigText = Partial<Record<'en' | 'ar' | 'ur', string>>;
+
+export interface ProjectType {
+  id: string;
+  code: string;
+  name: ConfigText;
+  usesStages: boolean;
+  sortOrder: number;
+  active: boolean;
+}
+
+export interface ProjectStage {
+  id: string;
+  projectTypeId: string;
+  code: string;
+  name: ConfigText;
+  sortOrder: number;
+  active: boolean;
+}
+
+export type ProjectStatus = 'active' | 'on_hold' | 'completed' | 'closed';
+
+export interface Project {
+  id: string;
+  code?: string;
+  name: string;
+  clientId: string;
+  projectTypeId: string;
+  stageId?: string;
+  status: ProjectStatus;
+  supervisorId?: string;
+  notes?: string;
+  closedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type EmployeeStatus = 'active' | 'inactive';
+
+/** Crew member. Not an app user; supervisors are not employees. */
+export interface Employee {
+  id: string;
+  code?: string;
+  fullName: string;
+  phone?: string;
+  status: EmployeeStatus;
+  notes?: string;
+}
+
+export type VisitStatus = 'planned' | 'in_progress' | 'completed';
+
+export interface Visit {
+  id: string;
+  projectId: string;
+  /** YYYY-MM-DD */
+  visitDate: string;
+  supervisorId: string;
+  status: VisitStatus;
+  startedAt?: string;
+  completedAt?: string;
+  notes?: string;
+}
+
+export type TaskItemStatus = 'open' | 'completed' | 'needs_follow_up';
+export type TaskItemSource = 'manual' | 'checklist' | 'stage' | 'recurring';
+
+/** One task record per project, re-shown in each visit until completed. */
+export interface ProjectTask {
+  id: string;
+  projectId: string;
+  visitId?: string;
+  source: TaskItemSource;
+  templateId?: string;
+  templateItemId?: string;
+  recurringItemId?: string;
+  description: string;
+  status: TaskItemStatus;
+  photoRequired: boolean;
+  note?: string;
+  completedAt?: string;
+  completedInVisitId?: string;
+  lastVisitId?: string;
+  createdAt: string;
+}
+
+export interface ProjectRecurringItem {
+  id: string;
+  projectId: string;
+  templateId?: string;
+  templateItemId?: string;
+  description: string;
+  recurrence: Exclude<Recurrence, 'none'>;
+  /** YYYY-MM-DD */
+  lastDoneOn?: string;
+  /** YYYY-MM-DD */
+  nextDueOn: string;
+  photoRequired: boolean;
+  active: boolean;
+}
+
+export type PhotoKind = 'before' | 'after';
+
+export interface TaskPhoto {
+  id: string;
+  taskId: string;
+  visitId?: string;
+  projectId: string;
+  kind?: PhotoKind;
+  storagePath: string;
+  mime: string;
+  capturedAt: string;
+  voidedAt?: string;
+}
+
+export type LaborDuration = 0.5 | 1;
+
+export interface LaborAllocation {
+  id: string;
+  /** YYYY-MM-DD */
+  workDate: string;
+  employeeId: string;
+  projectId: string;
+  visitId?: string;
+  duration: LaborDuration;
+  supervisorId: string;
+  notes?: string;
+  changeReason?: string;
+  voidedAt?: string;
+  voidReason?: string;
+}
+
+export interface MonthClose {
+  /** First day of the month, YYYY-MM-01 */
+  month: string;
+  closedAt: string;
+  closedBy: string;
+}
+
+export interface VisitReport {
+  id: string;
+  visitId: string;
+  reportNumber: number;
+  signatureStatus: 'unsigned' | 'signed';
+  signerName?: string;
+  signedAt?: string;
+  generatedAt: string;
 }
