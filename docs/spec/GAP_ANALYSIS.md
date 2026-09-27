@@ -2,6 +2,25 @@
 
 Compares the code on `main` (commit `cc67ce9`) against `Master_Specification_v2.1_EN.md`.
 
+> **Status (2026-09-27): all five phases are built** on branch `claude/repo-features-file-comparison-f775hw`. Sections 1–5 below describe the repo *before* this work, kept for reference. See `docs/FIELD_OPS_GUIDE.md` for how the system now works and §6 for decisions.
+
+## Spec coverage after the build
+
+| Spec area | Where |
+|---|---|
+| Projects, types, stages, status, history (§3, §9, §13) | `/projects`, `/projects/:id`, Setup |
+| Visit cycle, crew, one-tap items, photos, follow-up (§4–§8, §11) | `/field`, `/visits/start`, `/visits/:id` |
+| Auto visit report + PDF (§12) | `/visits/:id/report` |
+| Labor rules BR-001…004, month close BR-009/010 (§6, §16) | DB triggers (0006/0007) + `/labor`, `/month-close` |
+| Reports + Excel (§14) | `/reports` |
+| Roles & permissions (§10, §29) | RLS in 0006/0007, `src/domain/auth/permissions.ts` |
+| Config over code (§25) | Setup, Checklists, Workers |
+| Audit, no hard delete (§30, BR-014) | `audit_row()` trigger, delete guards, `/audit` |
+| Arabic + English + Urdu, RTL (§17, §33) | `src/i18n/locales/{en,ar,ur}.json` |
+| Tests BR/TC (§32, §33) | `npm test` (unit + demo backend), `npm run test:db` (Postgres, incl. concurrent TC-12) |
+
+Not done: a separate staging Supabase project (needs a second project created in Supabase); backup/restore drills (Supabase dashboard); migrating the older `tasks` data into projects/visits (the old task list stays reachable).
+
 ## 1. What the repo is today
 
 A React + Vite PWA on Supabase (Postgres + RLS + Edge Functions), with a full in-browser demo backend (`mockClient.ts`) that mirrors the schema. Arabic/English with RTL.
@@ -128,19 +147,19 @@ Original plan for reference:
 - Replace `on delete cascade` with restrict + status/archive columns (BR-014).
 - Audit trigger generalized to projects, visits, tasks, allocations with old/new payload.
 
-### Phase 2 — Supervisor flow (the daily path, < 1 minute)
+### Phase 2 — Supervisor flow ✅ done
 1. **Home:** today's visits · open & follow-up items · big **+ Start visit** · unallocated employees today.
 2. **Start visit:** pick project (search) → visit created → **crew picker**: multi-select employees, full/half toggle per person, "copy yesterday's crew", live blocking of anyone already at 1.0.
 3. **Visit screen:** list = manager tasks for the project + carried follow-ups + due periodic items + stage checklist. Each item: one-tap **Done / Not done / Needs follow-up**, optional before/after photo, optional note.
 4. **Complete visit:** validate required items/photos and crew → COMPLETED → report generated automatically.
 
-### Phase 3 — Manager/admin
+### Phase 3 — Manager/admin ✅ done
 Projects list + create/edit + change supervisor; **project history page** (visits, tasks by status, photos, reports, labor days); template editor extended with type/stage/recurrence/photo-required; config screens for project types, stages, employees; overdue/open dashboard.
 
-### Phase 4 — Reports & finance
+### Phase 4 — Reports & finance ✅ done
 Worker report, project labor report, unallocated report, open/overdue tasks, visits done, monthly allocation matrix — all filterable by period/project/worker and exportable to **Excel (.xlsx)**. Month-close screen with privileged edit + reason.
 
-### Phase 5 — Hardening
+### Phase 5 — Hardening ✅ done (staging project and backups are Supabase-side tasks)
 Urdu locale (`LocalizedText` → open map; Urdu is RTL), automated tests for BR-001…015 and TC-01…12 (DB-level tests for the allocation trigger), staging Supabase project, backup/restore check, clear save-failure UX, rework visit report PDF to the §12 contents.
 
 ## 8. Risks / things to push back on

@@ -1502,3 +1502,8 @@ table.data a { color: inherit; font-weight: 600; }
 @media (min-width: 1024px) {
   .app-shell--with-nav .action-bar { bottom: 0; }
 }
+
+/* Links styled as buttons / tiles / cards never show link underlines. */
+a.btn, a.kpi, a.card, a.chip { text-decoration: none; }
+a.btn--primary, a.btn--success { color: #fff; }
+a.btn--ghost { color: var(--color-text); }

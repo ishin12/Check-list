@@ -153,3 +153,48 @@ create trigger trg_visits_roll_recurring after update on public.visits
 -- close" = finance). The guard trigger still requires a reason and audits it.
 create policy "labor finance insert closed" on public.labor_allocations for insert
   with check (public.has_finance() and public.is_month_closed(work_date));
+
+-- ---------------------------------------------------------------------------
+-- Urdu names for the seeded configuration (§17: Arabic + English + Urdu).
+-- Only fills Urdu where it is missing; admin edits are never overwritten.
+-- ---------------------------------------------------------------------------
+update public.project_types t set name = t.name || jsonb_build_object('ur', v.ur)
+from (values
+  ('establishment', 'قیام / تعمیر'),
+  ('maintenance',   'دیکھ بھال'),
+  ('modification',  'ترمیم / اضافہ'),
+  ('other',         'دیگر')
+) as v(code, ur)
+where t.code = v.code and not (t.name ? 'ur');
+
+update public.project_stages s set name = s.name || jsonb_build_object('ur', v.ur)
+from (values
+  ('site_handover',  'سائٹ کی وصولی اور تیاری'),
+  ('preparatory',    'تیاری کے کام'),
+  ('irrigation',     'آبپاشی کا نظام'),
+  ('planting_ready', 'شجرکاری کی تیاری'),
+  ('planting',       'شجرکاری / تعمیر'),
+  ('handover',       'معائنہ اور حوالگی')
+) as v(code, ur)
+where s.code = v.code and not (s.name ? 'ur');
+
+-- Standard maintenance list: add Urdu labels by matching the English label.
+update public.templates tpl set tasks = (
+  select jsonb_agg(
+    case when item->'label' ? 'ur' or m.ur is null then item
+         else jsonb_set(item, '{label,ur}', to_jsonb(m.ur)) end
+    order by ord)
+  from jsonb_array_elements(tpl.tasks) with ordinality as e(item, ord)
+  left join (values
+    ('Irrigation network check',           'آبپاشی کے نظام کا معائنہ'),
+    ('Plant and general condition check',  'پودوں اور عمومی حالت کا معائنہ'),
+    ('Pruning',                            'کٹائی'),
+    ('Fertilizing',                        'کھاد ڈالنا'),
+    ('Spraying / pest control',            'اسپرے / کیڑوں کا تدارک'),
+    ('Weeding',                            'جڑی بوٹیوں کی صفائی'),
+    ('Cleaning',                           'صفائی'),
+    ('Pumps / site equipment check',       'پمپ / سائٹ کے آلات کا معائنہ'),
+    ('Special replacements or treatments', 'خصوصی تبدیلیاں یا علاج')
+  ) as m(en, ur) on m.en = item->'label'->>'en'
+)
+where tpl.title->>'en' = 'Maintenance — standard';

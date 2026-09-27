@@ -49,6 +49,15 @@ Open the **SQL Editor** and run each file's contents, in this order:
 6. `supabase/migrations/0006_field_ops.sql` — projects, employees, visits, project
    tasks, recurring items, task photos, labor allocation (≤ 1.0 day per worker,
    enforced in the database), month close and visit reports.
+7. `supabase/migrations/0007_field_ops_app.sql` — policies and helpers the field
+   screens need (supervisor checklist tasks, day-load lookup, staff directory,
+   working days, same-visit correction of a "Done" tap, finance post-close
+   inserts, Urdu names for the seeded configuration).
+
+> **Upgrading the live project:** run 0005 → 0006 → 0007 in the SQL editor
+> *before* merging this branch to `main` (merging deploys the new screens).
+> The app keeps loading if the migrations are late, but the field screens
+> show an error until they are applied.
 
 Test the migrations locally before running them on the live project:
 ```
@@ -74,7 +83,7 @@ values ('<your-auth.uid>', 'manager', 'Your Name', 'you@example.com', true);
 ## 5. Deploy the Edge Functions
 ```
 supabase functions deploy notify --no-verify-jwt
-supabase functions deploy invite-user
+supabase functions deploy invite-user   # redeploy: now accepts supervisor / finance roles
 supabase functions deploy set-password
 supabase functions deploy send-sign-link
 supabase functions deploy send-reminder --no-verify-jwt

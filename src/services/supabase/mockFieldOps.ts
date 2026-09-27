@@ -251,45 +251,45 @@ export function seedFieldOps(state: State, day: (offset: number, hour?: number, 
 
   // Checklist templates scoped to a project type or stage (mirrors 0006's seed,
   // with a few frequencies set so the demo shows periodic items).
-  const item = (id: string, order: number, en: string, ar: string, extra: Partial<Row> = {}) =>
-    ({ id, order, required: false, label: { en, ar }, ...extra });
+  const item = (id: string, order: number, en: string, ar: string, extra: Partial<Row> = {}, ur?: string) =>
+    ({ id, order, required: false, label: ur ? { en, ar, ur } : { en, ar }, ...extra });
   state.templates.push(
     { id: 't-mnt', title: { en: 'Maintenance — standard', ar: 'صيانة — القائمة الأساسية' }, project_type_id: 'pt-mnt', stage_id: null, active: true, version: 1,
       created_by: 'u-mgr', created_at: day(-90), updated_at: day(-90), tasks: [
-        item('m-irr',   0, 'Irrigation network check', 'فحص شبكة الري', { recurrence: 'weekly' }),
-        item('m-plant', 1, 'Plant and general condition check', 'فحص النباتات والحالة العامة', { required: true }),
-        item('m-prune', 2, 'Pruning', 'التقليم'),
-        item('m-fert',  3, 'Fertilizing', 'التسميد', { recurrence: 'monthly' }),
-        item('m-spray', 4, 'Spraying / pest control', 'الرش / المكافحة', { recurrence: 'monthly' }),
-        item('m-weed',  5, 'Weeding', 'إزالة الحشائش'),
-        item('m-clean', 6, 'Cleaning', 'النظافة', { required: true, photoRequired: true }),
-        item('m-pump',  7, 'Pumps / site equipment check', 'فحص المضخات أو المعدات المرتبطة بالموقع'),
+        item('m-irr',   0, 'Irrigation network check', 'فحص شبكة الري', { recurrence: 'weekly' }, 'آبپاشی کے نظام کا معائنہ'),
+        item('m-plant', 1, 'Plant and general condition check', 'فحص النباتات والحالة العامة', { required: true }, 'پودوں اور عمومی حالت کا معائنہ'),
+        item('m-prune', 2, 'Pruning', 'التقليم', {}, 'کٹائی'),
+        item('m-fert',  3, 'Fertilizing', 'التسميد', { recurrence: 'monthly' }, 'کھاد ڈالنا'),
+        item('m-spray', 4, 'Spraying / pest control', 'الرش / المكافحة', { recurrence: 'monthly' }, 'اسپرے / کیڑوں کا تدارک'),
+        item('m-weed',  5, 'Weeding', 'إزالة الحشائش', {}, 'جڑی بوٹیوں کی صفائی'),
+        item('m-clean', 6, 'Cleaning', 'النظافة', { required: true, photoRequired: true }, 'صفائی'),
+        item('m-pump',  7, 'Pumps / site equipment check', 'فحص المضخات أو المعدات المرتبطة بالموقع', {}, 'پمپ / سائٹ کے آلات کا معائنہ'),
       ] },
     { id: 't-irr', title: { en: 'Irrigation network — stage checklist', ar: 'شبكة الري — قائمة المرحلة' }, project_type_id: 'pt-est', stage_id: 'st-irrigation', active: true, version: 1,
       created_by: 'u-mgr', created_at: day(-90), updated_at: day(-90), tasks: [
-        item('i-test',  0, 'Pressure-test irrigation lines', 'اختبار ضغط خطوط الري', { required: true, photoRequired: true }),
-        item('i-drip',  1, 'Check drip emitters at each basin', 'فحص النقاطات عند كل حوض', { required: true }),
-        item('i-notes', 2, 'Record defects and fixes needed', 'تسجيل الملاحظات والمعالجات المطلوبة', { required: true }),
+        item('i-test',  0, 'Pressure-test irrigation lines', 'اختبار ضغط خطوط الري', { required: true, photoRequired: true }, 'آبپاشی کی لائنوں کا پریشر ٹیسٹ'),
+        item('i-drip',  1, 'Check drip emitters at each basin', 'فحص النقاطات عند كل حوض', { required: true }, 'ہر حوض پر ڈرپ ایمیٹرز کا معائنہ'),
+        item('i-notes', 2, 'Record defects and fixes needed', 'تسجيل الملاحظات والمعالجات المطلوبة', { required: true }, 'خرابیاں اور ضروری مرمت درج کریں'),
       ] },
   );
 
   state.project_types = [
-    { id: 'pt-est', code: 'establishment', name: { en: 'Establishment / Execution', ar: 'تأسيس / تنفيذ' }, uses_stages: true,  sort_order: 1, active: true },
-    { id: 'pt-mnt', code: 'maintenance',   name: { en: 'Maintenance', ar: 'صيانة' },                         uses_stages: false, sort_order: 2, active: true },
-    { id: 'pt-mod', code: 'modification',  name: { en: 'Modification / Addition', ar: 'تعديل / إضافة' },     uses_stages: false, sort_order: 3, active: true },
-    { id: 'pt-oth', code: 'other',         name: { en: 'Other', ar: 'أخرى' },                                uses_stages: false, sort_order: 4, active: true },
+    { id: 'pt-est', code: 'establishment', name: { en: 'Establishment / Execution', ar: 'تأسيس / تنفيذ', ur: 'قیام / تعمیر' }, uses_stages: true,  sort_order: 1, active: true },
+    { id: 'pt-mnt', code: 'maintenance',   name: { en: 'Maintenance', ar: 'صيانة', ur: 'دیکھ بھال' },                         uses_stages: false, sort_order: 2, active: true },
+    { id: 'pt-mod', code: 'modification',  name: { en: 'Modification / Addition', ar: 'تعديل / إضافة', ur: 'ترمیم / اضافہ' },     uses_stages: false, sort_order: 3, active: true },
+    { id: 'pt-oth', code: 'other',         name: { en: 'Other', ar: 'أخرى', ur: 'دیگر' },                                uses_stages: false, sort_order: 4, active: true },
   ];
 
-  const stages: [string, string, string][] = [
-    ['site_handover', 'Site handover & preparation', 'استلام وتجهيز الموقع'],
-    ['preparatory', 'Preparatory works', 'الأعمال التحضيرية'],
-    ['irrigation', 'Irrigation network', 'شبكة الري'],
-    ['planting_ready', 'Planting readiness', 'جاهزية الزراعة'],
-    ['planting', 'Planting / Execution', 'الزراعة / التنفيذ'],
-    ['handover', 'Inspection & handover', 'الفحص والتسليم'],
+  const stages: [string, string, string, string][] = [
+    ['site_handover', 'Site handover & preparation', 'استلام وتجهيز الموقع', 'سائٹ کی وصولی اور تیاری'],
+    ['preparatory', 'Preparatory works', 'الأعمال التحضيرية', 'تیاری کے کام'],
+    ['irrigation', 'Irrigation network', 'شبكة الري', 'آبپاشی کا نظام'],
+    ['planting_ready', 'Planting readiness', 'جاهزية الزراعة', 'شجرکاری کی تیاری'],
+    ['planting', 'Planting / Execution', 'الزراعة / التنفيذ', 'شجرکاری / تعمیر'],
+    ['handover', 'Inspection & handover', 'الفحص والتسليم', 'معائنہ اور حوالگی'],
   ];
-  state.project_stages = stages.map(([code, en, ar], i) => ({
-    id: `st-${code}`, project_type_id: 'pt-est', code, name: { en, ar }, sort_order: i + 1, active: true,
+  state.project_stages = stages.map(([code, en, ar, ur], i) => ({
+    id: `st-${code}`, project_type_id: 'pt-est', code, name: { en, ar, ur }, sort_order: i + 1, active: true,
   }));
 
   state.projects = [
