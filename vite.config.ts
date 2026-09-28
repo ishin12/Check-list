@@ -9,6 +9,9 @@ export default defineConfig(({ command }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // /demo/ is a separate standalone demo build deployed alongside this
+      // site; keep this app's service worker from answering its navigations.
+      workbox: { navigateFallbackDenylist: [/\/demo\//] },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Ghsoon Najd',

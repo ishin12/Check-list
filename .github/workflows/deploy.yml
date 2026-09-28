@@ -32,6 +32,16 @@ jobs:
           VITE_DEMO_MODE: '0'
           VITE_SUPABASE_URL: https://qyznhoimffltdigickjl.supabase.co
           VITE_SUPABASE_ANON_KEY: sb_publishable_8GlzwxVm3OTezLF18jmWyQ_UtI924W4
+      # Client demo (in-browser sample data, no backend) served at /Check-list/demo/.
+      # Built from the field-ops development branch until it is merged here.
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/repo-features-file-comparison-f775hw
+          path: demo-src
+      - run: npm ci
+        working-directory: demo-src
+      - run: npm run build:demo && cp -r dist-demo ../dist/demo
+        working-directory: demo-src
       - uses: actions/configure-pages@v5
         with:
           enablement: true
