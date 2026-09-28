@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, createHashRouter, Navigate } from 'react-router-dom';
 import { HomeScreen } from '@/screens/Home/HomeScreen';
 import { TemplateListScreen } from '@/screens/TemplateList/TemplateListScreen';
 import { JobRunnerScreen } from '@/screens/JobRunner/JobRunnerScreen';
@@ -52,7 +52,11 @@ const LEGACY: Role[] = ['worker', 'supervisor', 'manager'];
 // needs the basename without the trailing slash.
 const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
 
-export const router = createBrowserRouter([
+// Standalone demo builds (VITE_HASH_ROUTER=1) are hosted as plain static files
+// where deep links can't be rewritten, so they route via the URL hash.
+const hashRouter = import.meta.env.VITE_HASH_ROUTER === '1';
+
+export const router = (hashRouter ? createHashRouter : createBrowserRouter)([
   { path: '/', element: <RootRedirect /> },
   { path: '/login', element: <LoginScreen /> },
   { path: '/auth/callback', element: <AuthCallbackScreen /> },
@@ -104,4 +108,4 @@ export const router = createBrowserRouter([
   { path: '/settings',       element: <RoleGate roles={[...LEGACY, 'finance', 'client']}><SettingsScreen /></RoleGate> },
 
   { path: '*', element: <Navigate to="/" replace /> },
-], { basename });
+], { basename: hashRouter ? '/' : basename });

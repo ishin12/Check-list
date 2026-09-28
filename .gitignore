@@ -10,3 +10,4 @@ coverage
 dev-dist
 *.log
 *.tsbuildinfo
+dist-demo
