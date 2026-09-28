@@ -1505,5 +1505,9 @@ table.data a { color: inherit; font-weight: 600; }
 
 /* Links styled as buttons / tiles / cards never show link underlines. */
 a.btn, a.kpi, a.card, a.chip { text-decoration: none; }
+a.card, a.kpi { color: inherit; }
 a.btn--primary, a.btn--success { color: #fff; }
 a.btn--ghost { color: var(--color-text); }
+
+/* Plain text links inside cards use the brand green, not browser blue. */
+.card ol a, .card ul a, .card__meta a { color: var(--color-brand-strong); font-weight: 600; }
