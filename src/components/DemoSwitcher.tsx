@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isDemoMode } from '@/services/supabase/client';
+import { features } from '@/config/features';
 
 interface Profile { id: string; full_name: string; role: string }
 
@@ -12,7 +13,8 @@ export function DemoSwitcher() {
   useEffect(() => {
     if (!isDemoMode()) return;
     const ps = window.__demo?.listProfiles() ?? [];
-    setProfiles(ps as Profile[]);
+    const all = ps as Profile[];
+    setProfiles(features.legacyTasks ? all : all.filter((x) => x.role !== 'client' && x.role !== 'worker'));
   }, []);
 
   if (!isDemoMode()) return null;

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { features } from '@/config/features';
 import { Link } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
@@ -154,7 +155,7 @@ export function FieldHomeScreen() {
             )}
         </section>
 
-        {user?.role === 'worker' || isManager ? (
+        {features.legacyTasks && (user?.role === 'worker' || isManager) ? (
           <Link to="/today" className="card__meta" style={{ textAlign: 'center' }}>{t('fo.home.legacy', 'Open the older task list')}</Link>
         ) : null}
       </main>

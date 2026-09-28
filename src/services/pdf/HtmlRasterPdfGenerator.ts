@@ -4,6 +4,7 @@ import type { PdfGenerator } from './PdfGenerator';
 
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
+const JPEG_QUALITY = 0.85;
 
 /**
  * Generates a PDF by rasterizing rendered HTML. The browser handles Arabic
@@ -34,39 +35,37 @@ export class HtmlRasterPdfGenerator implements PdfGenerator {
     const pxPerMm = imgWidthPx / A4_WIDTH_MM;
     const pageHeightPx = Math.floor(A4_HEIGHT_MM * pxPerMm);
 
-    if (imgHeightPx <= pageHeightPx) {
-      const renderedHeightMm = imgHeightPx / pxPerMm;
-      pdf.addImage(dataUrl, 'PNG', 0, 0, A4_WIDTH_MM, renderedHeightMm);
-    } else {
-      let offsetPx = 0;
-      let page = 0;
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Canvas 2D context unavailable for PDF paging.');
+    // Each page is re-encoded as JPEG: lossless PNG pages made a one-visit
+    // report with photos ~14 MB, too heavy to send over WhatsApp.
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D context unavailable for PDF paging.');
 
-      while (offsetPx < imgHeightPx) {
-        const sliceHeightPx = Math.min(pageHeightPx, imgHeightPx - offsetPx);
-        canvas.width = imgWidthPx;
-        canvas.height = sliceHeightPx;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(
-          img,
-          0,
-          offsetPx,
-          imgWidthPx,
-          sliceHeightPx,
-          0,
-          0,
-          imgWidthPx,
-          sliceHeightPx,
-        );
-        const sliceData = canvas.toDataURL('image/png');
-        const sliceHeightMm = sliceHeightPx / pxPerMm;
-        if (page > 0) pdf.addPage();
-        pdf.addImage(sliceData, 'PNG', 0, 0, A4_WIDTH_MM, sliceHeightMm);
-        offsetPx += sliceHeightPx;
-        page += 1;
-      }
+    let offsetPx = 0;
+    let page = 0;
+    while (offsetPx < imgHeightPx) {
+      const sliceHeightPx = Math.min(pageHeightPx, imgHeightPx - offsetPx);
+      canvas.width = imgWidthPx;
+      canvas.height = sliceHeightPx;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(
+        img,
+        0,
+        offsetPx,
+        imgWidthPx,
+        sliceHeightPx,
+        0,
+        0,
+        imgWidthPx,
+        sliceHeightPx,
+      );
+      const sliceData = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+      const sliceHeightMm = sliceHeightPx / pxPerMm;
+      if (page > 0) pdf.addPage();
+      pdf.addImage(sliceData, 'JPEG', 0, 0, A4_WIDTH_MM, sliceHeightMm, undefined, 'FAST');
+      offsetPx += sliceHeightPx;
+      page += 1;
     }
 
     const blob = pdf.output('blob');

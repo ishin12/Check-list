@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:db": "bash scripts/test-db.sh"
+    "test:db": "bash scripts/test-db.sh",
+    "build:demo": "VITE_DEMO_MODE=1 VITE_HASH_ROUTER=1 VITE_BASE=./ VITE_FEATURE_LEGACY_TASKS=0 sh -c 'tsc -b && vite build --outDir dist-demo --emptyOutDir'"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

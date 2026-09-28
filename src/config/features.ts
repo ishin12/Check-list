@@ -15,4 +15,9 @@ export const features = {
    * is still open. With no links sent, the expire/reminder crons do nothing.
    */
   whatsappSigning: flag(import.meta.env.VITE_FEATURE_WHATSAPP_SIGNING, false),
+  /**
+   * The older task system (Today/Calendar, Inbox, approvals, client portal).
+   * The standalone client demo turns it off so only the field-ops system shows.
+   */
+  legacyTasks: flag(import.meta.env.VITE_FEATURE_LEGACY_TASKS, true),
 } as const;

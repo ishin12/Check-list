@@ -4,6 +4,7 @@ import { Navigate } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { useAuth } from '@/app/providers/AuthContext';
 import { isDemoMode } from '@/services/supabase/client';
+import { features } from '@/config/features';
 
 interface DemoProfile { id: string; full_name: string; email: string; role: 'manager' | 'supervisor' | 'finance' | 'worker' | 'client' }
 
@@ -28,7 +29,7 @@ export function LoginScreen() {
   useEffect(() => {
     if (!demo) return;
     const profiles = (window.__demo?.listProfiles() ?? []) as DemoProfile[];
-    setDemoProfiles(profiles);
+    setDemoProfiles(features.legacyTasks ? profiles : profiles.filter((x) => x.role !== 'client' && x.role !== 'worker'));
   }, [demo]);
 
   if (user) return <Navigate to="/" replace />;
@@ -108,11 +109,11 @@ export function LoginScreen() {
                   disabled={status === 'sending'}
                 >
                   <div className={`demo-account__role demo-account__role--${p.role}`}>
-                    {p.role}
+                    {t(`demo.role.${p.role}`, p.role)}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div className="card__title">{p.full_name}</div>
-                    <div className="card__meta">{ROLE_BLURB[p.role]}</div>
+                    <div className="card__meta">{t(`demo.blurb.${p.role}`, ROLE_BLURB[p.role])}</div>
                   </div>
                   <span className="demo-account__arrow" aria-hidden>→</span>
                 </button>

@@ -66,7 +66,7 @@ export function SettingsScreen() {
         {user ? (
           <div className="card">
             <div className="card__title">{user.fullName ?? user.email}</div>
-            <div className="card__meta">{user.role}</div>
+            <div className="card__meta">{t(`demo.role.${user.role}`, user.role)}</div>
           </div>
         ) : null}
 
@@ -152,31 +152,32 @@ export function SettingsScreen() {
             <Link to="/config" className="card card--tap"><div className="card__title">⚙ {t('fo.config.title', 'Setup')}</div></Link>
             <Link to="/users" className="card card--tap"><div className="card__title">{t('users.title', 'Team & clients')}</div></Link>
             <Link to="/audit" className="card card--tap"><div className="card__title">{t('audit.title', 'Audit log')}</div></Link>
-            <Link to="/today" className="card card--tap"><div className="card__title">{t('fo.home.legacy', 'Open the older task list')}</div></Link>
+            {features.legacyTasks ? (
+              <Link to="/today" className="card card--tap"><div className="card__title">{t('fo.home.legacy', 'Open the older task list')}</div></Link>
+            ) : null}
           </div>
         ) : null}
         {user && (user.role === 'finance' || user.financeAccess) ? (
           <div className="stack">
             <Link to="/month-close" className="card card--tap"><div className="card__title">▣ {t('tabs.monthClose', 'Month close')}</div></Link>
-            <Link to="/audit" className="card card--tap"><div className="card__title">{t('audit.title', 'Audit log')}</div></Link>
+            {user.role !== 'manager' ? (
+              <Link to="/audit" className="card card--tap"><div className="card__title">{t('audit.title', 'Audit log')}</div></Link>
+            ) : null}
           </div>
         ) : null}
 
         {isDemoMode() ? (
           <div className="card stack">
-            <div className="card__title">Demo mode</div>
+            <div className="card__title">{t('demo.modeTitle', 'Demo mode')}</div>
             <div className="card__meta">
-              You're running against in-browser seed data. Switch roles from the “Demo” chip
-              in the header. To go live, set <code>VITE_SUPABASE_URL</code>,
-              <code>VITE_SUPABASE_ANON_KEY</code> in <code>.env.local</code>, run the SQL
-              migration, then set <code>VITE_DEMO_MODE=0</code>.
+              {t('demo.modeBody', 'This is a demo with sample data. Your changes stay in this browser only. Switch between manager, supervisor and finance from the “Demo” chip at the top.')}
             </div>
             <button
               type="button"
               className="btn btn--ghost"
               onClick={async () => { await window.__demo?.reset(); location.reload(); }}
             >
-              Reset demo data
+              {t('demo.reset', 'Reset demo data')}
             </button>
           </div>
         ) : null}

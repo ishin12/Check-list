@@ -236,7 +236,17 @@
   "demo": {
     "loginHint": "Demo mode — pick an account below to see exactly what they see.",
     "accountsTitle": "Demo accounts",
-    "orEmail": "Or sign in with email below:"
+    "orEmail": "Or sign in with email below:",
+    "modeTitle": "Demo mode",
+    "modeBody": "This is a demo with sample data. Your changes stay in this browser only. Switch between manager, supervisor and finance from the “Demo” chip at the top.",
+    "reset": "Reset demo data",
+    "role": {
+      "manager": "Manager",
+      "supervisor": "Supervisor",
+      "finance": "Finance",
+      "worker": "Worker",
+      "client": "Client"
+    }
   },
   "proof": {
     "title": "Proof",

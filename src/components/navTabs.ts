@@ -1,4 +1,5 @@
 import type { Role } from '@/domain/models/ops';
+import { features } from '@/config/features';
 
 export interface NavTab {
   to: string;
@@ -36,6 +37,7 @@ export function tabsFor(user: NavUser, surface: 'side' | 'bottom'): NavTab[] {
   return NAV_TABS.filter((tab) => {
     const allowed = tab.roles.includes(user.role) || (finance && tab.finance === true);
     if (!allowed) return false;
+    if (tab.to === '/notifications' && !features.legacyTasks) return false;
     if (surface === 'bottom' && tab.sideOnly) return false;
     // Month close lives in the side rail / Me screen for managers with the grant.
     if (surface === 'bottom' && tab.to === '/month-close' && user.role !== 'finance') return false;
