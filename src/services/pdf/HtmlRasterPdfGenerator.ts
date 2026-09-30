@@ -60,6 +60,8 @@ export class HtmlRasterPdfGenerator implements PdfGenerator {
         imgWidthPx,
         sliceHeightPx,
       );
+      // A trailing slice with nothing on it (layout rounding) is not a page.
+      if (page > 0 && isBlank(ctx, canvas.width, canvas.height)) break;
       const sliceData = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
       const sliceHeightMm = sliceHeightPx / pxPerMm;
       if (page > 0) pdf.addPage();
@@ -80,4 +82,14 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onerror = reject;
     img.src = src;
   });
+}
+
+/** True when a canvas area is (near) plain white. Samples a grid of pixels. */
+function isBlank(ctx: CanvasRenderingContext2D, width: number, height: number): boolean {
+  const { data } = ctx.getImageData(0, 0, width, height);
+  const step = 4 * 7;   // every 7th pixel
+  for (let i = 0; i < data.length; i += step) {
+    if (data[i] < 245 || data[i + 1] < 245 || data[i + 2] < 245) return false;
+  }
+  return true;
 }

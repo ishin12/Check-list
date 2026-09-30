@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAsync } from '@/lib/useAsync';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
 import { useDirectory } from '@/app/providers/DirectoryContext';
 import { useFieldData } from '@/app/providers/FieldDataContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
-import { createProject, createRecurring, listRecurring, updateProject } from '@/services/data/fieldOps';
+import { createProject, createRecurring, listRecurring, updateProject, listVisits } from '@/services/data/fieldOps';
 import { recurringItemsFromTemplates } from '@/domain/fieldops/visitPlan';
 import { isSupervisorRole } from '@/domain/auth/permissions';
 import { configText } from '@/lib/configText';
 import { localToday } from '@/lib/dates';
 import { friendlyError } from '@/lib/ruleErrors';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 /**
  * Create / edit a project (§3, §10). Required: name, type (status defaults to
@@ -52,9 +54,15 @@ export function ProjectEditScreen() {
     .sort((a, b) => (a.fullName ?? '').localeCompare(b.fullName ?? ''));
   const clientList = [...clients.values()].sort((a, b) => a.name.localeCompare(b.name));
 
+  // A staged project always has a current stage (UAT D-30).
+  const stageMissing = !!type?.usesStages && !stageId;
+  // Reassigning while the current supervisor has a visit open (UAT D-17).
+  const openVisits = useAsync(async () => (existing ? listVisits({ projectId: existing.id, status: 'in_progress' }) : []), [existing?.id]);
+  const reassigning = !!existing && (existing.supervisorId ?? '') !== supervisorId;
+
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !typeId || !clientId) return;
+    if (!name.trim() || !typeId || !clientId || stageMissing) return;
     setSaving(true); setError(null);
     const input = { name, code, clientId, projectTypeId: typeId, stageId: type?.usesStages ? stageId : '', supervisorId, notes };
     try {
@@ -125,6 +133,7 @@ export function ProjectEditScreen() {
                 </option>
               ))}
             </select>
+            {stageMissing ? <div className="hint" style={{ color: 'var(--color-danger)' }}>{t('fo.projects.stageRequired', 'Choose the stage this project is at.')}</div> : null}
             {existing?.stageId ? <div className="hint">{t('fo.stage.editHint', 'To move forward, use "Move to next stage" on the project page once the stage checklist is done.')}</div> : null}
           </div>
         ) : null}
@@ -137,13 +146,18 @@ export function ProjectEditScreen() {
           {existing && existing.supervisorId && existing.supervisorId !== supervisorId ? (
             <div className="card__meta">{t('fo.projects.handover', 'The new supervisor sees the full history and open work (BR-007).')}</div>
           ) : null}
+          {reassigning && openVisits.data?.length ? (
+            <div className="banner banner--warn">
+              {t('fo.projects.reassignOpenVisit', '{{count}} visit(s) of this project are still in progress with the current supervisor. They stay with them until completed; you can complete them as manager.', { count: openVisits.data.length })}
+            </div>
+          ) : null}
         </div>
         <div className="field">
           <label className="field__label" htmlFor="p-notes">{t('fo.projects.notes', 'Notes (optional)')}</label>
           <textarea id="p-notes" className="textarea" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
-        {error ? <div className="banner banner--error">{error}</div> : null}
-        <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={saving || !name.trim() || !typeId || !clientId}>
+        <ErrorBanner message={error} />
+        <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={saving || !name.trim() || !typeId || !clientId || stageMissing}>
           {saving ? t('common.saving', 'Saving…') : t('common.save', 'Save')}
         </button>
       </form>

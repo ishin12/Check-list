@@ -28,7 +28,7 @@ import {
 
 const DB_NAME = 'checklist-demo';
 // Re-seed when this changes (bump on each schema-affecting change).
-const SEED_VERSION = 'v11';
+const SEED_VERSION = 'v12';
 const DB_VERSION = 2; // 2: field-ops tables (0006)
 
 const TABLES = [
@@ -112,8 +112,83 @@ async function loadAll(): Promise<void> {
 }
 
 function ensureReady(): Promise<void> {
-  if (!ready) ready = loadAll();
+  if (!ready) ready = loadAll().then(async () => { localRev = Number((await (await db()).get('meta', 'rev')) ?? 0); });
   return ready;
+}
+
+/**
+ * Row-level security for supervisors, as in 0006/0007: they see only the
+ * projects they supervise and those projects' visits, tasks, photos, reports
+ * and labor. Managers and anyone with finance see everything.
+ */
+function rowVisible(table: Table, row: Row): boolean {
+  const me = state.profiles.find((p) => p.id === activeUserId);
+  if (!me || me.role !== 'supervisor' || me.finance_access === true) return true;
+  const supervises = (projectId: unknown) => state.projects.some((p) => p.id === projectId && p.supervisor_id === activeUserId);
+  switch (table) {
+    case 'projects': return row.supervisor_id === activeUserId;
+    case 'visits':
+    case 'project_tasks':
+    case 'project_recurring_items':
+    case 'task_photos': return supervises(row.project_id);
+    case 'labor_allocations': return row.supervisor_id === activeUserId || supervises(row.project_id);
+    case 'visit_reports': {
+      const visit = state.visits.find((v) => v.id === row.visit_id);
+      return !!visit && supervises(visit.project_id);
+    }
+    case 'clients': return state.projects.some((p) => p.client_id === row.id && p.supervisor_id === activeUserId);
+    default: return true;
+  }
+}
+
+// Several tabs share one IndexedDB. Every statement runs under a cross-tab
+// lock, first reloading what another tab committed, and every write commits
+// all tables with a new revision — so two tabs can never overwrite each
+// other's rows (the demo's stand-in for Postgres transactions, TC-12).
+let localRev = 0;
+
+function withDbLock<T>(fn: () => Promise<T>): Promise<T> {
+  const locks = typeof navigator !== 'undefined' ? (navigator as unknown as { locks?: { request(name: string, cb: () => Promise<T>): Promise<T> } }).locks : undefined;
+  return locks?.request ? locks.request('checklist-demo-db', fn) : fn();
+}
+
+async function syncFromDb(): Promise<void> {
+  const conn = await db();
+  const rev = Number((await conn.get('meta', 'rev')) ?? 0);
+  if (rev === localRev) return;
+  for (const t of TABLES) state[t] = (await conn.getAll(t)) as Row[];
+  for (const k of await conn.getAllKeys('blobs')) {
+    if (blobs.has(String(k))) continue;
+    const v = (await conn.get('blobs', k)) as Blob | undefined;
+    if (v) blobs.set(String(k), v);
+  }
+  localRev = rev;
+}
+
+async function commitAll(): Promise<void> {
+  const conn = await db();
+  const tx = conn.transaction([...TABLES, 'meta'], 'readwrite');
+  for (const t of TABLES) {
+    const store = tx.objectStore(t);
+    await store.clear();
+    for (const row of state[t]) await store.put(row);
+  }
+  const meta = tx.objectStore('meta');
+  const rev = Number((await meta.get('rev')) ?? 0) + 1;
+  await meta.put(rev, 'rev');
+  await tx.done;
+  localRev = rev;
+}
+
+/** Runs a statement against the latest shared data; commits it if it wrote. */
+function atomically<T>(fn: () => T | Promise<T>, write: boolean): Promise<T> {
+  return ensureReady().then(() => withDbLock(async () => {
+    await syncFromDb();
+    const out = await fn();
+    const failed = !!(out && typeof out === 'object' && 'error' in (out as object) && (out as unknown as { error: unknown }).error);
+    if (write && !failed) await commitAll();
+    return out;
+  }));
 }
 
 async function persist(table: Table): Promise<void> {
@@ -178,11 +253,11 @@ function audit(action: string, entity: string, entityId: string | null, payload:
     action,
     entity,
     entity_id: entityId,
-    payload,
+    // A snapshot: later writes to the same row must not change this entry.
+    payload: JSON.parse(JSON.stringify(payload)),
     at: new Date().toISOString(),
   };
   state.audit_log.unshift(row);
-  void persist('audit_log');
 }
 
 function notify(userId: string, kind: string, payload: Record<string, unknown>): void {
@@ -196,7 +271,6 @@ function notify(userId: string, kind: string, payload: Record<string, unknown>):
     created_at: new Date().toISOString(),
   };
   state.notifications.unshift(row);
-  void persist('notifications');
   fireChange('notifications', 'INSERT', row);
 }
 
@@ -296,11 +370,11 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
     onFulfilled?: ((v: { data: any; error: { message: string } | null }) => TR1 | PromiseLike<TR1>) | null,
     onRejected?: ((reason: any) => TR2 | PromiseLike<TR2>) | null,
   ): PromiseLike<TR1 | TR2> {
-    return ensureReady().then(() => this.run()).then(onFulfilled as any, onRejected as any);
+    return atomically(() => this.run(), this.op !== 'select').then(onFulfilled as any, onRejected as any);
   }
 
   private filterRows(): Row[] {
-    let rows = state[this.table].slice();
+    let rows = state[this.table].filter((r) => rowVisible(this.table, r));
     for (const f of this.filters) rows = rows.filter(f);
     if (this.orderBy) {
       const { col, asc } = this.orderBy;
@@ -349,7 +423,6 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
             state[this.table].splice(before);   // statement is atomic
             throw e;
           }
-          void persist(this.table);
           for (const row of inserted) {
             if (this.table === 'tasks') onTaskInsert(row);
             if (fieldOps) fieldOpsAfter(this.table, 'INSERT', null, row, guardCtx());
@@ -378,11 +451,10 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
             throw e;
           }
           updated.forEach((row, i) => {
+            if (this.table === 'templates') audit('templates.update', 'templates', String(row.id), { old: prevs[i], new: row });
             if (this.table === 'tasks') onTaskUpdate(prevs[i], row);
             if (fieldOps) fieldOpsAfter(this.table, 'UPDATE', prevs[i], row, guardCtx());
           });
-          void persist(this.table);
-          if (this.table === 'project_tasks' || this.table === 'visits') void persist('project_recurring_items');
           return formatResult(updated, this.singleMode);
         }
         case 'upsert': {
@@ -394,24 +466,27 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
           for (const data of list) {
             const idx = state[this.table].findIndex((r) => r.id === data.id);
             if (idx >= 0) {
+              const prev = { ...state[this.table][idx] };
               Object.assign(state[this.table][idx], data, { updated_at: new Date().toISOString() });
               out.push(state[this.table][idx]);
+              if (this.table === 'templates') audit('templates.update', 'templates', String(data.id), { old: prev, new: state[this.table][idx] });
             } else {
               const row = withDefaults(this.table, { ...data, id: data.id ?? crypto.randomUUID() });
               state[this.table].push(row); out.push(row);
+              if (this.table === 'templates') audit('templates.insert', 'templates', String(row.id), { old: null, new: row });
             }
           }
-          void persist(this.table);
           return formatResult(out, this.singleMode);
         }
         case 'delete': {
           const target = this.filterRows();
+          // 0008: checklists are switched off, never deleted (BR-014).
+          if (this.table === 'templates' && target.length) throw new Error('BR-014: templates rows cannot be deleted; archive, close or void instead');
           if (isFieldOpsTable(this.table)) {
             for (const row of target) fieldOpsBefore(this.table, 'DELETE', row, null, guardCtx());
           }
           const ids = new Set(target.map((r) => r.id));
           state[this.table] = state[this.table].filter((r) => !ids.has(r.id));
-          void persist(this.table);
           if (isFieldOpsTable(this.table)) {
             for (const row of target) fieldOpsAfter(this.table, 'DELETE', row, null, guardCtx());
           }
@@ -574,13 +649,11 @@ export function getMockClient(): MockClient {
       },
     },
     async rpc(fn: string, args: Record<string, unknown>) {
-      await ensureReady();
-      return runRpc(fn, args);
+      return atomically(() => runRpc(fn, args), true);
     },
     functions: {
       async invoke(name: string, opts: { body: unknown }) {
-        await ensureReady();
-        return runFunction(name, (opts.body ?? {}) as Record<string, unknown>);
+        return atomically(() => runFunction(name, (opts.body ?? {}) as Record<string, unknown>), true);
       },
     },
     from(table: Table) { return new Query(table); },
@@ -675,7 +748,6 @@ function runRpc(fn: string, args: Record<string, unknown>): { data: any; error: 
     }
     link.signed_at = new Date().toISOString();
     link.signature_data_url = signature;
-    void persist('signing_links');
     const task = state.tasks.find((t) => t.id === link.task_id);
     if (task) {
       const prev = { ...task };
@@ -687,7 +759,6 @@ function runRpc(fn: string, args: Record<string, unknown>): { data: any; error: 
         signature: { dataUrl: signature, signedAt: new Date().toISOString() },
       });
       onTaskUpdate(prev, task);
-      void persist('tasks');
     }
     return { data: true, error: null };
   }
@@ -739,7 +810,6 @@ function runFunction(name: string, body: Record<string, unknown>): { data: unkno
       created_at: new Date().toISOString(),
     };
     state.signing_links.unshift(row);
-    void persist('signing_links');
     audit('task.sign_link_sent', 'task', taskId, { status: 'sent' });
     // In demo there's no real WhatsApp — the link is shown to the manager directly.
     const signUrl = `${location.origin}${import.meta.env.BASE_URL}sign/${token}`.replace(/([^:]\/)\/+/g, '$1');
@@ -758,7 +828,6 @@ function runFunction(name: string, body: Record<string, unknown>): { data: unkno
       phone: body.phone ?? null, client_id: body.client_id ?? null, active: true,
       finance_access: role === 'manager' && body.finance_access === true,
     });
-    void persist('profiles');
     return { data: { user_id: id }, error: null };
   }
   return { data: null, error: { message: `unknown function ${name}` } };
@@ -783,6 +852,7 @@ async function resetDemo(): Promise<void> {
   blobs.clear();
   for (const t of TABLES) state[t] = [];
   await seedDemo();
+  await withDbLock(commitAll);   // other open tabs reload the fresh seed
 }
 
 declare global {
@@ -814,10 +884,10 @@ async function seedDemo(): Promise<void> {
     new Date(`${addDays(today, offset)}T${pad2(hour)}:${pad2(min)}:00+03:00`).toISOString();
 
   state.profiles = [
-    { id: 'u-mgr', role: 'manager', full_name: 'Faisal (Manager)', email: 'faisal@demo.com', phone: null, client_id: null, active: true, finance_access: true },
-    { id: 'u-wa', role: 'supervisor', full_name: 'Ahmed (Supervisor)', email: 'ahmed@demo.com', phone: null, client_id: null, active: true },
-    { id: 'u-wb', role: 'supervisor', full_name: 'Sara (Supervisor)',  email: 'sara@demo.com',  phone: null, client_id: null, active: true },
-    { id: 'u-fin', role: 'finance',   full_name: 'Noura (Finance)',    email: 'noura@demo.com', phone: null, client_id: null, active: true },
+    { id: 'u-mgr', role: 'manager', full_name: 'Faisal', email: 'faisal@demo.com', phone: null, client_id: null, active: true, finance_access: true },
+    { id: 'u-wa', role: 'supervisor', full_name: 'Ahmed', email: 'ahmed@demo.com', phone: null, client_id: null, active: true },
+    { id: 'u-wb', role: 'supervisor', full_name: 'Sara',  email: 'sara@demo.com',  phone: null, client_id: null, active: true },
+    { id: 'u-fin', role: 'finance',   full_name: 'Noura',    email: 'noura@demo.com', phone: null, client_id: null, active: true },
     { id: 'u-cli', role: 'client', full_name: 'Khaled Al-Saud',   email: 'khaled@demo.com',  phone: null, client_id: 'c-1', active: true },
   ];
 

@@ -93,11 +93,13 @@ export interface UnallocatedDay {
  * only configured working days. A half-booked worker shows 0.5 free.
  */
 export function unallocatedReport(
-  employees: Pick<Employee, 'id' | 'status'>[],
+  employees: (Pick<Employee, 'id' | 'status'> & Partial<Pick<Employee, 'createdAt'>>)[],
   allocations: Alloc[],
   days: string[],
   workDays: number[],
   weekdayOf: (date: string) => number,
+  /** Calendar date of a timestamp (Riyadh); defaults to its first 10 characters. */
+  dayOf: (iso: string) => string = (iso) => iso.slice(0, 10),
 ): UnallocatedDay[] {
   const load = new Map<string, number>();
   for (const a of allocations) {
@@ -111,6 +113,8 @@ export function unallocatedReport(
     .map((date) => ({
       date,
       items: active
+        // A worker is not unallocated before they were added (UAT D-18).
+        .filter((e) => !e.createdAt || dayOf(e.createdAt) <= date)
         .map((e) => ({ employeeId: e.id, free: Math.max(0, 1 - (load.get(`${e.id}|${date}`) ?? 0)) }))
         .filter((x) => x.free > 0),
     }));

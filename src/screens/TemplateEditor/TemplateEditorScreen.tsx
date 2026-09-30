@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppHeader } from '@/components/AppHeader';
+import { AppShell } from '@/components/AppShell';
 import { useStorage } from '@/app/providers/StorageContext';
 import {
   createTask,
@@ -87,7 +88,7 @@ export function TemplateEditorScreen() {
   };
 
   return (
-    <div className="app-shell">
+    <AppShell>
       <AppHeader
         title={isNew ? t('editor.newTitle') : t('editor.editTitle')}
         showBack
@@ -295,6 +296,6 @@ export function TemplateEditorScreen() {
           {t('common.save')}
         </button>
       </div>
-    </div>
+    </AppShell>
   );
 }

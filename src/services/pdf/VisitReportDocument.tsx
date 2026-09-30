@@ -15,6 +15,7 @@ export interface VisitReportLabels {
   followUp: string;
   none: string;
   crew: string;
+  notes: string;
   days: string;
   statusDone: string;
   statusFollowUp: string;
@@ -154,15 +155,25 @@ export const VisitReportDocument = forwardRef<HTMLDivElement, Props>(({ content,
         <>
           {section(labels.crew)}
           <div style={{ color: INK }}>
-            {content.crew.map((c) => `${c.name} (${c.duration} ${labels.days})`).join(' · ')}
+            {/* Each worker is isolated so names and numbers keep their order in Arabic (UAT D-41). */}
+            {content.crew.map((c, i) => (
+              <span key={i}>{i ? ' · ' : ''}<bdi>{c.name}</bdi> (<bdi>{c.duration} {labels.days}</bdi>)</span>
+            ))}
           </div>
+        </>
+      ) : null}
+
+      {content.visitNotes ? (
+        <>
+          {section(labels.notes)}
+          <div style={{ color: INK, whiteSpace: 'pre-wrap' }}>{content.visitNotes}</div>
         </>
       ) : null}
 
       <div style={{ display: 'flex', gap: 24, marginTop: 40 }}>
         <div style={{ flex: 1 }}>
           <div style={{ color: MUTED, fontSize: 12, fontWeight: 700 }}>{labels.clientRep}</div>
-          <div style={{ borderBottom: `1px solid ${INK}`, minHeight: 28, paddingTop: 6, fontWeight: 700 }}>{content.clientRepName ?? ''}</div>
+          <div style={{ borderBottom: `1px solid ${INK}`, minHeight: 60, paddingTop: 6, fontWeight: 700 }}>{content.clientRepName ?? ''}</div>
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ color: MUTED, fontSize: 12, fontWeight: 700 }}>{labels.signature} / {labels.approval}</div>

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { useAuth } from '@/app/providers/AuthContext';
 import { isDemoMode } from '@/services/supabase/client';
@@ -15,6 +16,7 @@ export function SettingsScreen() {
   const { user, signOut, updatePassword } = useAuth();
 
   // Change my password
+  const [confirmReset, setConfirmReset] = useState(false);
   const [pw, setPw] = useState('');
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -150,7 +152,7 @@ export function SettingsScreen() {
             <Link to="/clients" className="card card--tap"><div className="card__title">⌖ {t('tabs.clients', 'Clients')}</div></Link>
             <Link to="/templates" className="card card--tap"><div className="card__title">☑ {t('fo.config.checklists', 'Checklists & frequencies')}</div></Link>
             <Link to="/config" className="card card--tap"><div className="card__title">⚙ {t('fo.config.title', 'Setup')}</div></Link>
-            <Link to="/users" className="card card--tap"><div className="card__title">{t('users.title', 'Team & clients')}</div></Link>
+            <Link to="/users" className="card card--tap"><div className="card__title">{features.legacyTasks ? t('users.title', 'Team & clients') : t('users.teamTitle', 'Team')}</div></Link>
             <Link to="/audit" className="card card--tap"><div className="card__title">{t('audit.title', 'Audit log')}</div></Link>
             {features.legacyTasks ? (
               <Link to="/today" className="card card--tap"><div className="card__title">{t('fo.home.legacy', 'Open the older task list')}</div></Link>
@@ -175,10 +177,19 @@ export function SettingsScreen() {
             <button
               type="button"
               className="btn btn--ghost"
-              onClick={async () => { await window.__demo?.reset(); location.reload(); }}
+              onClick={() => setConfirmReset(true)}
             >
               {t('demo.reset', 'Reset demo data')}
             </button>
+            <ConfirmDialog
+              open={confirmReset}
+              title={t('demo.resetTitle', 'Reset the demo data?')}
+              body={t('demo.resetBody', 'Everything entered in this browser is replaced by the original sample data.')}
+              confirmLabel={t('demo.reset', 'Reset demo data')}
+              danger
+              onConfirm={async () => { setConfirmReset(false); await window.__demo?.reset(); location.reload(); }}
+              onCancel={() => setConfirmReset(false)}
+            />
           </div>
         ) : null}
 

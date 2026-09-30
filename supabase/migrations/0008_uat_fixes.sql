@@ -133,3 +133,151 @@ join (values
     {"id":"ho-handover","order":2,"required":true,"label":{"en":"Handed over to the client","ar":"التسليم للعميل","ur":"کلائنٹ کو حوالگی"}}]')
 ) as c(code, items) on c.code = s.code
 where not exists (select 1 from public.templates t where t.stage_id = s.id);
+
+-- ---------------------------------------------------------------------------
+-- UAT D-05: a follow-up tapped by mistake can be corrected on the same visit.
+-- follow_up_visit_id records the visit on which the task became a follow-up;
+-- while that visit is in progress the answer may still go back to "not done".
+-- A follow-up carried from an earlier visit stays a follow-up (BR-006).
+-- ---------------------------------------------------------------------------
+alter table public.project_tasks
+  add column follow_up_visit_id uuid references public.visits (id) on delete restrict;
+
+update public.project_tasks set follow_up_visit_id = last_visit_id
+where status = 'needs_follow_up' and follow_up_visit_id is null;
+
+create or replace function public.project_tasks_guard() returns trigger
+language plpgsql as $$
+begin
+  if tg_op = 'DELETE' then
+    if old.status = 'completed' then
+      raise exception 'BR-014: a completed task cannot be deleted' using errcode = 'P0001';
+    end if;
+    return old;
+  end if;
+  if tg_op = 'UPDATE' and new.status is distinct from old.status then
+    if old.status = 'completed' then
+      if old.completed_in_visit_id is null or not exists (
+           select 1 from public.visits v
+           where v.id = old.completed_in_visit_id and v.status = 'in_progress') then
+        raise exception 'A completed task cannot be reopened' using errcode = 'P0001';
+      end if;
+      if new.status = 'open' and old.was_follow_up then
+        if old.follow_up_visit_id is not distinct from old.completed_in_visit_id then
+          -- The follow-up was only set on this same visit: the whole answer is corrected.
+          new.was_follow_up = false;
+          new.follow_up_visit_id = null;
+        else
+          new.status = 'needs_follow_up';
+        end if;
+      end if;
+      if new.status = 'needs_follow_up' and not old.was_follow_up then
+        new.was_follow_up = true;
+        new.follow_up_visit_id = old.completed_in_visit_id;
+      end if;
+      new.completed_at = null;
+      new.completed_in_visit_id = null;
+      return new;
+    end if;
+    if old.status = 'needs_follow_up' and new.status = 'open' then
+      if old.follow_up_visit_id is null or not exists (
+           select 1 from public.visits v
+           where v.id = old.follow_up_visit_id and v.status = 'in_progress') then
+        raise exception 'A follow-up task cannot go back to open' using errcode = 'P0001';
+      end if;
+      new.was_follow_up = false;
+      new.follow_up_visit_id = null;
+      return new;
+    end if;
+    if new.status = 'completed' then
+      new.completed_at = coalesce(new.completed_at, now());
+    end if;
+    if new.status = 'needs_follow_up' then
+      new.was_follow_up = true;
+      new.follow_up_visit_id = coalesce(new.last_visit_id, old.last_visit_id);
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- UAT D-07: no completing / closing a project while a visit is in progress.
+-- UAT D-13: a visit cannot start before its date (Riyadh calendar).
+-- ---------------------------------------------------------------------------
+create or replace function public.projects_open_visit_guard() returns trigger
+language plpgsql as $$
+begin
+  if new.status is distinct from old.status and new.status in ('completed', 'closed')
+     and exists (select 1 from public.visits where project_id = new.id and status = 'in_progress') then
+    raise exception 'Project has a visit in progress and cannot be closed' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_projects_open_visit_guard before update of status on public.projects
+  for each row execute function public.projects_open_visit_guard();
+
+-- Today in Riyadh. `app.today` lets the test suite pin the date.
+create or replace function public.riyadh_today() returns date
+language sql stable as $$
+  select coalesce(nullif(current_setting('app.today', true), '')::date,
+                  (now() at time zone 'Asia/Riyadh')::date);
+$$;
+
+create or replace function public.visits_start_date_guard() returns trigger
+language plpgsql as $$
+begin
+  if new.status = 'in_progress' and (tg_op = 'INSERT' or old.status is distinct from 'in_progress')
+     and new.visit_date > public.riyadh_today() then
+    raise exception 'A visit cannot start before its date' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_visits_start_date_guard before insert or update on public.visits
+  for each row execute function public.visits_start_date_guard();
+
+-- ---------------------------------------------------------------------------
+-- UAT D-29 / I05: a periodic item done on a visit counts as done on the VISIT
+-- date; done outside a visit, on its Riyadh calendar date (not the UTC date).
+-- ---------------------------------------------------------------------------
+create or replace function public.roll_recurring_item() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.recurring_item_id is not null and new.completed_in_visit_id is null
+     and new.status = 'completed' and old.status is distinct from 'completed' then
+    perform public.roll_one_recurring(new.recurring_item_id,
+      (coalesce(new.completed_at, now()) at time zone 'Asia/Riyadh')::date);
+  end if;
+  return new;
+end;
+$$;
+
+create or replace function public.roll_recurring_on_visit() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  t record;
+begin
+  if new.status = 'completed' and old.status is distinct from 'completed' then
+    for t in
+      select recurring_item_id from public.project_tasks
+      where completed_in_visit_id = new.id and status = 'completed' and recurring_item_id is not null
+    loop
+      perform public.roll_one_recurring(t.recurring_item_id, new.visit_date);
+    end loop;
+  end if;
+  return new;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- UAT D-32: checklists are switched off, never deleted, and every change to
+-- them is in the audit log.
+-- ---------------------------------------------------------------------------
+create trigger trg_templates_nodelete before delete on public.templates
+  for each row execute function public.forbid_delete();
+create trigger trg_audit_templates after insert or update on public.templates
+  for each row execute function public.audit_row();

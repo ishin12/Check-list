@@ -10,6 +10,7 @@ import { useLanguage } from '@/app/providers/LanguageContext';
 import type { ProjectStatus } from '@/domain/models/ops';
 import { configText } from '@/lib/configText';
 import { useNames, useRoles } from './common';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 type Filter = ProjectStatus | 'open' | 'all';
 
@@ -26,7 +27,8 @@ export function ProjectsScreen() {
 
   const list = useMemo(() => fd.projects
     .filter((p) => !isSupervisor || isManager || p.supervisorId === user?.id)
-    .filter((p) => filter === 'all' || (filter === 'open' ? p.status === 'active' || p.status === 'on_hold' : p.status === filter))
+    // A search looks through every status, so a closed project is always findable (UAT D-37).
+    .filter((p) => query.trim() !== '' || filter === 'all' || (filter === 'open' ? p.status === 'active' || p.status === 'on_hold' : p.status === filter))
     .filter((p) => !typeId || p.projectTypeId === typeId)
     .filter((p) => matches(query, p.name, p.code, names.client(p.clientId), names.person(p.supervisorId)))
     .sort((a, b) => a.name.localeCompare(b.name)), [fd.projects, filter, typeId, query, names, isSupervisor, isManager, user?.id]);
@@ -46,7 +48,7 @@ export function ProjectsScreen() {
         <Link to="/projects/new" className="btn btn--primary">＋ {t('fo.projects.new', 'New')}</Link>
       ) : undefined} />
       <main className="app-main">
-        {fd.error ? <div className="banner banner--error">{fd.error}</div> : null}
+        <ErrorBanner message={fd.error} />
         <SearchBox value={query} onChange={setQuery} placeholder={t('fo.projects.search', 'Search name, code, client, supervisor') ?? ''} />
         <div className="chips">
           {filters.map((f) => (

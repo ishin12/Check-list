@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ProjectTask, TaskPhoto, VisitStatus } from '@/domain/models/ops';
-import { answerOnVisit, answerTask, updateTaskNote, type TaskAnswer } from '@/services/data/fieldOps';
+import { answerOnVisit, answerTask, updateTaskNote, voidPhoto, type TaskAnswer } from '@/services/data/fieldOps';
 import { saveOptionalItem } from '@/services/data/visitFlow';
 import { canCorrectCompleted } from '@/domain/fieldops/fieldOps';
 import { friendlyError } from '@/lib/ruleErrors';
 import { FieldStatusPill } from './FieldStatusPill';
 import { PhotoCapture, PhotoThumb, PhotoViewer } from './Photos';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 interface Props {
   task: ProjectTask;
@@ -32,7 +33,7 @@ export function TaskItemCard({ task, label, photos, visitId, visitStatus, editab
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState(task.note ?? '');
   const [showNote, setShowNote] = useState(!!task.note);
-  const [viewer, setViewer] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<{ url: string; photoId: string; removable: boolean } | null>(null);
   // An optional item is saved the first time it is used (once, even if the
   // supervisor taps twice quickly).
   const saved = useRef<Promise<ProjectTask> | null>(null);
@@ -44,7 +45,10 @@ export function TaskItemCard({ task, label, photos, visitId, visitStatus, editab
 
   const answer = visitId ? answerOnVisit(task, visitId) : null;
   const locked = task.status === 'completed' && !canCorrectCompleted(task, visitStatus);
-  const carried = !!visitId && task.visitId !== visitId && task.status !== 'completed' && answer === null;
+  // Carried = already on an earlier visit. A manager's task waiting for its
+  // first visit is not "carried from earlier" (UAT D-43).
+  const carried = !!visitId && !task.pending && task.status !== 'completed' && answer === null
+    && ((!!task.visitId && task.visitId !== visitId) || (!!task.lastVisitId && task.lastVisitId !== visitId));
   const visitPhotos = photos.filter((p) => !visitId || p.visitId === visitId);
   const olderPhotos = photos.filter((p) => visitId && p.visitId !== visitId);
   const stateClass = answer === 'done' || task.status === 'completed' ? 'completed'
@@ -98,8 +102,11 @@ export function TaskItemCard({ task, label, photos, visitId, visitStatus, editab
           {ANSWERS.map((a) => {
             const on = answer === a.key;
             // A follow-up cannot go back to open; completed is final once the visit ends.
-            const disabled = saving || (locked && a.key !== 'done')
-              || (a.key === 'not_done' && task.status === 'needs_follow_up' && answer !== 'done');
+            // A follow-up carried from an earlier visit stays one until done (BR-006);
+            // one set by mistake on this visit can still be corrected.
+            const carriedFollowUp = a.key === 'not_done' && task.status === 'needs_follow_up' && answer !== 'done'
+              && task.followUpVisitId !== visitId;
+            const disabled = saving || (locked && a.key !== 'done') || carriedFollowUp;
             return (
               <button
                 key={a.key}
@@ -107,6 +114,7 @@ export function TaskItemCard({ task, label, photos, visitId, visitStatus, editab
                 className={`answer answer--${a.key}${on ? ' answer--on' : ''}`}
                 aria-pressed={on}
                 disabled={disabled}
+                title={carriedFollowUp ? t('fo.task.followUpStays', 'A follow-up from an earlier visit stays open until it is done.') ?? undefined : undefined}
                 onClick={() => void choose(a.key)}
               >
                 {t(`fo.answer.${a.key}`, a.label)}
@@ -116,6 +124,9 @@ export function TaskItemCard({ task, label, photos, visitId, visitStatus, editab
         </div>
       ) : null}
 
+      {answerable && task.status === 'needs_follow_up' && task.followUpVisitId !== visitId && answer !== 'done' ? (
+        <div className="card__meta">{t('fo.task.followUpStays', 'A follow-up from an earlier visit stays open until it is done.')}</div>
+      ) : null}
       {answerable && showNote ? (
         <textarea
           className="textarea"
@@ -127,7 +138,7 @@ export function TaskItemCard({ task, label, photos, visitId, visitStatus, editab
       ) : task.note ? <div className="card__meta">📝 {task.note}</div> : null}
 
       <div className="thumbs">
-        {visitPhotos.map((p) => <PhotoThumb key={p.id} photo={p} onOpen={setViewer} />)}
+        {visitPhotos.map((p) => <PhotoThumb key={p.id} photo={p} onOpen={(url) => setViewer({ url, photoId: p.id, removable: answerable })} />)}
         {answerable ? (
           <>
             <PhotoCapture taskId={task.id} resolveTaskId={async () => (await savedTask()).id} projectId={task.projectId} visitId={visitId} kind="before" onUploaded={onChanged} />
@@ -144,12 +155,13 @@ export function TaskItemCard({ task, label, photos, visitId, visitStatus, editab
         <details>
           <summary className="card__meta">{t('fo.task.earlierPhotos', 'Earlier photos')} ({olderPhotos.length})</summary>
           <div className="thumbs" style={{ marginTop: 8 }}>
-            {olderPhotos.map((p) => <PhotoThumb key={p.id} photo={p} onOpen={setViewer} />)}
+            {olderPhotos.map((p) => <PhotoThumb key={p.id} photo={p} onOpen={(url) => setViewer({ url, photoId: p.id, removable: false })} />)}
           </div>
         </details>
       ) : null}
-      {error ? <div className="banner banner--error">{error}</div> : null}
-      <PhotoViewer url={viewer} onClose={() => setViewer(null)} />
+      <ErrorBanner message={error} />
+      <PhotoViewer url={viewer?.url ?? null} onClose={() => setViewer(null)}
+        onRemove={viewer?.removable ? async () => { await voidPhoto(viewer.photoId, t('fo.photo.removedReason', 'Removed by the supervisor on the visit')); onChanged(); } : undefined} />
     </div>
   );
 }

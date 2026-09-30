@@ -7,6 +7,7 @@
  * machines, recurring roll-forward). RLS is not emulated.
  */
 import { STAGE_CHECKLISTS } from './stageChecklists';
+import { localToday, riyadhDate } from '@/lib/dates';
 import { checkAllocation, isMonthClosed } from '@/domain/labor/allocation';
 import { canCorrectCompleted, canMoveProject, canMoveTask, canMoveVisit, nextDueDate } from '@/domain/fieldops/fieldOps';
 import type { LaborAllocation } from '@/domain/models/ops';
@@ -121,10 +122,6 @@ export function fieldOpsDefaults(table: string, row: Row, actorId: string, state
   return r;
 }
 
-/**
- * Runs the BEFORE-trigger logic. May adjust `next` in place (timestamps).
- * Throws with the same rule code as Postgres when the write is refused.
- */
 /** Mirrors 0008 stage_missing_items / projects_stage_guard: the first stage (from `from` up to, not including, `to`) with a required item not completed. */
 function stageGateBlocker(state: State, projectId: string, typeId: string, from: string, to: string): string | null {
   const order = (id: string) => Number(state.project_stages.find((s) => s.id === id)?.sort_order ?? 0);
@@ -145,6 +142,10 @@ function stageGateBlocker(state: State, projectId: string, typeId: string, from:
   return null;
 }
 
+/**
+ * Runs the BEFORE-trigger logic. May adjust `next` in place (timestamps).
+ * Throws with the same rule code as Postgres when the write is refused.
+ */
 export function fieldOpsBefore(table: string, op: Op, prev: Row | null, next: Row | null, ctx: GuardContext): void {
   if (op === 'DELETE' && NO_DELETE.has(table)) {
     fail(`BR-014: ${table} rows cannot be deleted; archive, close or void instead`);
@@ -166,6 +167,11 @@ export function fieldOpsBefore(table: string, op: Op, prev: Row | null, next: Ro
         if (project && (project.status === 'completed' || project.status === 'closed')) {
           fail(`BR-008: project is ${project.status} and cannot take new visits`);
         }
+      }
+      // 0008 visits_start_date_guard (UAT D-13)
+      if (next!.status === 'in_progress' && (op === 'INSERT' || prev!.status !== 'in_progress')
+          && String(next!.visit_date).slice(0, 10) > localToday()) {
+        fail('A visit cannot start before its date');
       }
       if (op === 'UPDATE' && prev!.status !== next!.status) {
         if (!canMoveVisit(prev!.status, next!.status)) fail(`Visit cannot move from ${prev!.status} to ${next!.status}`);
@@ -202,14 +208,36 @@ export function fieldOpsBefore(table: string, op: Op, prev: Row | null, next: Ro
           if (!canCorrectCompleted({ status: 'completed', completedInVisitId: prev!.completed_in_visit_id ?? undefined }, visit?.status)) {
             fail('A completed task cannot be reopened');
           }
+          // 0008 project_tasks_guard
+          if (next!.status === 'open' && prev!.was_follow_up) {
+            if ((prev!.follow_up_visit_id ?? null) === (prev!.completed_in_visit_id ?? null)) {
+              next!.was_follow_up = false;
+              next!.follow_up_visit_id = null;
+            } else {
+              next!.status = 'needs_follow_up';
+            }
+          }
+          if (next!.status === 'needs_follow_up' && !prev!.was_follow_up) {
+            next!.was_follow_up = true;
+            next!.follow_up_visit_id = prev!.completed_in_visit_id;
+          }
           next!.completed_at = null;
           next!.completed_in_visit_id = null;
-          if (next!.status === 'open' && prev!.was_follow_up) next!.status = 'needs_follow_up';
+          return;
+        }
+        if (prev!.status === 'needs_follow_up' && next!.status === 'open') {
+          const fu = ctx.state.visits.find((v) => v.id === prev!.follow_up_visit_id);
+          if (!fu || fu.status !== 'in_progress') fail('A follow-up task cannot go back to open');
+          next!.was_follow_up = false;
+          next!.follow_up_visit_id = null;
           return;
         }
         if (!canMoveTask(prev!.status, next!.status)) fail('A follow-up task cannot go back to open');
         if (next!.status === 'completed') next!.completed_at ??= new Date().toISOString();
-        if (next!.status === 'needs_follow_up') next!.was_follow_up = true;
+        if (next!.status === 'needs_follow_up') {
+          next!.was_follow_up = true;
+          next!.follow_up_visit_id = next!.last_visit_id ?? prev!.last_visit_id ?? null;
+        }
       }
       return;
     }
@@ -231,6 +259,10 @@ export function fieldOpsBefore(table: string, op: Op, prev: Row | null, next: Ro
         if (next!.status === 'completed' || next!.status === 'closed') {
           const open = ctx.state.project_tasks.some((t) => t.project_id === next!.id && t.status !== 'completed');
           if (open) fail('Project has open or follow-up tasks and cannot be closed');
+          // 0008 projects_open_visit_guard (UAT D-07)
+          if (ctx.state.visits.some((v) => v.project_id === next!.id && v.status === 'in_progress')) {
+            fail('Project has a visit in progress and cannot be closed');
+          }
           next!.closed_at ??= new Date().toISOString();
         }
       }
@@ -282,7 +314,8 @@ export function fieldOpsAfter(table: string, op: Op, prev: Row | null, next: Row
   const roll = (itemId: string, completedAt: string | null) => {
     const item = ctx.state.project_recurring_items.find((r) => r.id === itemId);
     if (!item) return;
-    const done = String(completedAt ?? new Date().toISOString()).slice(0, 10);
+    // 0008: a visit's date, or the Riyadh date of the completion.
+    const done = /^\d{4}-\d{2}-\d{2}$/.test(String(completedAt)) ? String(completedAt) : riyadhDate(new Date(completedAt ?? Date.now()));
     item.last_done_on = done;
     item.next_due_on = nextDueDate(done, item.recurrence);
     item.updated_at = new Date().toISOString();
@@ -295,7 +328,7 @@ export function fieldOpsAfter(table: string, op: Op, prev: Row | null, next: Row
   if (table === 'visits' && op === 'UPDATE' && next!.status === 'completed' && prev!.status !== 'completed') {
     for (const t of ctx.state.project_tasks) {
       if (t.completed_in_visit_id === next!.id && t.status === 'completed' && t.recurring_item_id) {
-        roll(t.recurring_item_id, t.completed_at);
+        roll(t.recurring_item_id, String(next!.visit_date).slice(0, 10));
       }
     }
   }
@@ -387,6 +420,7 @@ export function seedFieldOps(state: State, day: (offset: number, hour?: number, 
     description, status, photo_required: false, required: true, note: null, completed_at: null, completed_in_visit_id: null,
     last_visit_id: null, created_by: 'u-mgr', created_at: day(-2), updated_at: day(-2), updated_by: null,
     was_follow_up: status === 'needs_follow_up', ...extra,
+    follow_up_visit_id: status === 'needs_follow_up' ? (extra.last_visit_id ?? null) : null,
   });
   state.project_tasks = [
     t('pt-1', 'pr-1', 'Fertilizing', 'needs_follow_up', { visit_id: 'vi-1', last_visit_id: 'vi-1', note: 'Fertilizer not delivered yet' }),

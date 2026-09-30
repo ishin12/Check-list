@@ -16,6 +16,8 @@ export function friendlyError(e: unknown, t: TFunction): string {
     [/BR-008/, 'err.br008', 'This project is completed or closed. It keeps its history but takes no new visits.'],
     [/STAGE-GATE/, 'err.stageGate', 'The current stage checklist is not finished. Complete its required items on a visit first.'],
     [/BR-014/, 'err.br014', 'Completed records cannot be deleted. Archive, close or void instead.'],
+    [/visit in progress and cannot be closed/, 'err.projectOpenVisit', 'This project has a visit in progress. Complete it first.'],
+    [/cannot start before its date/, 'err.futureVisit', 'A visit cannot be started before its date.'],
     [/cannot be closed/, 'err.projectOpenTasks', 'This project still has open or follow-up tasks.'],
     [/cannot move from/, 'err.visitState', 'This visit cannot change to that status.'],
     [/cannot be reopened|cannot go back/, 'err.taskState', 'This task cannot go back to that status.'],

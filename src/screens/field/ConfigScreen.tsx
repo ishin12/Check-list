@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { features } from '@/config/features';
 import { Link } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
@@ -11,6 +12,7 @@ import type { ConfigText, ProjectStage, ProjectType } from '@/domain/models/ops'
 import { configText } from '@/lib/configText';
 import { weekdayName } from '@/lib/dates';
 import { friendlyError } from '@/lib/ruleErrors';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 /**
  * Configuration over code (§25): project types, new-project stages and
@@ -40,13 +42,13 @@ export function ConfigScreen() {
     <AppShell>
       <AppHeader title={t('fo.config.title', 'Setup')} showBack />
       <main className="app-main">
-        {error ? <div className="banner banner--error">{error}</div> : null}
+        <ErrorBanner message={error} />
         {msg ? <div className="banner banner--success">{msg}</div> : null}
 
         <div className="row wrap" style={{ gap: 8 }}>
           <Link className="btn btn--ghost" to="/templates">☑ {t('fo.config.checklists', 'Checklists & frequencies')}</Link>
           <Link className="btn btn--ghost" to="/employees">☺ {t('fo.emp.title', 'Workers')}</Link>
-          <Link className="btn btn--ghost" to="/users">{t('users.title', 'Team & clients')}</Link>
+          <Link className="btn btn--ghost" to="/users">{features.legacyTasks ? t('users.title', 'Team & clients') : t('users.teamTitle', 'Team')}</Link>
         </div>
 
         <section className="card stack">

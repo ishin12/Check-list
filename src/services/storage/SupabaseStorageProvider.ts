@@ -14,6 +14,7 @@ interface TemplateRow {
   updated_at: string;
   project_type_id?: string | null;
   stage_id?: string | null;
+  active?: boolean | null;
 }
 
 function rowToTemplate(r: TemplateRow): Template {
@@ -26,6 +27,7 @@ function rowToTemplate(r: TemplateRow): Template {
     version: r.version,
     projectTypeId: r.project_type_id ?? undefined,
     stageId: r.stage_id ?? undefined,
+    active: r.active !== false,
   };
 }
 
@@ -63,8 +65,14 @@ export class SupabaseStorageProvider implements StorageProvider {
     if (error) throw error;
   }
 
+  /** Checklists are never deleted (BR-014, migration 0008): this switches one off. */
   async deleteTemplate(id: string): Promise<void> {
-    const { error } = await getSupabase().from('templates').delete().eq('id', id);
+    const { error } = await getSupabase().from('templates').update({ active: false }).eq('id', id);
+    if (error) throw error;
+  }
+
+  async setTemplateActive(id: string, active: boolean): Promise<void> {
+    const { error } = await getSupabase().from('templates').update({ active }).eq('id', id);
     if (error) throw error;
   }
 

@@ -25,6 +25,7 @@ interface Props {
 export function CrewPicker({ employees, booked, value, onChange, previous, onVisit }: Props) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
+  const [skipped, setSkipped] = useState<string[]>([]);
   const active = useMemo(() => employees.filter((e) => e.status === 'active'), [employees]);
   const free = (id: string) => Math.max(0, 1 - (booked.get(id) ?? 0));
 
@@ -47,12 +48,19 @@ export function CrewPicker({ employees, booked, value, onChange, previous, onVis
   function copyPrevious() {
     if (!previous) return;
     const next = new Map(value);
+    const left: string[] = [];
     for (const p of previous) {
       if (onVisit?.has(p.employeeId)) continue;
       const f = free(p.employeeId);
-      if (f <= 0 || !active.some((e) => e.id === p.employeeId)) continue;
+      const worker = employees.find((e) => e.id === p.employeeId);
+      if (f <= 0 || !active.some((e) => e.id === p.employeeId)) {
+        // Say who was left out and why, instead of silently copying fewer (UAT D-20).
+        left.push(`${worker?.fullName ?? '—'} (${worker?.status !== 'active' ? t('fo.crew.skippedInactive', 'inactive') : t('fo.crew.skippedBooked', 'already booked today')})`);
+        continue;
+      }
       next.set(p.employeeId, (Math.min(p.duration, f) >= 1 ? 1 : 0.5) as LaborDuration);
     }
+    setSkipped(left);
     onChange(next);
   }
 
@@ -83,6 +91,9 @@ export function CrewPicker({ employees, booked, value, onChange, previous, onVis
           </button>
         ) : null}
       </div>
+      {skipped.length ? (
+        <div className="banner banner--warn">{t('fo.crew.skipped', 'Not copied')}: {skipped.join(' · ')}</div>
+      ) : null}
       <SearchBox value={query} onChange={setQuery} placeholder={t('fo.crew.search', 'Search workers') ?? ''} />
       <div className="card__meta">
         {t('fo.crew.summary', '{{count}} selected · {{days}} day(s)', { count: value.size, days: selectedDays })}

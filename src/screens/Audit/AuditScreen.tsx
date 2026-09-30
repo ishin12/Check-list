@@ -4,6 +4,7 @@ import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
 import { addDays, formatDateTime, localToday } from '@/lib/dates';
+import { features } from '@/config/features';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { useFieldData } from '@/app/providers/FieldDataContext';
 import { configText } from '@/lib/configText';
@@ -20,7 +21,9 @@ interface Row {
   actor?: { full_name: string | null; email: string | null }[] | null;
 }
 
-const ENTITY_OPTIONS = ['all', 'labor_allocations', 'month_closes', 'projects', 'visits', 'project_tasks', 'employees', 'task', 'client_note', 'task_proofs', 'client', 'profile'] as const;
+const LEGACY_ENTITIES = ['task', 'client_note', 'task_proofs', 'client'];
+const ENTITY_OPTIONS = ['all', 'labor_allocations', 'month_closes', 'projects', 'visits', 'project_tasks', 'employees', 'templates', 'profile',
+  ...(features.legacyTasks ? LEGACY_ENTITIES : [])];
 
 export function AuditScreen() {
   const { t } = useTranslation();
@@ -49,7 +52,8 @@ export function AuditScreen() {
       if (actor) q = q.eq('actor_id', actor);
       const { data, error } = await q;
       if (error) throw error;
-      setRows((data ?? []) as Row[]);
+      // The older task system's entries are hidden with it (UAT D-34).
+      setRows(((data ?? []) as Row[]).filter((r) => features.legacyTasks || !LEGACY_ENTITIES.includes(r.entity)));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -85,6 +89,7 @@ export function AuditScreen() {
       case 'visits': return [names.project(s(row.project_id)), s(row.visit_date)].filter(Boolean).join(' · ');
       case 'labor_allocations': return [names.employee(s(row.employee_id)), s(row.work_date), names.project(s(row.project_id))].filter(Boolean).join(' · ');
       case 'month_closes': return s(row.month)?.slice(0, 7) ?? '';
+      case 'templates': return configText(row.title as never, language) || '';
       default: return '';
     }
   }
@@ -93,6 +98,8 @@ export function AuditScreen() {
   function value(field: string, v: string): string {
     if (v === '—') return v;
     if (field === 'status') return t(`fo.status.${v}`, v);
+    if (field === 'title') { try { return configText(JSON.parse(v), language) || v; } catch { return v; } }
+    if (field === 'tasks') { try { return t('templates.tasksCount', { count: (JSON.parse(v) as unknown[]).length }); } catch { return v; } }
     if (field === 'duration') return v === '1' ? t('fo.crew.full', 'Full') : v === '0.5' ? t('fo.crew.half', 'Half') : v;
     if (v === 'true') return t('common.yes', 'Yes');
     if (v === 'false') return t('common.no', 'No');

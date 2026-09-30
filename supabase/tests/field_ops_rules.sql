@@ -5,6 +5,8 @@
 \set ON_ERROR_STOP 1
 \o /dev/null
 set client_min_messages = warning;
+-- Fixtures use dates up to the end of 2026; pin "today" after them (0008 riyadh_today).
+set app.today = '2026-12-31';
 
 -- Supabase grants table access to `authenticated`; RLS does the filtering.
 grant usage on schema public to authenticated;
@@ -491,6 +493,71 @@ where id = '20000000-0000-0000-0000-000000000005';
 select pg_temp.ok('I01 management can move a project back a stage',
   (select s.code = 'site_handover' from public.projects p join public.project_stages s on s.id = p.stage_id
    where p.id = '20000000-0000-0000-0000-000000000005'));
+
+-- D-05: a follow-up set by mistake is correctable on the same visit only.
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
+insert into public.visits (id, project_id, visit_date, supervisor_id, status)
+values ('40000000-0000-0000-0000-000000000009', '20000000-0000-0000-0000-000000000001', '2026-10-25',
+        '00000000-0000-0000-0000-00000000000b', 'planned');
+update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000009';
+insert into public.project_tasks (id, project_id, visit_id, description)
+values ('50000000-0000-0000-0000-000000000010', '20000000-0000-0000-0000-000000000001',
+        '40000000-0000-0000-0000-000000000009', 'Hedge trimming');
+update public.project_tasks set status = 'needs_follow_up', last_visit_id = '40000000-0000-0000-0000-000000000009'
+where id = '50000000-0000-0000-0000-000000000010';
+update public.project_tasks set status = 'open' where id = '50000000-0000-0000-0000-000000000010';
+select pg_temp.ok('D-05 a mistaken follow-up is corrected to not done on the same visit',
+  (select status = 'open' and not was_follow_up from public.project_tasks where id = '50000000-0000-0000-0000-000000000010'));
+update public.project_tasks set status = 'needs_follow_up', last_visit_id = '40000000-0000-0000-0000-000000000009'
+where id = '50000000-0000-0000-0000-000000000010';
+update public.project_tasks set status = 'completed', completed_in_visit_id = '40000000-0000-0000-0000-000000000009'
+where id = '50000000-0000-0000-0000-000000000010';
+update public.project_tasks set status = 'open' where id = '50000000-0000-0000-0000-000000000010';
+select pg_temp.ok('D-05 follow-up then done then not done, all on one visit, ends open',
+  (select status = 'open' from public.project_tasks where id = '50000000-0000-0000-0000-000000000010'));
+update public.project_tasks set status = 'needs_follow_up', last_visit_id = '40000000-0000-0000-0000-000000000009'
+where id = '50000000-0000-0000-0000-000000000010';
+update public.visits set status = 'completed' where id = '40000000-0000-0000-0000-000000000009';
+select pg_temp.expect_fail('D-05 after the visit, a follow-up cannot go back to open (BR-006)', $$
+  update public.project_tasks set status = 'open' where id = '50000000-0000-0000-0000-000000000010' $$, 'cannot go back to open');
+
+-- D-07 / D-13
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
+insert into public.projects (id, code, name, client_id, project_type_id, supervisor_id)
+values ('20000000-0000-0000-0000-000000000006', 'P-6', 'Project 6', '10000000-0000-0000-0000-000000000001',
+        (select id from public.project_types where code = 'maintenance'), '00000000-0000-0000-0000-00000000000b');
+insert into public.visits (id, project_id, visit_date, supervisor_id, status)
+values ('40000000-0000-0000-0000-000000000010', '20000000-0000-0000-0000-000000000006',
+        '2026-12-31', '00000000-0000-0000-0000-00000000000b', 'planned');
+update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000010';
+select pg_temp.expect_fail('D-07 a project with a visit in progress cannot be closed', $$
+  update public.projects set status = 'closed' where id = '20000000-0000-0000-0000-000000000006' $$, 'visit in progress');
+insert into public.visits (id, project_id, visit_date, supervisor_id, status)
+values ('40000000-0000-0000-0000-000000000011', '20000000-0000-0000-0000-000000000006',
+        '2027-01-03', '00000000-0000-0000-0000-00000000000b', 'planned');
+select pg_temp.ok('D-13 a future visit can be planned', true);
+select pg_temp.expect_fail('D-13 a future visit cannot be started early', $$
+  update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000011' $$, 'before its date');
+
+-- D-29: done on a visit = done on the visit's date.
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
+insert into public.project_recurring_items (id, project_id, description, recurrence, next_due_on)
+values ('60000000-0000-0000-0000-00000000000a', '20000000-0000-0000-0000-000000000006',
+        'Spraying', 'monthly', '2026-12-01');
+insert into public.visits (id, project_id, visit_date, supervisor_id, status)
+values ('40000000-0000-0000-0000-000000000012', '20000000-0000-0000-0000-000000000006', '2026-12-20',
+        '00000000-0000-0000-0000-00000000000b', 'planned');
+update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000012';
+insert into public.project_tasks (id, project_id, visit_id, source, recurring_item_id, description)
+values ('50000000-0000-0000-0000-000000000011', '20000000-0000-0000-0000-000000000006',
+        '40000000-0000-0000-0000-000000000012', 'recurring', '60000000-0000-0000-0000-00000000000a', 'Spraying');
+update public.project_tasks set status = 'completed', completed_in_visit_id = '40000000-0000-0000-0000-000000000012',
+  completed_at = '2026-12-22 21:30+00'   -- entered late: 23 Dec in Riyadh
+where id = '50000000-0000-0000-0000-000000000011';
+update public.visits set status = 'completed' where id = '40000000-0000-0000-0000-000000000012';
+select pg_temp.ok('D-29 periodic item done on a visit rolls from the visit date',
+  (select last_done_on = '2026-12-20' and next_due_on = '2027-01-20'
+   from public.project_recurring_items where id = '60000000-0000-0000-0000-00000000000a'));
 
 select pg_temp.act_as(null);
 \o

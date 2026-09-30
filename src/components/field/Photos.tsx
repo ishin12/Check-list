@@ -4,6 +4,7 @@ import { getProofUrl } from '@/services/media/proofUrls';
 import { uploadTaskPhoto } from '@/services/data/fieldOps';
 import type { PhotoKind, TaskPhoto } from '@/domain/models/ops';
 import { friendlyError } from '@/lib/ruleErrors';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 type PhotoLike = Pick<TaskPhoto, 'id' | 'storagePath' | 'mime' | 'kind'>;
 
@@ -26,12 +27,40 @@ export function PhotoThumb({ photo, onOpen }: { photo: PhotoLike; onOpen?: (url:
   );
 }
 
-/** Full-screen viewer for a tapped thumbnail. */
-export function PhotoViewer({ url, onClose }: { url: string | null; onClose: () => void }) {
+/**
+ * Full-screen viewer for a tapped thumbnail. With `onRemove` (a photo taken on
+ * the visit still in progress) it offers to remove a wrong photo; the photo is
+ * voided with a reason, never deleted (BR-014).
+ */
+export function PhotoViewer({ url, onClose, onRemove }: { url: string | null; onClose: () => void; onRemove?: () => Promise<void> }) {
+  const { t } = useTranslation();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => { setConfirming(false); setError(null); }, [url]);
   if (!url) return null;
   return (
     <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
-      <img src={url} alt="" style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: 12 }} />
+      <div className="stack" style={{ alignItems: 'center', maxWidth: '100%' }} onClick={(e) => e.stopPropagation()}>
+        <img src={url} alt="" style={{ maxWidth: '100%', maxHeight: '75vh', borderRadius: 12 }} />
+        <ErrorBanner message={error} />
+        <div className="row" style={{ gap: 8 }}>
+          {onRemove ? (
+            confirming ? (
+              <button type="button" className="btn btn--danger" disabled={busy}
+                onClick={async () => {
+                  setBusy(true); setError(null);
+                  try { await onRemove(); onClose(); } catch (e) { setError(friendlyError(e, t)); } finally { setBusy(false); }
+                }}>
+                {t('fo.photo.confirmRemove', 'Yes, remove this photo')}
+              </button>
+            ) : (
+              <button type="button" className="btn btn--ghost" onClick={() => setConfirming(true)}>{t('fo.photo.remove', 'Remove photo')}</button>
+            )
+          ) : null}
+          <button type="button" className="btn btn--primary" onClick={onClose}>{t('common.close', 'Close')}</button>
+        </div>
+      </div>
     </div>
   );
 }

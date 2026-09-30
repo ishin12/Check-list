@@ -166,6 +166,7 @@ export interface ReportInput {
   photos: { id: string; taskId: string; visitId?: string; kind?: 'before' | 'after'; storagePath: string; mime: string; voidedAt?: string }[];
   crew: { name: string; duration: number }[];
   clientRepName?: string;
+  visitNotes?: string;
 }
 
 export function buildReportContent(input: ReportInput): VisitReportContent {
@@ -193,6 +194,7 @@ export function buildReportContent(input: ReportInput): VisitReportContent {
     followUp: required.filter((l) => l.status !== 'completed'),
     crew: input.crew,
     clientRepName: input.clientRepName,
+    ...(input.visitNotes ? { visitNotes: input.visitNotes } : {}),
   };
 }
 

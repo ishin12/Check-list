@@ -5,10 +5,13 @@ import { AppShell } from '@/components/AppShell';
 import { FieldStatusPill } from '@/components/field/FieldStatusPill';
 import { SearchBox, matches } from '@/components/field/SearchBox';
 import { useFieldData } from '@/app/providers/FieldDataContext';
-import { saveEmployee } from '@/services/data/fieldOps';
+import { listLabor, saveEmployee } from '@/services/data/fieldOps';
+import { localToday } from '@/lib/dates';
+import { useNames } from './common';
 import type { Employee } from '@/domain/models/ops';
 import { friendlyError } from '@/lib/ruleErrors';
 import { useRoles } from './common';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 /**
  * Crew list (§15 Employees). Workers are never deleted; deactivating hides
@@ -23,6 +26,13 @@ export function EmployeesScreen() {
   const [editing, setEditing] = useState<Partial<Employee> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmOff, setConfirmOff] = useState<{ e: Employee; projects: string[] } | null>(null);
+  const names = useNames();
+  const norm = (s?: string) => (s ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+  // Two workers with the same name must be told apart by employee no. (UAT D-33).
+  const duplicate = !!editing?.fullName?.trim()
+    && fd.employees.some((x) => x.id !== editing.id && norm(x.fullName) === norm(editing.fullName));
+  const needsCode = duplicate && !editing?.code?.trim();
 
   const list = fd.employees
     .filter((e) => showInactive || e.status === 'active')
@@ -45,9 +55,16 @@ export function EmployeesScreen() {
     }
   }
 
-  async function toggle(e: Employee) {
+  async function toggle(e: Employee, confirmed = false) {
     setError(null);
     try {
+      // Warn before taking someone off who is on a crew today (UAT D-36).
+      if (e.status === 'active' && !confirmed) {
+        const today = localToday();
+        const rows = await listLabor({ employeeId: e.id, from: today, to: today });
+        if (rows.length) { setConfirmOff({ e, projects: rows.map((r) => names.project(r.projectId)) }); return; }
+      }
+      setConfirmOff(null);
       await saveEmployee({ ...e, status: e.status === 'active' ? 'inactive' : 'active' });
       await fd.refresh();
     } catch (err) {
@@ -75,13 +92,25 @@ export function EmployeesScreen() {
             </div>
             <div className="field"><label className="field__label" htmlFor="e-notes">{t('fo.projects.notes', 'Notes (optional)')}</label>
               <input id="e-notes" className="input" value={editing.notes ?? ''} onChange={(e) => setEditing({ ...editing, notes: e.target.value })} /></div>
+            {duplicate ? (
+              <div className="banner banner--warn">{t('fo.emp.duplicate', 'Another worker already has this name. Enter an employee no. so the two can be told apart.')}</div>
+            ) : null}
             <div className="row" style={{ gap: 8 }}>
-              <button type="button" className="btn btn--primary" disabled={busy || !editing.fullName?.trim()} onClick={() => void save()}>{t('common.save', 'Save')}</button>
+              <button type="button" className="btn btn--primary" disabled={busy || !editing.fullName?.trim() || needsCode} onClick={() => void save()}>{t('common.save', 'Save')}</button>
               <button type="button" className="btn btn--ghost" onClick={() => setEditing(null)}>{t('common.cancel', 'Cancel')}</button>
             </div>
           </div>
         ) : null}
-        {error ? <div className="banner banner--error">{error}</div> : null}
+        <ErrorBanner message={error} />
+        {confirmOff ? (
+          <div className="banner banner--warn stack">
+            <div>{t('fo.emp.onCrewToday', '{{name}} is on today\'s crew ({{projects}}). Deactivating keeps today\'s record; they will not be offered for new visits.', { name: confirmOff.e.fullName, projects: confirmOff.projects.join(', ') })}</div>
+            <div className="row" style={{ gap: 8 }}>
+              <button type="button" className="btn btn--danger" onClick={() => void toggle(confirmOff.e, true)}>{t('users.deactivate', 'Deactivate')}</button>
+              <button type="button" className="btn btn--ghost" onClick={() => setConfirmOff(null)}>{t('common.cancel', 'Cancel')}</button>
+            </div>
+          </div>
+        ) : null}
         <SearchBox value={query} onChange={setQuery} placeholder={t('fo.crew.search', 'Search workers') ?? ''} />
         <label className="checkbox-row"><input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />{t('fo.emp.showInactive', 'Show inactive')}</label>
         <div className="card__meta">{t('fo.emp.count', '{{count}} worker(s)', { count: list.length })}</div>

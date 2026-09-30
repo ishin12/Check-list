@@ -16,10 +16,11 @@ import {
   workerReport,
 } from '@/domain/reports/reports';
 import { exportExcel, type ExportSheet } from '@/services/export/excel';
-import { addMonths, eachDay, formatDate, localToday, monthEnd, monthStart, weekday } from '@/lib/dates';
+import { addMonths, eachDay, formatDate, localToday, monthEnd, monthStart, weekday, riyadhDate } from '@/lib/dates';
 import { friendlyError } from '@/lib/ruleErrors';
 import { useAsync } from '@/lib/useAsync';
 import { useNames, useRoles } from './common';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 type Tab = 'workers' | 'projects' | 'matrix' | 'unallocated' | 'open' | 'visits';
 
@@ -67,7 +68,7 @@ export function ReportsScreen() {
     const recurring = data.recurring.filter((r) => !projectId || r.projectId === projectId);
     const employees = fd.employees.filter((e) => !employeeId || e.id === employeeId);
     const days = eachDay(from, to > today ? today : to);
-    const unalloc = unallocatedReport(employees, data.labor, days, data.workDays, weekday);
+    const unalloc = unallocatedReport(employees, data.labor, days, data.workDays, weekday, (iso) => riyadhDate(new Date(iso)));
     return {
       labor, visits, tasks, recurring,
       workers: workerReport(labor, from, to),
@@ -85,7 +86,7 @@ export function ReportsScreen() {
     { key: 'matrix', label: t('fo.rep.matrix', 'Monthly distribution') },
     { key: 'unallocated', label: t('fo.rep.unallocated', 'Not allocated') },
     { key: 'open', label: t('fo.rep.open', 'Open & overdue') },
-    { key: 'visits', label: t('fo.rep.visits', 'Visits done') },
+    { key: 'visits', label: t('fo.rep.visits', 'Visits') },
   ];
 
   const period = `${formatDate(from, language)} – ${formatDate(to, language)}`;
@@ -125,7 +126,7 @@ export function ReportsScreen() {
         rows: [
           ...f.open.followUp.map((x) => [names.project(x.projectId), names.taskLabel(x), statusText(x.status), x.note ?? '', '']),
           ...f.open.open.map((x) => [names.project(x.projectId), names.taskLabel(x), statusText(x.status), x.note ?? '', '']),
-          ...f.open.overduePeriodic.map((r) => [names.project(r.projectId), r.description, statusText('overdue'), '', r.nextDueOn]),
+          ...f.open.overduePeriodic.map((r) => [names.project(r.projectId), names.taskLabel(r), statusText('overdue'), '', r.nextDueOn]),
         ],
       },
       visits: {
@@ -189,8 +190,8 @@ export function ReportsScreen() {
             </div>
           ) : null}
         </div>
-        {error ? <div className="banner banner--error">{error}</div> : null}
-        {exportError ? <div className="banner banner--error">{exportError}</div> : null}
+        <ErrorBanner message={error} />
+        <ErrorBanner message={exportError} />
         {loading && !filtered ? <p className="hint">{t('common.loading', 'Loading…')}</p> : null}
 
         {filtered && tab === 'workers' ? (
@@ -239,7 +240,7 @@ export function ReportsScreen() {
               rows={[
                 ...filtered.open.followUp.map((x) => [<Link key="p" to={`/projects/${x.projectId}`}>{names.project(x.projectId)}</Link>, names.taskLabel(x), <FieldStatusPill key="s" status={x.status} />, x.note ?? '']),
                 ...filtered.open.open.map((x) => [<Link key="p" to={`/projects/${x.projectId}`}>{names.project(x.projectId)}</Link>, names.taskLabel(x), <FieldStatusPill key="s" status={x.status} />, x.note ?? '']),
-                ...filtered.open.overduePeriodic.map((r) => [<Link key="p" to={`/projects/${r.projectId}`}>{names.project(r.projectId)}</Link>, r.description, <FieldStatusPill key="s" status="overdue" />, `${H.due}: ${formatDate(r.nextDueOn, language)}`]),
+                ...filtered.open.overduePeriodic.map((r) => [<Link key="p" to={`/projects/${r.projectId}`}>{names.project(r.projectId)}</Link>, names.taskLabel(r), <FieldStatusPill key="s" status="overdue" />, `${H.due}: ${formatDate(r.nextDueOn, language)}`]),
               ]}
               empty={t('fo.home.noFollowUps', 'Nothing waiting.')} />
           </div>
@@ -262,8 +263,11 @@ export function ReportsScreen() {
 function Table({ head, rows, foot, numeric = [], empty }: {
   head: React.ReactNode[]; rows: React.ReactNode[][]; foot?: React.ReactNode[]; numeric?: number[]; empty: string;
 }) {
+  const { t } = useTranslation();
   if (rows.length === 0) return <p className="hint">{empty}</p>;
   return (
+    <>
+    {head.length > 3 ? <p className="hint scroll-hint">↔ {t('fo.rep.swipe', 'Swipe sideways to see every column.')}</p> : null}
     <div className="table-wrap">
       <table className="data">
         <thead><tr>{head.map((h, i) => <th key={i} className={numeric.includes(i) ? 'num' : undefined}>{h}</th>)}</tr></thead>
@@ -271,5 +275,6 @@ function Table({ head, rows, foot, numeric = [], empty }: {
         {foot ? <tfoot><tr>{foot.map((c, j) => <td key={j} className={numeric.includes(j) ? 'num' : undefined}>{c}</td>)}</tr></tfoot> : null}
       </table>
     </div>
+    </>
   );
 }

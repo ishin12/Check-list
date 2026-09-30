@@ -15,6 +15,7 @@ import { addDays, formatDate, localToday } from '@/lib/dates';
 import { friendlyError } from '@/lib/ruleErrors';
 import { useAsync } from '@/lib/useAsync';
 import { useMyProjects, useNames, useRoles } from './common';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 /**
  * §5 steps 1–3: pick the project, start the visit, pick the crew — in one
@@ -154,7 +155,7 @@ export function StartVisitScreen() {
         </div>
 
         <div className="section-title">{t('fo.start.crew', 'Crew with you today')}</div>
-        {ctx.error ? <div className="banner banner--error">{ctx.error}</div> : null}
+        <ErrorBanner message={ctx.error} />
         {ctx.data ? (
           <CrewPicker
             employees={fd.employees}
@@ -165,10 +166,10 @@ export function StartVisitScreen() {
           />
         ) : <p className="hint">{t('common.loading', 'Loading…')}</p>}
 
-        {error ? <div className="banner banner--error">{error}</div> : null}
+        <ErrorBanner message={error} />
       </main>
       <div className="action-bar">
-        <button type="button" className="btn btn--primary btn--lg btn--block" disabled={saving || crew.size === 0 || project.status !== 'active'} onClick={() => void start()}>
+        <button type="button" className="btn btn--primary btn--lg btn--block" disabled={saving || crew.size === 0 || project.status !== 'active' || date > localToday()} onClick={() => void start()}>
           {saving ? t('common.saving', 'Saving…') : crew.size === 0 ? t('fo.start.pickCrew', 'Select the crew to start') : t('fo.start.go', 'Start visit with {{count}} worker(s)', { count: crew.size })}
         </button>
       </div>

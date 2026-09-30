@@ -11,6 +11,7 @@ import { dueRecurringItems, isOverdue } from '@/domain/fieldops/fieldOps';
 import { addDays, formatDate, localToday, weekday } from '@/lib/dates';
 import { useAsync } from '@/lib/useAsync';
 import { useMyProjects, useNames, useRoles } from './common';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 /**
  * Supervisor home (§4): only what is needed today — today's visits, open and
@@ -42,7 +43,8 @@ export function FieldHomeScreen() {
   const unclosed = (data?.visits ?? []).filter((v) => v.status === 'in_progress' && v.visitDate < today);
   const upcoming = (data?.visits ?? []).filter((v) => v.status === 'planned' && v.visitDate > today).slice(-5).reverse();
   const followUps = (data?.tasks ?? []).filter((x) => x.status === 'needs_follow_up');
-  const openManual = (data?.tasks ?? []).filter((x) => x.status === 'open' && x.source === 'manual');
+  // Open work waiting for a visit: manager tasks and items answered "not done" (UAT D-19).
+  const openManual = (data?.tasks ?? []).filter((x) => x.status === 'open' && (x.source === 'manual' || !!x.lastVisitId));
   const due = projects.flatMap((p) => dueRecurringItems(p.id, today, data?.recurring ?? []));
   const isWorkDay = (data?.workDays ?? []).includes(weekday(today));
   const unallocated = fd.employees
@@ -54,7 +56,7 @@ export function FieldHomeScreen() {
     <AppShell>
       <AppHeader title={t('fo.home.title', 'Today')} />
       <main className="app-main">
-        {error || fd.error ? <div className="banner banner--error">{error ?? fd.error}</div> : null}
+        <ErrorBanner message={error ?? fd.error} />
 
         <div className="hero hero--brand">
           <div className="hero__title">{t('today.greeting', 'Hi {{name}}', { name: user?.fullName ?? user?.email ?? '' })}</div>
@@ -134,7 +136,7 @@ export function FieldHomeScreen() {
             {due.map((r) => (
               <Link key={r.id} to={`/projects/${r.projectId}`} className="card card--tap">
                 <div className="grow">
-                  <div className="card__title">{r.description}</div>
+                  <div className="card__title">{names.taskLabel(r)}</div>
                   <div className="card__meta">{names.project(r.projectId)} · {t('fo.home.dueOn', 'due')} {formatDate(r.nextDueOn, language)}</div>
                 </div>
                 {isOverdue(r, today) ? <FieldStatusPill status="overdue" /> : null}

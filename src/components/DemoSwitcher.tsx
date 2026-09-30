@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { isDemoMode } from '@/services/supabase/client';
 import { features } from '@/config/features';
 
@@ -7,6 +8,7 @@ interface Profile { id: string; full_name: string; role: string }
 
 export function DemoSwitcher() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [open, setOpen] = useState(false);
 
@@ -33,11 +35,11 @@ export function DemoSwitcher() {
       </button>
       {open ? (
         <div className="demo-switcher__menu" role="menu">
-          <div className="demo-switcher__label">Switch role</div>
+          <div className="demo-switcher__label">{t('demo.switchRole', 'Switch role')}</div>
           {profiles.map((p) => (
             <button key={p.id} type="button" className="demo-switcher__item" onClick={() => switchTo(p.id)}>
               <span style={{ flex: 1 }}>{p.full_name}</span>
-              <span className="card__meta" style={{ textTransform: 'capitalize' }}>{p.role}</span>
+              <span className="card__meta">{t(`demo.role.${p.role}`, p.role)}</span>
             </button>
           ))}
         </div>

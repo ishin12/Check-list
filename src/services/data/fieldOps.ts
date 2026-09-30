@@ -63,6 +63,7 @@ export const toProject = (r: Row): Project => ({
 
 export const toEmployee = (r: Row): Employee => ({
   id: r.id, code: u(r.code), fullName: r.full_name, phone: u(r.phone), status: r.status, notes: u(r.notes),
+  createdAt: u(r.created_at),
 });
 
 export const toVisit = (r: Row): Visit => ({
@@ -74,7 +75,7 @@ export const toTask = (r: Row): ProjectTask => ({
   id: r.id, projectId: r.project_id, visitId: u(r.visit_id), source: r.source, templateId: u(r.template_id),
   templateItemId: u(r.template_item_id), recurringItemId: u(r.recurring_item_id), description: r.description,
   status: r.status, required: r.required !== false, photoRequired: !!r.photo_required, note: u(r.note),
-  completedAt: u(r.completed_at), completedInVisitId: u(r.completed_in_visit_id), lastVisitId: u(r.last_visit_id),
+  completedAt: u(r.completed_at), completedInVisitId: u(r.completed_in_visit_id), lastVisitId: u(r.last_visit_id), followUpVisitId: u(r.follow_up_visit_id),
   createdAt: r.created_at,
 });
 
@@ -292,7 +293,7 @@ export type TaskAnswer = 'done' | 'not_done' | 'follow_up';
  * back to open, so "not done" on a follow-up keeps it as a follow-up.
  */
 export async function answerTask(
-  task: Pick<ProjectTask, 'id' | 'status'>,
+  task: Pick<ProjectTask, 'id' | 'status'> & Partial<Pick<ProjectTask, 'followUpVisitId'>>,
   visitId: string,
   answer: TaskAnswer,
   note?: string,
@@ -301,6 +302,8 @@ export async function answerTask(
   if (answer === 'done') { row.status = 'completed'; row.completed_in_visit_id = visitId; }
   if (answer === 'follow_up') row.status = 'needs_follow_up';
   if (answer === 'not_done' && task.status === 'completed') row.status = 'open';
+  // A follow-up set by mistake on this same visit can still become "not done" (0008).
+  if (answer === 'not_done' && task.status === 'needs_follow_up' && task.followUpVisitId === visitId) row.status = 'open';
   if (note !== undefined) row.note = note.trim() || null;
   changed(await sb().from('project_tasks').update(row).eq('id', task.id).select('id'));
 }

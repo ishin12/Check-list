@@ -31,8 +31,14 @@ import { formatDate } from '@/lib/dates';
 import { friendlyError } from '@/lib/ruleErrors';
 import { useAsync } from '@/lib/useAsync';
 import { useNames, useRoles } from './common';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 const SOURCE_ORDER: Record<ProjectTask['source'], number> = { manual: 0, recurring: 1, stage: 2, checklist: 3 };
+
+/** Existing work brought into the visit (not raised by it). Fixed for the whole visit. */
+function carriedIn(t: ProjectTask, visitId: string): boolean {
+  return !t.pending && t.visitId !== visitId;
+}
 
 /** §5 steps 4–7: what is required, execute, follow-up, complete. */
 export function VisitScreen() {
@@ -81,7 +87,9 @@ export function VisitScreen() {
       : [...tasksForVisit(visit.projectId, visit.id, data.tasks), ...data.optional];
     return [...list].sort((a, b) =>
       (a.pending ? 1 : 0) - (b.pending ? 1 : 0)   // unused optional items last
-      || (a.status === 'needs_follow_up' ? -1 : 0) - (b.status === 'needs_follow_up' ? -1 : 0)
+      // Work carried in from earlier visits first. This does not depend on the
+      // answer given now, so cards stay in place while they are answered.
+      || (carriedIn(b, visit.id) ? 1 : 0) - (carriedIn(a, visit.id) ? 1 : 0)
       || SOURCE_ORDER[a.source] - SOURCE_ORDER[b.source]
       || (a.createdAt < b.createdAt ? -1 : 1));
   }, [visit, data]);
@@ -105,7 +113,7 @@ export function VisitScreen() {
     setBusy(true); setActionError(null);
     try {
       if (notes !== (visit.notes ?? '')) await updateVisit(visit.id, { notes });
-      await completeVisit(visit, {
+      await completeVisit({ ...visit, notes }, {
         projectName: project.name, projectCode: project.code, clientName: names.client(project.clientId),
         supervisorName: names.person(visit.supervisorId), employeeName: names.employee, taskLabel: names.taskLabel,
       });
@@ -135,7 +143,7 @@ export function VisitScreen() {
             <div className="grow">
               <div className="card__title">{formatDate(visit.visitDate, language, { weekday: 'long', day: 'numeric', month: 'long' })}</div>
               <div className="card__meta">
-                {[names.client(project?.clientId), names.person(visit.supervisorId), configText(fd.stage(project?.stageId)?.name, language)].filter(Boolean).join(' · ')}
+                {[names.client(project?.clientId), names.person(visit.supervisorId), visit.status === 'in_progress' ? configText(fd.stage(project?.stageId)?.name, language) : ''].filter(Boolean).join(' · ')}
               </div>
             </div>
             <FieldStatusPill status={visit.status} />
@@ -208,21 +216,36 @@ export function VisitScreen() {
         ) : visit.notes ? <div className="card"><div className="card__meta">{visit.notes}</div></div> : null}
 
         {editable && check && !canCompleteVisit(check) ? (
-          <div className="banner banner--info">
+          <div className="banner banner--warn" id="complete-blockers">
             <div style={{ fontWeight: 700, marginBottom: 4 }}>{t('fo.visit.toComplete', 'Before completing:')}</div>
             <ul style={{ margin: 0, paddingInlineStart: 18 }}>
               {check.noCrew ? <li>{t('fo.visit.needCrew', 'Add the crew.')}</li> : null}
-              {check.undecided.length ? <li>{t('fo.visit.needAnswers', 'Answer {{count}} required item(s): done, not done or follow-up.', { count: check.undecided.length })}</li> : null}
-              {check.missingPhotos.length ? <li>{t('fo.visit.needPhotos', 'Add a photo to {{count}} completed item(s) that require one.', { count: check.missingPhotos.length })}</li> : null}
+              {check.undecided.length ? (
+                <li>
+                  {t('fo.visit.needAnswers', 'Answer {{count}} required item(s): done, not done or follow-up.', { count: check.undecided.length })}
+                  {' '}<strong>{check.undecided.map((id) => names.taskLabel(visitTasks.find((x) => x.id === id)!)).join(language === 'en' ? ', ' : '، ')}</strong>
+                </li>
+              ) : null}
+              {check.missingPhotos.length ? (
+                <li>
+                  {t('fo.visit.needPhotos', 'Add a photo to {{count}} completed item(s) that require one.', { count: check.missingPhotos.length })}
+                  {' '}<strong>{check.missingPhotos.map((id) => names.taskLabel(visitTasks.find((x) => x.id === id)!)).join(language === 'en' ? ', ' : '، ')}</strong>
+                </li>
+              ) : null}
             </ul>
           </div>
         ) : null}
-        {actionError ? <div className="banner banner--error">{actionError}</div> : null}
+        <ErrorBanner message={actionError} />
       </main>
 
       {editable ? (
         <div className="action-bar">
-          <button type="button" className="btn btn--success btn--lg btn--block" disabled={busy || !check || !canCompleteVisit(check)} onClick={() => setConfirm(true)}>
+          {/* Stays tappable: when something is missing it shows what (UAT D-21). */}
+          <button type="button" className={`btn btn--lg btn--block ${check && canCompleteVisit(check) ? 'btn--success' : 'btn--ghost'}`} disabled={busy || !check}
+            onClick={() => {
+              if (check && canCompleteVisit(check)) setConfirm(true);
+              else document.getElementById('complete-blockers')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }}>
             {busy ? t('common.saving', 'Saving…') : `✓ ${t('fo.visit.complete', 'Complete visit')}`}
           </button>
         </div>
@@ -291,7 +314,7 @@ function CrewEditor({ visitId, projectId, workDate, supervisorId, crew, onChange
           {t('fo.crew.addSelected', 'Add {{count}} worker(s)', { count: adding.size })}
         </button>
       ) : null}
-      {error ? <div className="banner banner--error">{error}</div> : null}
+      <ErrorBanner message={error} />
     </div>
   );
 }

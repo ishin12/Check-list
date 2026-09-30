@@ -6,10 +6,13 @@
 import type { LaborDuration, Project, ProjectTask, Visit, VisitReport } from '@/domain/models/ops';
 import type { Language } from '@/domain/models/types';
 import { buildReportContent, buildVisitTasks, labelText } from '@/domain/fieldops/visitPlan';
+import { isMonthClosed } from '@/domain/labor/allocation';
 import {
   createReport,
   createTasks,
   createVisit,
+  dayLoads,
+  listMonthCloses,
   deletePlannedVisit,
   getReportForVisit,
   insertCrew,
@@ -38,6 +41,17 @@ export interface StartVisitInput {
  * a visit created here is removed again so nothing half-saved is left.
  */
 export async function startVisit(input: StartVisitInput): Promise<string> {
+  // Check the crew first so a refused start leaves nothing behind — not even a
+  // created-then-removed visit in the audit log (UAT D-02). The database still
+  // re-checks under a lock (BR-001, TC-12) in case two supervisors race.
+  const [loads, closes] = await Promise.all([dayLoads(input.date, input.date), listMonthCloses()]);
+  if (isMonthClosed(input.date, closes)) throw new Error(`BR-009: labor for ${input.date.slice(0, 7)} is closed`);
+  for (const c of input.crew) {
+    const booked = loads.get(`${c.employeeId}|${input.date}`) ?? 0;
+    if (booked + c.duration > 1) {
+      throw new Error(`BR-001: employee already has ${booked} day(s) on ${input.date}; adding ${c.duration} would exceed 1.0`);
+    }
+  }
   let visit = input.plannedVisit ?? await createVisit({
     projectId: input.project.id, visitDate: input.date, supervisorId: input.supervisorId,
   });
@@ -142,6 +156,7 @@ export async function generateReportContent(visit: Visit, names: ReportNames, re
     photos,
     crew: crew.map((a) => ({ name: names.employeeName(a.employeeId), duration: a.duration })),
     clientRepName,
+    visitNotes: visit.notes,
   });
 }
 
@@ -174,6 +189,9 @@ export function makeTaskLabeler(
   for (const tpl of templates) for (const it of tpl.tasks) index.set(`${tpl.id}|${it.id}`, it.label);
   return (t) => {
     const label = t.templateId && t.templateItemId ? index.get(`${t.templateId}|${t.templateItemId}`) : undefined;
-    return label ? labelText(label, language) || t.description : t.description;
+    // Translate only an unchanged template wording; a description management
+    // rewrote is shown as written.
+    if (!label || !Object.values(label).includes(t.description)) return t.description;
+    return labelText(label, language) || t.description;
   };
 }

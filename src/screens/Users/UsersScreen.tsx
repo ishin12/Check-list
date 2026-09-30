@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/AppShell';
+import { features } from '@/config/features';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
 import { invokeFunction } from '@/services/data/functions';
@@ -101,7 +102,7 @@ export function UsersScreen() {
 
   return (
     <AppShell>
-      <AppHeader title={t('users.title', 'Team & clients')} showBack />
+      <AppHeader title={features.legacyTasks ? t('users.title', 'Team & clients') : t('users.teamTitle', 'Team')} showBack />
       <main className="app-main">
         <form className="card stack" onSubmit={invite}>
           <div className="card__title">{t('users.invite', 'Invite someone')}</div>
@@ -119,8 +120,8 @@ export function UsersScreen() {
               <option value="supervisor">{t('fo.role.supervisor', 'Supervisor')}</option>
               <option value="manager">{t('fo.role.manager', 'Manager')}</option>
               <option value="finance">{t('fo.role.finance', 'Finance')}</option>
-              <option value="client">{t('fo.role.client', 'Client')}</option>
-              <option value="worker">{t('fo.role.worker', 'Worker (older task list)')}</option>
+              {features.legacyTasks ? <option value="client">{t('fo.role.client', 'Client')}</option> : null}
+              {features.legacyTasks ? <option value="worker">{t('fo.role.worker', 'Worker (older task list)')}</option> : null}
             </select>
           </div>
           {role === 'manager' ? (
@@ -147,7 +148,7 @@ export function UsersScreen() {
 
         <div className="section-title">{t('users.everyone', 'Everyone')}</div>
         <div className="stack">
-          {users.map((u) => (
+          {users.filter((u) => features.legacyTasks || (u.role !== 'client' && u.role !== 'worker')).map((u) => (
             <div key={u.id} className="card">
               <div className="row" style={{ justifyContent: 'space-between' }}>
                 <div>
@@ -176,7 +177,7 @@ export function UsersScreen() {
                     <option value="supervisor">{t('fo.role.supervisor', 'Supervisor')}</option>
                     <option value="manager">{t('fo.role.manager', 'Manager')}</option>
                     <option value="finance">{t('fo.role.finance', 'Finance')}</option>
-                    <option value="worker">{t('fo.role.worker', 'Worker (older task list)')}</option>
+                    {features.legacyTasks ? <option value="worker">{t('fo.role.worker', 'Worker (older task list)')}</option> : null}
                   </select>
                   {u.role === 'manager' ? (
                     <label className="checkbox-row">

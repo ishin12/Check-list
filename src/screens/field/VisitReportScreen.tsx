@@ -15,6 +15,7 @@ import type { VisitReportContent } from '@/domain/models/ops';
 import { friendlyError } from '@/lib/ruleErrors';
 import { useAsync } from '@/lib/useAsync';
 import { useNames } from './common';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 const WIDTH = 794;
 const pdf = new HtmlRasterPdfGenerator();
@@ -74,6 +75,7 @@ export function VisitReportScreen() {
   const docRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [zoomed, setZoomed] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [building, setBuilding] = useState(false);
   const [outcome, setOutcome] = useState<ShareOutcome | null>(null);
@@ -115,6 +117,7 @@ export function VisitReportScreen() {
       await reload();
     } catch (e) {
       setSaveError(friendlyError(e, t));
+      void build();
     }
   }
 
@@ -130,6 +133,7 @@ export function VisitReportScreen() {
     followUp: t('fo.report.followUp', 'Follow-up / next visit'),
     none: t('fo.report.none', 'None'),
     crew: t('fo.report.crew', 'Crew'),
+    notes: t('fo.report.notes', 'Visit notes'),
     days: t('fo.days', 'day(s)'),
     statusDone: t('fo.answer.done', 'Done'),
     statusFollowUp: t('fo.status.needs_follow_up', 'Follow-up'),
@@ -151,7 +155,7 @@ export function VisitReportScreen() {
     <AppShell>
       <AppHeader title={t('fo.report.title', 'Visit report')} showBack />
       <main className="app-main">
-        {error ? <div className="banner banner--error">{error}</div> : null}
+        <ErrorBanner message={error} />
         {!data ? <p className="hint">{t('common.loading', 'Loading…')}</p> : (
           <>
             {data.visit.status !== 'completed' ? (
@@ -162,15 +166,23 @@ export function VisitReportScreen() {
             {data.report ? (
               <div className="field">
                 <label className="field__label" htmlFor="rep">{t('fo.report.clientRep', 'Client representative')}</label>
-                <input id="rep" className="input" value={rep} onChange={(e) => setRep(e.target.value)} onBlur={() => void saveRep()}
+                <input id="rep" className="input" value={rep}
+                  onChange={(e) => { setRep(e.target.value); setFile(null); /* the PDF is rebuilt with the saved name */ }}
+                  onBlur={() => { if (rep === (data.content.clientRepName ?? '')) void build(); else void saveRep(); }}
                   placeholder={t('fo.report.repPlaceholder', 'Name of the person receiving the visit') ?? ''} />
-                {saveError ? <div className="banner banner--error">{saveError}</div> : null}
+                <ErrorBanner message={saveError} />
               </div>
             ) : null}
 
-            <div ref={boxRef} className="report-frame">
-              <div style={{ width: WIDTH * scale, height: docHeight * scale, overflow: 'hidden' }}>
-                <div style={{ transform: `scale(${scale})`, transformOrigin: language === 'en' ? 'top left' : 'top right', width: WIDTH }}>
+            {scale < 0.75 ? (
+              // On a phone the page is shrunk to fit; full size scrolls instead (UAT D-46).
+              <button type="button" className="btn btn--ghost" onClick={() => setZoomed((z) => !z)}>
+                {zoomed ? t('fo.report.fit', 'Fit to screen') : t('fo.report.fullSize', 'View full size')}
+              </button>
+            ) : null}
+            <div ref={boxRef} className="report-frame" style={zoomed ? { overflowX: 'auto' } : undefined}>
+              <div style={{ width: WIDTH * (zoomed ? 1 : scale), height: docHeight * (zoomed ? 1 : scale), overflow: 'hidden' }}>
+                <div style={{ transform: `scale(${zoomed ? 1 : scale})`, transformOrigin: language === 'en' ? 'top left' : 'top right', width: WIDTH }}>
                   <VisitReportDocument ref={docRef} content={data.content} language={language} labels={labels} images={data.images} />
                 </div>
               </div>

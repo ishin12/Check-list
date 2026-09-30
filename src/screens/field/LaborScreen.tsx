@@ -12,6 +12,7 @@ import { formatDate, localToday, monthEnd, monthStart } from '@/lib/dates';
 import { friendlyError } from '@/lib/ruleErrors';
 import { useAsync } from '@/lib/useAsync';
 import { useNames, useRoles } from './common';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 /**
  * Labor ledger (§6, §23): the single record of allocations used by finance
@@ -73,7 +74,7 @@ export function LaborScreen() {
         <label className="checkbox-row"><input type="checkbox" checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />{t('fo.labor.showVoided', 'Show voided rows')}</label>
 
         {adding ? <AddAllocation closes={data?.closes ?? []} onDone={async () => { setAdding(false); await reload(); }} /> : null}
-        {error ? <div className="banner banner--error">{error}</div> : null}
+        <ErrorBanner message={error} />
 
         <div className="card__meta">{t('fo.labor.summary', '{{count}} row(s) · {{days}} day(s)', { count: rows.filter((r) => !r.voidedAt).length, days: total })}</div>
         <div className="stack">
@@ -148,7 +149,7 @@ function EditAllocation({ row, closed, onDone, onCancel }: { row: LaborAllocatio
         <button type="button" className="btn btn--danger" disabled={busy || !voidReason.trim() || (closed && !reason.trim())}
           onClick={() => void act(() => voidLabor(row.id, voidReason, closed ? reason : undefined))}>{t('fo.labor.void', 'Void')}</button>
       </div>
-      {error ? <div className="banner banner--error">{error}</div> : null}
+      <ErrorBanner message={error} />
     </div>
   );
 }
@@ -173,8 +174,8 @@ function AddAllocation({ closes, onDone }: { closes: { month: string }[]; onDone
     <div className="card stack">
       <div className="card__title">{t('fo.labor.add', 'Add labor')}</div>
       <div className="toolbar">
-        <div className="field"><label className="field__label">{t('fo.start.date', 'Visit date')}</label>
-          <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+        <div className="field"><label className="field__label">{t('fo.rep.day', 'Date')}</label>
+          <input className="input" type="date" value={date} max={localToday()} onChange={(e) => setDate(e.target.value)} /></div>
         <div className="field"><label className="field__label">{t('fo.labor.worker', 'Worker')}</label>
           <select className="input" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
             <option value="">—</option>
@@ -202,7 +203,7 @@ function AddAllocation({ closes, onDone }: { closes: { month: string }[]; onDone
           await onDone();
         } catch (e) { setError(friendlyError(e, t)); } finally { setBusy(false); }
       }}>{t('common.save', 'Save')}</button>
-      {error ? <div className="banner banner--error">{error}</div> : null}
+      <ErrorBanner message={error} />
     </div>
   );
 }

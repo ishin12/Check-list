@@ -8,10 +8,11 @@ import { useFieldData } from '@/app/providers/FieldDataContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { closeMonth, getWorkDays, listLabor, listMonthCloses, listVisits } from '@/services/data/fieldOps';
 import { unallocatedByWorker, unallocatedReport } from '@/domain/reports/reports';
-import { addMonths, eachDay, formatDateTimeShort, formatMonth, localToday, monthEnd, monthStart, weekday, formatDate } from '@/lib/dates';
+import { addMonths, eachDay, formatDateTimeShort, formatMonth, localToday, monthEnd, monthStart, weekday, formatDate, riyadhDate } from '@/lib/dates';
 import { friendlyError } from '@/lib/ruleErrors';
 import { useAsync } from '@/lib/useAsync';
 import { useNames, useRoles } from './common';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 /**
  * Month close (§20, §23, BR-009): finance reviews the month, then closes it.
@@ -37,7 +38,7 @@ export function MonthCloseScreen() {
     const to = monthEnd(selected);
     const [labor, visits, workDays] = await Promise.all([listLabor({ from, to }), listVisits({ from, to }), getWorkDays()]);
     const days = eachDay(from, to < today ? to : today);
-    const unalloc = unallocatedReport(fd.employees, labor, days, workDays, weekday);
+    const unalloc = unallocatedReport(fd.employees, labor, days, workDays, weekday, (iso) => riyadhDate(new Date(iso)));
     return {
       days: labor.reduce((s, a) => s + a.duration, 0),
       rows: labor.length,
@@ -76,8 +77,8 @@ export function MonthCloseScreen() {
           })}
         </div>
 
-        {closes.error || detail.error ? <div className="banner banner--error">{closes.error ?? detail.error}</div> : null}
-        {error ? <div className="banner banner--error">{error}</div> : null}
+        <ErrorBanner message={closes.error ?? detail.error} />
+        <ErrorBanner message={error} />
         {done ? <div className="banner banner--success">{done}</div> : null}
 
         <div className="card stack">

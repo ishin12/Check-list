@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getMockClient } from '@/services/supabase/mockClient';
+import { localToday } from '@/lib/dates';
 
 // The demo backend must refuse what Postgres refuses (0006_field_ops.sql), so
 // what the owner tries in demo mode behaves the same in production.
@@ -98,6 +99,7 @@ describe('demo backend mirrors the field-ops rules', () => {
   });
 
   it('TC-04 follow-up survives visit completion; states only move forward', async () => {
+    await asUser('u-wb');   // Sara supervises pr-2 (vi-2, pt-4, pt-5)
     await sb.from('project_tasks').update({ status: 'needs_follow_up' }).eq('id', 'pt-4');
     await sb.from('project_tasks').update({ status: 'completed' }).eq('id', 'pt-5');
     expect((await sb.from('visits').update({ status: 'completed' }).eq('id', 'vi-2')).error).toBeNull();
@@ -107,6 +109,17 @@ describe('demo backend mirrors the field-ops rules', () => {
     expect((await sb.from('project_tasks').update({ status: 'open' }).eq('id', 'pt-4')).error?.message).toMatch(/cannot go back/);
     expect((await sb.from('project_tasks').update({ status: 'open' }).eq('id', 'pt-5')).error?.message).toMatch(/cannot be reopened/);
     expect((await sb.from('visits').update({ status: 'in_progress' }).eq('id', 'vi-2')).error?.message).toMatch(/cannot move/);
+  });
+
+  it('D-10: a supervisor sees only the projects they supervise (RLS)', async () => {
+    const { data: projects } = await sb.from('projects').select('*');
+    expect(projects.map((p: { id: string }) => p.id).sort()).toEqual(['pr-1', 'pr-3']);
+    const { data: visits } = await sb.from('visits').select('*');
+    expect(visits.every((v: { project_id: string }) => v.project_id !== 'pr-2')).toBe(true);
+    const { data: hidden } = await sb.from('project_tasks').select('*').eq('id', 'pt-4');
+    expect(hidden).toEqual([]);
+    await asUser('u-fin');
+    expect((await sb.from('projects').select('*')).data.length).toBe(3);
   });
 
   it('a project with open tasks cannot be closed', async () => {
@@ -124,7 +137,7 @@ describe('demo backend mirrors the field-ops rules', () => {
 
 describe('review fixes mirrored in the demo backend', () => {
   it('a Done correction on a follow-up stays a follow-up', async () => {
-    const { data: v } = await sb.from('visits').insert({ project_id: 'pr-1', visit_date: '2026-10-22', supervisor_id: 'u-wa' }).select().single();
+    const { data: v } = await sb.from('visits').insert({ project_id: 'pr-1', visit_date: localToday(), supervisor_id: 'u-wa' }).select().single();
     await sb.from('visits').update({ status: 'in_progress' }).eq('id', v.id);
     await sb.from('project_tasks').update({ status: 'completed', completed_in_visit_id: v.id }).eq('id', 'pt-1');
     await sb.from('project_tasks').update({ status: 'open' }).eq('id', 'pt-1');
@@ -133,6 +146,7 @@ describe('review fixes mirrored in the demo backend', () => {
   });
 
   it('C03: no task can be deleted, used or not (BR-014, migration 0008)', async () => {
+    await asUser('u-mgr');
     const { data: fresh } = await sb.from('project_tasks').insert({ project_id: 'pr-1', description: 'Edging', source: 'checklist', required: false }).select().single();
     for (const id of ['pt-5', fresh.id]) {
       const { error } = await sb.from('project_tasks').delete().eq('id', id);
@@ -147,6 +161,7 @@ describe('review fixes mirrored in the demo backend', () => {
   });
 
   it('I01: a project cannot move past a stage whose required items are not done', async () => {
+    await asUser('u-mgr');
     // pr-2 is on the irrigation stage with its three required items open.
     const { error } = await sb.from('projects').update({ stage_id: 'st-planting_ready' }).eq('id', 'pr-2');
     expect(error?.message).toMatch(/STAGE-GATE/);

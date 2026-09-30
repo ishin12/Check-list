@@ -33,6 +33,7 @@ import { formatDate, localToday } from '@/lib/dates';
 import { friendlyError } from '@/lib/ruleErrors';
 import { useAsync } from '@/lib/useAsync';
 import { useNames, useRoles } from './common';
+import { ErrorBanner } from '@/components/ErrorBanner';
 
 type Tab = 'overview' | 'visits' | 'tasks' | 'periodic' | 'photos' | 'labor';
 
@@ -84,6 +85,8 @@ export function ProjectDetailScreen() {
   const follow = (data?.tasks ?? []).filter((x) => x.status === 'needs_follow_up');
   const done = (data?.tasks ?? []).filter((x) => x.status === 'completed');
   const blockers = projectCloseBlockers(project, data?.tasks ?? []);
+  const visitInProgress = (data?.visits ?? []).some((v) => v.status === 'in_progress');
+  const cannotFinish = blockers.length > 0 || visitInProgress;
   const canWork = project.status === 'active' && (isManager || project.supervisorId === user?.id);
   const final = project.status === 'completed' || project.status === 'closed';
   const days = (data?.labor ?? []).reduce((s, a) => s + a.duration, 0);
@@ -96,7 +99,7 @@ export function ProjectDetailScreen() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'overview', label: t('fo.pd.overview', 'Overview') },
     { key: 'visits', label: `${t('fo.pd.visits', 'Visits')} (${data?.visits.length ?? 0})` },
-    { key: 'tasks', label: `${t('fo.pd.tasks', 'Tasks')} (${open.length + follow.length})` },
+    { key: 'tasks', label: `${t('fo.pd.tasks', 'Tasks')} (${t('fo.pd.openCount', '{{count}} open', { count: open.length + follow.length })})` },
     { key: 'periodic', label: `${t('fo.pd.periodic', 'Periodic')} (${data?.recurring.filter((r) => r.active).length ?? 0})` },
     { key: 'photos', label: `${t('fo.pd.photos', 'Photos')} (${data?.photos.length ?? 0})` },
     { key: 'labor', label: `${t('fo.pd.labor', 'Labor')} (${days})` },
@@ -106,7 +109,7 @@ export function ProjectDetailScreen() {
     <AppShell>
       <AppHeader title={project.name} showBack action={isManager ? <Link to={`/projects/${project.id}/edit`} className="btn btn--ghost">{t('common.edit', 'Edit')}</Link> : undefined} />
       <main className="app-main">
-        {error ? <div className="banner banner--error">{error}</div> : null}
+        <ErrorBanner message={error} />
         <div className="card stack" style={{ gap: 6 }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="grow">
@@ -128,13 +131,16 @@ export function ProjectDetailScreen() {
                 {project.status === 'active'
                   ? <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => setConfirmStatus('on_hold')}>{t('fo.pd.hold', 'Put on hold')}</button>
                   : <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => void run(() => updateProject(project.id, { status: 'active' }))}>{t('fo.pd.resume', 'Resume')}</button>}
-                <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => setConfirmStatus('completed')}>{t('fo.pd.complete', 'Mark completed')}</button>
-                <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => setConfirmStatus('closed')}>{t('fo.pd.close', 'Close')}</button>
+                <button type="button" className="btn btn--ghost" disabled={busy || cannotFinish} onClick={() => setConfirmStatus('completed')}>{t('fo.pd.complete', 'Mark completed')}</button>
+                <button type="button" className="btn btn--ghost" disabled={busy || cannotFinish} onClick={() => setConfirmStatus('closed')}>{t('fo.pd.close', 'Close')}</button>
               </>
             ) : null}
           </div>
           {isManager && !final && blockers.length ? (
             <div className="card__meta">{t('fo.pd.closeBlocked', '{{count}} open or follow-up task(s) must be finished before the project can be completed or closed.', { count: blockers.length })}</div>
+          ) : null}
+          {isManager && !final && visitInProgress ? (
+            <div className="card__meta">{t('fo.pd.closeVisitOpen', 'A visit is in progress; it must be completed before the project can be completed or closed.')}</div>
           ) : null}
         </div>
         {project.stageId && progress ? (
@@ -168,7 +174,7 @@ export function ProjectDetailScreen() {
             ) : null}
           </div>
         ) : null}
-        {actionError ? <div className="banner banner--error">{actionError}</div> : null}
+        <ErrorBanner message={actionError} />
 
         <div className="tabs" role="tablist">
           {tabs.map((x) => (
@@ -228,7 +234,7 @@ export function ProjectDetailScreen() {
               <div key={r.id} className="card">
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div className="grow">
-                    <div className="card__title">{r.description}</div>
+                    <div className="card__title">{names.taskLabel(r)}</div>
                     <div className="card__meta">
                       ↻ {t(recurrenceLabel(r.recurrence).i18n, recurrenceLabel(r.recurrence).fallback)}
                       {' · '}{t('fo.pd.lastDone', 'Last done')}: {r.lastDoneOn ? formatDate(r.lastDoneOn, language) : '—'}
@@ -298,7 +304,9 @@ export function ProjectDetailScreen() {
       />
       <ConfirmDialog
         open={!!confirmStatus}
-        title={confirmStatus === 'on_hold' ? t('fo.pd.holdTitle', 'Put this project on hold?') : t('fo.pd.closeTitle', 'Close out this project?')}
+        title={confirmStatus === 'on_hold' ? t('fo.pd.holdTitle', 'Put this project on hold?')
+          : confirmStatus === 'completed' ? t('fo.pd.completeTitle', 'Mark this project as completed?')
+            : t('fo.pd.closeTitle', 'Close out this project?')}
         body={confirmStatus === 'on_hold'
           ? t('fo.pd.holdBody', 'It stays visible with its history; no new visits until it is resumed.') ?? ''
           : t('fo.pd.closeBody', 'The project keeps its full history and stays searchable, but cannot be reopened.') ?? ''}
@@ -396,7 +404,7 @@ function PlanVisit({ projectId, defaultSupervisor, onDone }: { projectId: string
           try { await createVisit({ projectId, visitDate: date, supervisorId: sup }); await onDone(); } catch (e) { setError(friendlyError(e, t)); } finally { setBusy(false); }
         }}>{t('fo.pd.plan', 'Plan')}</button>
       </div>
-      {error ? <div className="banner banner--error">{error}</div> : null}
+      <ErrorBanner message={error} />
     </details>
   );
 }
@@ -422,7 +430,7 @@ function AddTask({ projectId, onDone }: { projectId: string; onDone: () => Promi
       <input className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder={t('fo.pd.taskPlaceholder', 'What needs to be done?') ?? ''} />
       <label className="checkbox-row"><input type="checkbox" checked={photo} onChange={(e) => setPhoto(e.target.checked)} />{t('fo.task.photoRequired', 'Photo required')}</label>
       <button type="submit" className="btn btn--primary" disabled={busy || !text.trim()}>{t('fo.add', 'Add')}</button>
-      {error ? <div className="banner banner--error">{error}</div> : null}
+      <ErrorBanner message={error} />
     </form>
   );
 }
@@ -454,7 +462,7 @@ function AddRecurring({ projectId, onDone }: { projectId: string; onDone: () => 
             setText(''); await onDone();
           } catch (e) { setError(friendlyError(e, t)); } finally { setBusy(false); }
         }}>{t('fo.add', 'Add')}</button>
-        {error ? <div className="banner banner--error">{error}</div> : null}
+        <ErrorBanner message={error} />
       </div>
     </details>
   );

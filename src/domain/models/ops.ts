@@ -164,6 +164,8 @@ export interface Employee {
   phone?: string;
   status: EmployeeStatus;
   notes?: string;
+  /** When the worker was added (YYYY-MM-DD…); earlier days are not "unallocated". */
+  createdAt?: string;
 }
 
 export type VisitStatus = 'planned' | 'in_progress' | 'completed';
@@ -202,6 +204,8 @@ export interface ProjectTask {
   completedInVisitId?: string;
   lastVisitId?: string;
   createdAt: string;
+  /** Visit on which the task became a follow-up (0008); correctable while it is in progress. */
+  followUpVisitId?: string;
   /** Optional checklist item offered on a visit but not saved until used. */
   pending?: boolean;
 }
@@ -295,4 +299,6 @@ export interface VisitReportContent {
   followUp: VisitReportTaskLine[];
   crew: { name: string; duration: number }[];
   clientRepName?: string;
+  /** The supervisor's visit notes (UAT D-28). */
+  visitNotes?: string;
 }

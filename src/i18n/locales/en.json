@@ -25,7 +25,12 @@
     "tasksCount_other": "{{count}} tasks",
     "deleteConfirm": "Delete this template?",
     "deleteConfirmBody": "This can't be undone.",
-    "copySuffix": "(copy)"
+    "copySuffix": "(copy)",
+    "showInactive": "Show switched-off checklists",
+    "off": "Switched off",
+    "switchOff": "Switch off",
+    "switchOffTitle": "Switch off this checklist?",
+    "switchOffBody": "It stops appearing on new visits. It is kept with its history and can be switched on again."
   },
   "editor": {
     "newTitle": "New template",
@@ -246,7 +251,8 @@
       "profile": "User",
       "visit_reports": "Visit report",
       "task_photos": "Photo",
-      "project_recurring_items": "Periodic item"
+      "project_recurring_items": "Periodic item",
+      "templates": "Checklist"
     },
     "field": {
       "duration": "Days",
@@ -279,7 +285,10 @@
       "next_due_on": "Next due",
       "last_done_on": "Last done",
       "recurrence": "Frequency",
-      "active": "Active"
+      "active": "Active",
+      "title": "Title",
+      "tasks": "Items",
+      "version": "Version"
     }
   },
   "recurrence": {
@@ -302,7 +311,10 @@
       "finance": "Finance",
       "worker": "Worker",
       "client": "Client"
-    }
+    },
+    "resetTitle": "Reset the demo data?",
+    "resetBody": "Everything entered in this browser is replaced by the original sample data.",
+    "switchRole": "Switch role"
   },
   "proof": {
     "title": "Proof",
@@ -377,7 +389,8 @@
     "newPassword": "New password (min 8 chars)",
     "savePassword": "Save",
     "passwordSet": "Password updated.",
-    "passwordFailed": "Couldn’t set password."
+    "passwordFailed": "Couldn’t set password.",
+    "teamTitle": "Team"
   },
   "common": {
     "save": "Save",
@@ -414,7 +427,9 @@
     "permission": "You do not have permission to do this.",
     "network": "Could not reach the server. Nothing was saved — check the connection and try again.",
     "br008": "This project is completed or closed. It keeps its history but takes no new visits.",
-    "stageGate": "The current stage checklist is not finished. Complete its required items on a visit first."
+    "stageGate": "The current stage checklist is not finished. Complete its required items on a visit first.",
+    "projectOpenVisit": "This project has a visit in progress. Complete it first.",
+    "futureVisit": "A visit cannot be started before its date."
   },
   "fo": {
     "add": "Add",
@@ -505,7 +520,10 @@
       "remove": "Remove",
       "removedReason": "Removed from visit",
       "add": "Add workers",
-      "addSelected": "Add {{count}} worker(s)"
+      "addSelected": "Add {{count}} worker(s)",
+      "skipped": "Not copied",
+      "skippedInactive": "inactive",
+      "skippedBooked": "already booked today"
     },
     "visit": {
       "title": "Visit",
@@ -539,13 +557,17 @@
       "answer": "Answer",
       "note": "Note",
       "notePlaceholder": "Note or reason (optional)",
-      "earlierPhotos": "Earlier photos"
+      "earlierPhotos": "Earlier photos",
+      "followUpStays": "A follow-up from an earlier visit stays open until it is done."
     },
     "photo": {
       "before": "Before",
       "after": "After",
       "open": "Open photo",
-      "notSaved": "Photo not saved."
+      "notSaved": "Photo not saved.",
+      "remove": "Remove photo",
+      "confirmRemove": "Yes, remove this photo",
+      "removedReason": "Removed by the supervisor on the visit"
     },
     "report": {
       "title": "Visit report",
@@ -566,7 +588,10 @@
       "draft": "Draft — the visit is not completed yet.",
       "repPlaceholder": "Name of the person receiving the visit",
       "share": "Share PDF",
-      "riyadhTime": "Riyadh time"
+      "riyadhTime": "Riyadh time",
+      "notes": "Visit notes",
+      "fit": "Fit to screen",
+      "fullSize": "View full size"
     },
     "projects": {
       "title": "Projects",
@@ -588,7 +613,9 @@
       "stage": "Current stage",
       "notes": "Notes (optional)",
       "handover": "The new supervisor sees the full history and open work (BR-007).",
-      "notFound": "Project not found or not assigned to you."
+      "notFound": "Project not found or not assigned to you.",
+      "reassignOpenVisit": "{{count}} visit(s) of this project are still in progress with the current supervisor. They stay with them until completed; you can complete them as manager.",
+      "stageRequired": "Choose the stage this project is at."
     },
     "pd": {
       "overview": "Overview",
@@ -627,7 +654,10 @@
       "periodicPlaceholder": "e.g. Pump inspection",
       "frequency": "Frequency",
       "firstDue": "First due",
-      "noVisits": "No visits yet."
+      "noVisits": "No visits yet.",
+      "completeTitle": "Mark this project as completed?",
+      "closeVisitOpen": "A visit is in progress; it must be completed before the project can be completed or closed.",
+      "openCount": "{{count}} open"
     },
     "emp": {
       "title": "Workers",
@@ -638,7 +668,9 @@
       "code": "Employee no.",
       "phone": "Phone",
       "showInactive": "Show inactive",
-      "count": "{{count}} worker(s)"
+      "count": "{{count}} worker(s)",
+      "duplicate": "Another worker already has this name. Enter an employee no. so the two can be told apart.",
+      "onCrewToday": "{{name}} is on today's crew ({{projects}}). Deactivating keeps today's record; they will not be offered for new visits."
     },
     "config": {
       "title": "Setup",
@@ -673,7 +705,7 @@
       "matrix": "Monthly distribution",
       "unallocated": "Not allocated",
       "open": "Open & overdue",
-      "visits": "Visits done",
+      "visits": "Visits",
       "thisMonth": "This month",
       "lastMonth": "Last month",
       "excel": "Excel",
@@ -685,7 +717,8 @@
       "status": "Status",
       "task": "Task",
       "note": "Note",
-      "day": "Date"
+      "day": "Date",
+      "swipe": "Swipe sideways to see every column."
     },
     "labor": {
       "title": "Labor",

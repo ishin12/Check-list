@@ -29,6 +29,8 @@ export interface Template {
   /** Scope: which project type / stage this checklist belongs to. */
   projectTypeId?: string;
   stageId?: string;
+  /** Switched-off checklists are kept (never deleted) but not used on visits. */
+  active?: boolean;
 }
 
 export interface TaskResult {

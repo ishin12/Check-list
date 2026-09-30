@@ -14,11 +14,15 @@ export interface ExportSheet {
   footer?: CellValue[][];
 }
 
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
 function cell(v: CellValue, bold = false) {
   if (v === null || v === undefined || v === '') return null;
-  return typeof v === 'number'
-    ? { value: v, type: Number, fontWeight: bold ? 'bold' as const : undefined }
-    : { value: String(v), type: String, fontWeight: bold ? 'bold' as const : undefined };
+  if (typeof v === 'number') return { value: v, type: Number, fontWeight: bold ? 'bold' as const : undefined };
+  // Calendar dates are real Excel dates, so they sort and filter (UAT D-27).
+  const m = ISO_DATE.exec(v);
+  if (m) return { value: new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])), type: Date, format: 'yyyy-mm-dd', fontWeight: bold ? 'bold' as const : undefined };
+  return { value: String(v), type: String, fontWeight: bold ? 'bold' as const : undefined };
 }
 
 /** Builds the workbook and downloads it. Throws if the browser cannot write it. */
