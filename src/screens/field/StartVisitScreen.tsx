@@ -58,7 +58,9 @@ export function StartVisitScreen() {
     ]);
     const booked = new Map<string, number>();
     for (const [key, total] of loads) booked.set(key.split('|')[0], total);
-    return { booked, previous: previousCrew(projectId, date, labor), tasks, visits };
+    // The crew of the most recent day on this project, today included, so it
+    // matches the "last visit" shown above (UAT N-5).
+    return { booked, previous: previousCrew(projectId, addDays(date, 1), labor), tasks, visits };
   }, [projectId, date]);
 
   const openCount = (ctx.data?.tasks ?? []).filter((x) => x.status !== 'completed').length;
@@ -84,6 +86,8 @@ export function StartVisitScreen() {
       navigate(`/visits/${id}`, { replace: true });
     } catch (e) {
       setError(friendlyError(e, t));
+      // Someone else may have just booked a worker: show the current availability (UAT N-6).
+      if (/BR-001/.test(String((e as Error)?.message ?? e))) { setCrew(new Map()); await ctx.reload(); }
     } finally {
       setSaving(false);
     }
@@ -152,6 +156,7 @@ export function StartVisitScreen() {
         <div className="field">
           <label className="field__label" htmlFor="visit-date">{t('fo.start.date', 'Visit date')}</label>
           <input id="visit-date" className="input" type="date" value={date} max={localToday()} onChange={(e) => { setDate(e.target.value); setCrew(new Map()); }} />
+          {date > localToday() ? <div className="hint" style={{ color: 'var(--color-danger)' }}>{t('err.futureVisit', 'A visit cannot be started before its date.')}</div> : null}
         </div>
 
         <div className="section-title">{t('fo.start.crew', 'Crew with you today')}</div>

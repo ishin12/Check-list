@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Employee, LaborDuration } from '@/domain/models/ops';
 import { SearchBox, matches } from './SearchBox';
@@ -26,6 +26,8 @@ export function CrewPicker({ employees, booked, value, onChange, previous, onVis
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [skipped, setSkipped] = useState<string[]>([]);
+  // The "not copied" note belongs to the last copy only.
+  useEffect(() => { if (value.size === 0) setSkipped([]); }, [value.size]);
   const active = useMemo(() => employees.filter((e) => e.status === 'active'), [employees]);
   const free = (id: string) => Math.max(0, 1 - (booked.get(id) ?? 0));
 

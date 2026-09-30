@@ -173,7 +173,7 @@ export function VisitScreen() {
               supervisorId={isManager ? visit.supervisorId : user!.id} crew={data.crew} onChanged={reload} />
           ) : (
             <div className="chips">
-              {data.crew.map((a) => <span key={a.id} className="chip">{names.employee(a.employeeId)} · {a.duration === 1 ? t('fo.crew.full', 'Full') : t('fo.crew.half', 'Half')}</span>)}
+              {[...data.crew].sort((a, b) => names.employee(a.employeeId).localeCompare(names.employee(b.employeeId))).map((a) => <span key={a.id} className="chip">{names.employee(a.employeeId)} · {a.duration === 1 ? t('fo.crew.full', 'Full') : t('fo.crew.half', 'Half')}</span>)}
             </div>
           )}
         </section>
@@ -287,7 +287,7 @@ function CrewEditor({ visitId, projectId, workDate, supervisorId, crew, onChange
 
   return (
     <div className="card stack">
-      {crew.map((a) => (
+      {[...crew].sort((a, b) => names.employee(a.employeeId).localeCompare(names.employee(b.employeeId))).map((a) => (
         <div key={a.id} className="crew-row crew-row--on">
           <span className="crew-row__name">{names.employee(a.employeeId)}</span>
           <div className="dur">

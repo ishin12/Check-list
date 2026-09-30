@@ -19,6 +19,15 @@ export class HtmlRasterPdfGenerator implements PdfGenerator {
       await document.fonts.ready;
     }
 
+    // Where a page may end: the bottoms of the document's top-level blocks, so
+    // a block (e.g. the signature lines) is never cut in half (UAT N-3).
+    // Measured on screen and unscaled (the preview may be CSS-scaled).
+    const nodeRect = node.getBoundingClientRect();
+    const shown = nodeRect.height && node.offsetHeight ? nodeRect.height / node.offsetHeight : 1;
+    const breaksCss = Array.from(node.children)
+      .map((c) => (c.getBoundingClientRect().bottom - nodeRect.top) / shown)
+      .sort((a, b) => a - b);
+    const nodeWidthCss = node.offsetWidth || 1;
     const pixelRatio = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
     const dataUrl = await toPng(node, {
       pixelRatio,
@@ -43,8 +52,15 @@ export class HtmlRasterPdfGenerator implements PdfGenerator {
 
     let offsetPx = 0;
     let page = 0;
+    const toPx = imgWidthPx / nodeWidthCss;
+    const breaksPx = breaksCss.map((b) => Math.round(b * toPx));
     while (offsetPx < imgHeightPx) {
-      const sliceHeightPx = Math.min(pageHeightPx, imgHeightPx - offsetPx);
+      let sliceHeightPx = Math.min(pageHeightPx, imgHeightPx - offsetPx);
+      if (offsetPx + sliceHeightPx < imgHeightPx) {
+        // End the page at the last block boundary that fits, if one is in its lower half.
+        const fit = breaksPx.filter((b) => b > offsetPx + pageHeightPx * 0.5 && b <= offsetPx + pageHeightPx);
+        if (fit.length) sliceHeightPx = fit[fit.length - 1] - offsetPx;
+      }
       canvas.width = imgWidthPx;
       canvas.height = sliceHeightPx;
       ctx.fillStyle = '#ffffff';

@@ -5,13 +5,13 @@ import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
 import { useFieldData } from '@/app/providers/FieldDataContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
-import { getReportForVisit, getVisit, updateReport } from '@/services/data/fieldOps';
+import { getReportForVisit, getVisit, updateReport, listTasks } from '@/services/data/fieldOps';
 import { generateReportContent } from '@/services/data/visitFlow';
 import { getProofUrl } from '@/services/media/proofUrls';
 import { HtmlRasterPdfGenerator } from '@/services/pdf/HtmlRasterPdfGenerator';
 import { VisitReportDocument, type VisitReportLabels } from '@/services/pdf/VisitReportDocument';
 import { shareFile, type ShareOutcome } from '@/services/share/ShareService';
-import type { VisitReportContent } from '@/domain/models/ops';
+import type { VisitReportContent, VisitReportTaskLine } from '@/domain/models/ops';
 import { friendlyError } from '@/lib/ruleErrors';
 import { useAsync } from '@/lib/useAsync';
 import { useNames, useRoles } from './common';
@@ -63,6 +63,14 @@ export function VisitReportScreen() {
         supervisorName: names.person(visit.supervisorId), employeeName: names.employee, taskLabel: names.taskLabel,
       }, report?.reportNumber, report?.signerName);
     }
+    // Item names follow the language the report is viewed in; everything
+    // recorded (status, notes, photos, crew) stays as issued (UAT N-4).
+    const tasks = await listTasks({ projectId: visit.projectId });
+    const relabel = (l: VisitReportTaskLine): VisitReportTaskLine => {
+      const task = tasks.find((x) => x.id === l.taskId);
+      return task ? { ...l, description: names.taskLabel(task) } : l;
+    };
+    content = { ...content, required: content.required.map(relabel), done: content.done.map(relabel), followUp: content.followUp.map(relabel) };
     const paths = [...content.done, ...content.followUp].flatMap((l) => l.photos.map((p) => p.storagePath));
     const images = new Map<string, string>();
     await Promise.all(paths.map(async (path) => {
@@ -71,7 +79,7 @@ export function VisitReportScreen() {
       if (data) images.set(path, data);
     }));
     return { visit, report, content, images };
-  }, [id, fd.ready]);
+  }, [id, fd.ready, language]);
 
   const docRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -96,16 +104,34 @@ export function VisitReportScreen() {
     return () => window.removeEventListener('resize', measure);
   }, [data]);
 
-  const build = useCallback(async () => {
-    if (!docRef.current || !data) return;
+  const build = useCallback(async (): Promise<File | null> => {
+    if (!docRef.current || !data) return null;
     setBuilding(true);
     try {
       const no = data.report?.reportNumber ? String(data.report.reportNumber).padStart(5, '0') : data.visit.id.slice(0, 8);
-      setFile(await pdf.generateFromNode(docRef.current, `visit-report-${no}.pdf`));
+      const made = await pdf.generateFromNode(docRef.current, `visit-report-${no}.pdf`);
+      setFile(made);
+      return made;
     } finally {
       setBuilding(false);
     }
   }, [data]);
+
+  /**
+   * Share straight away, even while the representative's name is still being
+   * typed: save it, rebuild from what is on screen, then share (UAT N-2).
+   */
+  async function share() {
+    if (!data) return;
+    const dirty = !!data.report && rep !== (data.content.clientRepName ?? '');
+    let f = file;
+    if (dirty) {
+      try { await updateReport(data.report!.id, { signerName: rep }); } catch (e) { setSaveError(friendlyError(e, t)); return; }
+    }
+    if (!f || dirty) f = await build();
+    if (f) setOutcome((await shareFile(f, { title: labels.title, text: data.content.projectName })).outcome);
+    if (dirty) void reload();
+  }
 
   // Pre-build so Share can run inside the tap (iOS keeps the gesture).
   useEffect(() => { setFile(null); if (data) void build(); }, [data, language, build]);
@@ -168,8 +194,8 @@ export function VisitReportScreen() {
               <div className="field">
                 <label className="field__label" htmlFor="rep">{t('fo.report.clientRep', 'Client representative')}</label>
                 <input id="rep" className="input" value={rep}
-                  onChange={(e) => { setRep(e.target.value); setFile(null); /* the PDF is rebuilt with the saved name */ }}
-                  onBlur={() => { if (rep === (data.content.clientRepName ?? '')) void build(); else void saveRep(); }}
+                  onChange={(e) => { setRep(e.target.value); setFile(null); /* rebuilt on share or when saved */ }}
+                  onBlur={() => { if (rep !== (data.content.clientRepName ?? '')) void saveRep(); }}
                   placeholder={t('fo.report.repPlaceholder', 'Name of the person receiving the visit') ?? ''} />
                 <ErrorBanner message={saveError} />
               </div>
@@ -184,7 +210,7 @@ export function VisitReportScreen() {
             <div ref={boxRef} className="report-frame" style={zoomed ? { overflowX: 'auto' } : undefined}>
               <div style={{ width: WIDTH * (zoomed ? 1 : scale), height: docHeight * (zoomed ? 1 : scale), overflow: 'hidden' }}>
                 <div style={{ transform: `scale(${zoomed ? 1 : scale})`, transformOrigin: language === 'en' ? 'top left' : 'top right', width: WIDTH }}>
-                  <VisitReportDocument ref={docRef} content={data.content} language={language} labels={labels} images={data.images} />
+                  <VisitReportDocument ref={docRef} content={{ ...data.content, clientRepName: rep || undefined }} language={language} labels={labels} images={data.images} />
                 </div>
               </div>
             </div>
@@ -193,9 +219,10 @@ export function VisitReportScreen() {
       </main>
       {data ? (
         <div className="action-bar">
-          <button type="button" className="btn btn--success btn--lg btn--block" disabled={building || !file}
-            onClick={async () => { if (file) setOutcome((await shareFile(file, { title: labels.title, text: data.content.projectName })).outcome); }}>
-            {building || !file ? t('report.generating', 'Preparing PDF…') : `📤 ${t('fo.report.share', 'Share PDF')}`}
+          <button type="button" className="btn btn--success btn--lg btn--block" disabled={building}
+            onMouseDown={(e) => e.preventDefault() /* keep the name field's value; share() saves it */}
+            onClick={() => void share()}>
+            {building ? t('report.generating', 'Preparing PDF…') : `📤 ${t('fo.report.share', 'Share PDF')}`}
           </button>
         </div>
       ) : null}

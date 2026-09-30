@@ -1524,3 +1524,6 @@ a.btn--ghost { color: var(--color-text); }
   .tabs { -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); mask-image: linear-gradient(to right, #000 85%, transparent); padding-inline-end: 24px; }
   [dir='rtl'] .tabs { -webkit-mask-image: linear-gradient(to left, #000 85%, transparent); mask-image: linear-gradient(to left, #000 85%, transparent); }
 }
+
+/* UAT N-7: a Latin title in an RTL header truncates at its end, not its start. */
+.app-header__title { unicode-bidi: plaintext; }
