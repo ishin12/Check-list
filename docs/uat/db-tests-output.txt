@@ -78,16 +78,20 @@ psql:supabase/tests/field_ops_rules.sql:444: NOTICE:  ok  I01 each establishment
 psql:supabase/tests/field_ops_rules.sql:454: NOTICE:  ok  I01 cannot advance before the stage checklist is done
 psql:supabase/tests/field_ops_rules.sql:458: NOTICE:  ok  I01 cannot skip stages either
 psql:supabase/tests/field_ops_rules.sql:477: NOTICE:  ok  I01 one missing required item still blocks
-psql:supabase/tests/field_ops_rules.sql:485: NOTICE:  ok  I01 advances once the required items are done
-psql:supabase/tests/field_ops_rules.sql:489: NOTICE:  ok  I01 optional "agricultural wool" item does not gate
-psql:supabase/tests/field_ops_rules.sql:495: NOTICE:  ok  I01 management can move a project back a stage
-psql:supabase/tests/field_ops_rules.sql:510: NOTICE:  ok  D-05 a mistaken follow-up is corrected to not done on the same visit
-psql:supabase/tests/field_ops_rules.sql:517: NOTICE:  ok  D-05 follow-up then done then not done, all on one visit, ends open
-psql:supabase/tests/field_ops_rules.sql:522: NOTICE:  ok  D-05 after the visit, a follow-up cannot go back to open (BR-006)
-psql:supabase/tests/field_ops_rules.sql:534: NOTICE:  ok  D-07 a project with a visit in progress cannot be closed
-psql:supabase/tests/field_ops_rules.sql:538: NOTICE:  ok  D-13 a future visit can be planned
-psql:supabase/tests/field_ops_rules.sql:540: NOTICE:  ok  D-13 a future visit cannot be started early
-psql:supabase/tests/field_ops_rules.sql:560: NOTICE:  ok  D-29 periodic item done on a visit rolls from the visit date
+psql:supabase/tests/field_ops_rules.sql:483: NOTICE:  ok  L2 items done on a visit still in progress do not count yet
+psql:supabase/tests/field_ops_rules.sql:490: NOTICE:  ok  I01 advances once the required items are done
+psql:supabase/tests/field_ops_rules.sql:494: NOTICE:  ok  I01 optional "agricultural wool" item does not gate
+psql:supabase/tests/field_ops_rules.sql:500: NOTICE:  ok  I01 management can move a project back a stage
+psql:supabase/tests/field_ops_rules.sql:515: NOTICE:  ok  D-05 a mistaken follow-up is corrected to not done on the same visit
+psql:supabase/tests/field_ops_rules.sql:522: NOTICE:  ok  D-05 follow-up then done then not done, all on one visit, ends open
+psql:supabase/tests/field_ops_rules.sql:527: NOTICE:  ok  D-05 after the visit, a follow-up cannot go back to open (BR-006)
+psql:supabase/tests/field_ops_rules.sql:539: NOTICE:  ok  D-07 a project with a visit in progress cannot be closed
+psql:supabase/tests/field_ops_rules.sql:543: NOTICE:  ok  D-13 a future visit can be planned
+psql:supabase/tests/field_ops_rules.sql:545: NOTICE:  ok  D-13 a future visit cannot be started early
+psql:supabase/tests/field_ops_rules.sql:565: NOTICE:  ok  D-29 periodic item done on a visit rolls from the visit date
+psql:supabase/tests/field_ops_rules.sql:571: NOTICE:  ok  M1 employee numbers are unique (case-insensitive)
+psql:supabase/tests/field_ops_rules.sql:573: NOTICE:  ok  M4 a manager cannot deactivate their own account
+psql:supabase/tests/field_ops_rules.sql:576: NOTICE:  ok  L7 team changes are audited
 All field-ops rule checks passed.
 ok  TC-12 concurrent loads: one wins, the other is rejected (total 1.0)
 Database tests passed.
