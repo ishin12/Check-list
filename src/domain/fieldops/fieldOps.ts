@@ -124,22 +124,6 @@ export function visitCompletionCheck(
   };
 }
 
-/**
- * Optional checklist items created for this visit and never touched. They are
- * removed when the visit completes instead of piling up as open work.
- */
-export function skippedOptionalItems(
-  visitId: string,
-  tasks: Pick<ProjectTask, 'id' | 'source' | 'required' | 'status' | 'visitId' | 'lastVisitId' | 'completedInVisitId' | 'note'>[],
-  /** Tasks with photos are kept: their photos must stay linked (and on record). */
-  photoTaskIds: Set<string> = new Set(),
-): string[] {
-  return tasks
-    .filter((t) => t.source === 'checklist' && !t.required && t.status === 'open'
-      && t.visitId === visitId && !answeredOnVisit(t, visitId) && !photoTaskIds.has(t.id) && !t.note)
-    .map((t) => t.id);
-}
-
 export function canCompleteVisit(c: CompletionCheck): boolean {
   return c.undecided.length === 0 && c.missingPhotos.length === 0 && !c.noCrew;
 }

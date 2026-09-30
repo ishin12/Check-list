@@ -9,7 +9,6 @@ import {
   nextDueDate,
   projectCloseBlockers,
   rollRecurringItem,
-  skippedOptionalItems,
   tasksForVisit,
   visitCompletionCheck,
 } from '@/domain/fieldops/fieldOps';
@@ -83,19 +82,6 @@ describe('visits and follow-up', () => {
   it('BR-012 photos are not needed unless configured', () => {
     const check = visitCompletionCheck('v1', [task({ id: 'a', status: 'completed', completedInVisitId: 'v1' })], new Set(), 1);
     expect(canCompleteVisit(check)).toBe(true);
-  });
-
-  it('untouched optional checklist items are dropped at completion', () => {
-    const tasks = [
-      task({ id: 'opt', status: 'open', source: 'checklist', required: false, visitId: 'v1' }),
-      task({ id: 'optDone', status: 'open', source: 'checklist', required: false, visitId: 'v1', lastVisitId: 'v1' }),
-      task({ id: 'req', status: 'open', source: 'checklist', required: true, visitId: 'v1' }),
-      task({ id: 'older', status: 'open', source: 'checklist', required: false, visitId: 'v0' }),
-    ];
-    expect(skippedOptionalItems('v1', tasks)).toEqual(['opt']);
-    // An item with a photo or a note was worked on: keep it.
-    expect(skippedOptionalItems('v1', tasks, new Set(['opt']))).toEqual([]);
-    expect(skippedOptionalItems('v1', [{ ...tasks[0], note: 'looked fine' }])).toEqual([]);
   });
 });
 

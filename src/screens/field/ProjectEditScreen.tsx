@@ -46,6 +46,7 @@ export function ProjectEditScreen() {
   }, [existing]);
 
   const type = fd.type(typeId);
+  const currentStageOrder = fd.stage(existing?.stageId)?.sortOrder ?? 0;
   const stages = useMemo(() => fd.stages.filter((s) => s.projectTypeId === typeId && s.active).sort((a, b) => a.sortOrder - b.sortOrder), [fd.stages, typeId]);
   const supervisors = [...workers.values()].filter((w) => w.active && (isSupervisorRole(w.role) || w.role === 'manager'))
     .sort((a, b) => (a.fullName ?? '').localeCompare(b.fullName ?? ''));
@@ -116,8 +117,15 @@ export function ProjectEditScreen() {
             <label className="field__label" htmlFor="p-stage">{t('fo.projects.stage', 'Current stage')}</label>
             <select id="p-stage" className="input" value={stageId} onChange={(e) => setStageId(e.target.value)}>
               <option value="">—</option>
-              {stages.map((s, i) => <option key={s.id} value={s.id}>{i + 1}. {configText(s.name, language)}</option>)}
+              {stages.map((s, i) => (
+                // An existing project moves forward only from its page, once the
+                // stage checklist is done (§9); here it can only be set back.
+                <option key={s.id} value={s.id} disabled={!!existing?.stageId && existing.projectTypeId === typeId && s.sortOrder > currentStageOrder}>
+                  {i + 1}. {configText(s.name, language)}
+                </option>
+              ))}
             </select>
+            {existing?.stageId ? <div className="hint">{t('fo.stage.editHint', 'To move forward, use "Move to next stage" on the project page once the stage checklist is done.')}</div> : null}
           </div>
         ) : null}
         <div className="field">

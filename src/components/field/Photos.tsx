@@ -38,6 +38,8 @@ export function PhotoViewer({ url, onClose }: { url: string | null; onClose: () 
 
 interface CaptureProps {
   taskId: string;
+  /** Resolves the saved task id first (an optional item is saved on first use). */
+  resolveTaskId?: () => Promise<string>;
   projectId: string;
   visitId?: string;
   kind: PhotoKind;
@@ -49,7 +51,7 @@ interface CaptureProps {
  * Opens the phone camera directly (§17) and uploads. On failure the error is
  * shown with a retry, and the picked photo is kept until it is saved (§31).
  */
-export function PhotoCapture({ taskId, projectId, visitId, kind, onUploaded, disabled }: CaptureProps) {
+export function PhotoCapture({ taskId, resolveTaskId, projectId, visitId, kind, onUploaded, disabled }: CaptureProps) {
   const { t } = useTranslation();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -59,7 +61,8 @@ export function PhotoCapture({ taskId, projectId, visitId, kind, onUploaded, dis
   async function upload(file: File) {
     setBusy(true); setError(null);
     try {
-      await uploadTaskPhoto({ taskId, projectId, visitId, kind, file, mime: file.type || 'image/jpeg' });
+      const id = resolveTaskId ? await resolveTaskId() : taskId;
+      await uploadTaskPhoto({ taskId: id, projectId, visitId, kind, file, mime: file.type || 'image/jpeg' });
       setPending(null);
       onUploaded();
     } catch (e) {

@@ -11,16 +11,19 @@ import { useFieldData } from '@/app/providers/FieldDataContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import {
   dayLoads,
+  getProject,
   getVisit,
   insertCrew,
   listLabor,
+  listMonthCloses,
   listPhotos,
   listTasks,
   updateLabor,
   updateVisit,
   voidLabor,
 } from '@/services/data/fieldOps';
-import { completeVisit, syncVisitTasks } from '@/services/data/visitFlow';
+import { completeVisit, optionalVisitItems, syncVisitTasks } from '@/services/data/visitFlow';
+import { isMonthClosed } from '@/domain/labor/allocation';
 import { answeredOnVisit, canCompleteVisit, tasksForVisit, visitCompletionCheck } from '@/domain/fieldops/fieldOps';
 import type { LaborAllocation, ProjectTask } from '@/domain/models/ops';
 import { configText } from '@/lib/configText';
@@ -39,17 +42,21 @@ export function VisitScreen() {
   const navigate = useNavigate();
   const fd = useFieldData();
   const names = useNames();
-  const { user, isManager } = useRoles();
+  const { user, isManager, isFinance } = useRoles();
 
   const { data, error, reload } = useAsync(async () => {
     const visit = id ? await getVisit(id) : null;
     if (!visit) return null;
-    const [tasks, photos, crew] = await Promise.all([
+    const [tasks, photos, crew, project, closes] = await Promise.all([
       listTasks({ projectId: visit.projectId }),
       listPhotos({ projectId: visit.projectId }),
       listLabor({ visitId: visit.id }),
+      getProject(visit.projectId),
+      listMonthCloses(),
     ]);
-    return { visit, tasks, photos, crew };
+    const optional = visit.status === 'in_progress' && project
+      ? await optionalVisitItems(project, visit.id, visit.visitDate) : [];
+    return { visit, tasks, photos, crew, optional, monthClosed: isMonthClosed(visit.visitDate, closes) };
   }, [id]);
 
   const [editCrew, setEditCrew] = useState(false);
@@ -71,9 +78,10 @@ export function VisitScreen() {
     if (!visit || !data) return [];
     const list = visit.status === 'completed'
       ? data.tasks.filter((x) => answeredOnVisit(x, visit.id))
-      : tasksForVisit(visit.projectId, visit.id, data.tasks);
+      : [...tasksForVisit(visit.projectId, visit.id, data.tasks), ...data.optional];
     return [...list].sort((a, b) =>
-      (a.status === 'needs_follow_up' ? -1 : 0) - (b.status === 'needs_follow_up' ? -1 : 0)
+      (a.pending ? 1 : 0) - (b.pending ? 1 : 0)   // unused optional items last
+      || (a.status === 'needs_follow_up' ? -1 : 0) - (b.status === 'needs_follow_up' ? -1 : 0)
       || SOURCE_ORDER[a.source] - SOURCE_ORDER[b.source]
       || (a.createdAt < b.createdAt ? -1 : 1));
   }, [visit, data]);
@@ -142,9 +150,16 @@ export function VisitScreen() {
         <section className="stack">
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <span className="section-title">{t('fo.visit.crew', 'Crew')} · {data.crew.reduce((s, a) => s + a.duration, 0)} {t('fo.days', 'day(s)')}</span>
-            {editable ? <button type="button" className="btn btn--ghost" onClick={() => setEditCrew((x) => !x)}>{editCrew ? t('common.done', 'Done') : t('fo.visit.editCrew', 'Edit crew')}</button> : null}
+            {editable && !data.monthClosed ? <button type="button" className="btn btn--ghost" onClick={() => setEditCrew((x) => !x)}>{editCrew ? t('common.done', 'Done') : t('fo.visit.editCrew', 'Edit crew')}</button> : null}
           </div>
           {data.crew.length === 0 ? <div className="banner banner--info">{t('fo.visit.noCrew', 'No crew recorded yet.')}</div> : null}
+          {editable && data.monthClosed ? (
+            <div className="banner banner--info">
+              {isFinance
+                ? <>{t('fo.visit.monthClosedCrewFinance', 'This month is closed. Correct its labor in the labor ledger, with a reason.')} <Link to={`/labor?from=${visit.visitDate}&to=${visit.visitDate}`}>{t('fo.pd.laborLedger', 'Labor ledger')}</Link></>
+                : t('fo.visit.monthClosedCrew', 'This month is closed: the crew can no longer be changed here. Ask finance for a correction.')}
+            </div>
+          ) : null}
           {editCrew ? (
             <CrewEditor visitId={visit.id} projectId={visit.projectId} workDate={visit.visitDate}
               supervisorId={isManager ? visit.supervisorId : user!.id} crew={data.crew} onChanged={reload} />

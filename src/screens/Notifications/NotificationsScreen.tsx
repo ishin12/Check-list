@@ -6,6 +6,7 @@ import { useAuth } from '@/app/providers/AuthContext';
 import { getSupabase } from '@/services/supabase/client';
 import { useDirectory } from '@/app/providers/DirectoryContext';
 import type { AppNotification } from '@/domain/models/ops';
+import { APP_TIME_ZONE } from '@/lib/dates';
 
 export function NotificationsScreen() {
   const { t } = useTranslation();
@@ -68,7 +69,7 @@ export function NotificationsScreen() {
               return (
                 <div key={n.id} className={`card ${n.readAt ? '' : 'card--unread'}`}>
                   <div className="card__title">{renderKind(n.kind)}</div>
-                  <div className="card__meta">{new Date(n.createdAt).toLocaleString()}</div>
+                  <div className="card__meta">{new Date(n.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: APP_TIME_ZONE })}</div>
                   {payload.title ? (
                     <div className="card__meta">
                       {payload.title}{workerName ? ` · ${workerName}` : ''}

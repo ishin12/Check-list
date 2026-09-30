@@ -24,7 +24,7 @@ import {
   updateRecurring,
 } from '@/services/data/fieldOps';
 import { isOverdue, projectCloseBlockers } from '@/domain/fieldops/fieldOps';
-import { recurringItemsFromTemplates } from '@/domain/fieldops/visitPlan';
+import { labelText, recurringItemsFromTemplates, stageProgress } from '@/domain/fieldops/visitPlan';
 import { isSupervisorRole } from '@/domain/auth/permissions';
 import { RECURRENCE_OPTIONS, recurrenceLabel, type Recurrence } from '@/domain/job/recurrence';
 import type { ProjectStatus, ProjectTask } from '@/domain/models/ops';
@@ -52,6 +52,7 @@ export function ProjectDetailScreen() {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmStatus, setConfirmStatus] = useState<ProjectStatus | null>(null);
+  const [confirmStage, setConfirmStage] = useState(false);
   const [viewer, setViewer] = useState<string | null>(null);
 
   const { data, error, reload } = useAsync(async () => {
@@ -86,6 +87,11 @@ export function ProjectDetailScreen() {
   const canWork = project.status === 'active' && (isManager || project.supervisorId === user?.id);
   const final = project.status === 'completed' || project.status === 'closed';
   const days = (data?.labor ?? []).reduce((s, a) => s + a.duration, 0);
+  // §9 stage checklist and gate (the database re-checks it: migration 0008).
+  const typeStages = fd.stages.filter((s) => s.projectTypeId === project.projectTypeId && s.active).sort((a, b) => a.sortOrder - b.sortOrder);
+  const stageIndex = typeStages.findIndex((s) => s.id === project.stageId);
+  const nextStage = stageIndex >= 0 ? typeStages[stageIndex + 1] : undefined;
+  const progress = project.stageId && data ? stageProgress(project.id, project.stageId, fd.templates, data.tasks) : null;
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'overview', label: t('fo.pd.overview', 'Overview') },
@@ -131,6 +137,37 @@ export function ProjectDetailScreen() {
             <div className="card__meta">{t('fo.pd.closeBlocked', '{{count}} open or follow-up task(s) must be finished before the project can be completed or closed.', { count: blockers.length })}</div>
           ) : null}
         </div>
+        {project.stageId && progress ? (
+          <div className="card stack" style={{ gap: 6 }} id="stage-card">
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <div className="card__title">
+                {t('fo.stage.title', 'Stage {{n}} of {{total}}', { n: stageIndex + 1, total: typeStages.length })}: {configText(fd.stage(project.stageId)?.name, language)}
+              </div>
+              <span className="card__meta">
+                {t('fo.stage.progress', '{{done}}/{{total}} required items done', { done: progress.required.length - progress.missing.length, total: progress.required.length })}
+              </span>
+            </div>
+            {progress.required.length === 0 ? (
+              <div className="card__meta">{t('fo.stage.noChecklist', 'This stage has no required checklist items yet. Management can add them in Checklists.')}</div>
+            ) : progress.missing.length ? (
+              <>
+                <div className="card__meta">{t('fo.stage.missing', 'Still to be done on a visit before moving on:')}</div>
+                <ul style={{ margin: 0, paddingInlineStart: 18 }}>
+                  {progress.missing.map((m) => <li key={m.itemId} className="card__meta">{labelText(m.label, language)}</li>)}
+                </ul>
+              </>
+            ) : (
+              <div className="card__meta">✓ {t('fo.stage.ready', 'All required items of this stage are done.')}</div>
+            )}
+            {isManager && !final && nextStage ? (
+              <div>
+                <button type="button" className="btn btn--primary" disabled={busy || progress.missing.length > 0} onClick={() => setConfirmStage(true)}>
+                  {t('fo.stage.next', 'Move to next stage')}: {configText(nextStage.name, language)}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         {actionError ? <div className="banner banner--error">{actionError}</div> : null}
 
         <div className="tabs" role="tablist">
@@ -251,6 +288,14 @@ export function ProjectDetailScreen() {
         ) : null}
       </main>
 
+      <ConfirmDialog
+        open={confirmStage}
+        title={t('fo.stage.confirmTitle', 'Move to the next stage?') ?? ''}
+        body={nextStage ? t('fo.stage.confirmBody', 'The project moves to "{{stage}}". Its checklist will appear on the next visit.', { stage: configText(nextStage.name, language) }) ?? '' : ''}
+        confirmLabel={t('fo.stage.next', 'Move to next stage') ?? ''}
+        onConfirm={() => { setConfirmStage(false); if (nextStage) void run(() => updateProject(project.id, { stageId: nextStage.id })); }}
+        onCancel={() => setConfirmStage(false)}
+      />
       <ConfirmDialog
         open={!!confirmStatus}
         title={confirmStatus === 'on_hold' ? t('fo.pd.holdTitle', 'Put this project on hold?') : t('fo.pd.closeTitle', 'Close out this project?')}

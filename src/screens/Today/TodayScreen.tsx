@@ -9,6 +9,7 @@ import { listTasks } from '@/services/data/tasks';
 import { dailySummary, timeOnTaskMinutes } from '@/domain/job/taskFlow';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
+import { APP_TIME_ZONE, localToday } from '@/lib/dates';
 
 function startOfDay(d = new Date()): string {
   const x = new Date(d);
@@ -46,7 +47,7 @@ export function TodayScreen() {
     })();
   }, [user]);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localToday();
   const summary = user ? dailySummary(user.id, today, tasks) : null;
   const next = tasks.find((x) => x.status !== 'approved' && x.status !== 'rejected') ?? tasks[0];
 
@@ -84,7 +85,7 @@ export function TodayScreen() {
               <div className="card__title">{next.title}</div>
               <TaskWhoLine task={next} hideWorker={user?.role === 'worker'} />
               <div className="card__meta">
-                {new Date(next.scheduledAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                {new Date(next.scheduledAt).toLocaleTimeString(undefined, { timeZone: APP_TIME_ZONE, hour: '2-digit', minute: '2-digit' })}
                 {next.startedAt ? ` · ${timeOnTaskMinutes(next)} min` : null}
               </div>
             </div>
@@ -101,7 +102,7 @@ export function TodayScreen() {
                     <div className="card__title">{x.title}</div>
                     <TaskWhoLine task={x} hideWorker={user?.role === 'worker'} />
                     <div className="card__meta">
-                      {new Date(x.scheduledAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(x.scheduledAt).toLocaleTimeString(undefined, { timeZone: APP_TIME_ZONE, hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
                   <StatusPill status={x.status} approvalMethod={x.approvalMethod} />

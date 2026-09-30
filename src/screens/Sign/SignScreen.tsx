@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getSupabase } from '@/services/supabase/client';
 import { SignaturePadCanvas, type SignaturePadHandle } from '@/components/SignaturePadCanvas';
+import { APP_TIME_ZONE } from '@/lib/dates';
 
 interface SigningTask {
   task_title: string;
@@ -87,7 +88,7 @@ export function SignScreen() {
           <Row label={t('sign.visit', 'Visit')} value={task.task_title} />
           <Row label={t('sign.client', 'Client')} value={task.client_name} />
           {task.worker_name ? <Row label={t('sign.worker', 'Technician')} value={task.worker_name} /> : null}
-          <Row label={t('sign.date', 'Date')} value={new Date(task.scheduled_at).toLocaleString()} />
+          <Row label={t('sign.date', 'Date')} value={new Date(task.scheduled_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: APP_TIME_ZONE })} />
         </div>
 
         <label className="field__label" style={{ marginTop: 12 }}>{t('sign.signHere', 'Sign below')}</label>
@@ -103,7 +104,7 @@ export function SignScreen() {
           </button>
         </div>
         <p className="hint" style={{ marginTop: 10, textAlign: 'center' }}>
-          {t('sign.expiresOn', 'This link expires on {{date}}', { date: new Date(task.expires_at).toLocaleDateString() })}
+          {t('sign.expiresOn', 'This link expires on {{date}}', { date: new Date(task.expires_at).toLocaleDateString(undefined, { timeZone: APP_TIME_ZONE }) })}
         </p>
       </div>
     </div>

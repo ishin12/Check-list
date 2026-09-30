@@ -91,7 +91,7 @@ export function ReportsScreen() {
   const period = `${formatDate(from, language)} – ${formatDate(to, language)}`;
   const H = {
     worker: t('fo.labor.worker', 'Worker'), project: t('fo.report.project', 'Project / site'), days: t('fo.labor.days', 'Days'),
-    date: t('fo.report.date', 'Visit date'), status: t('fo.rep.status', 'Status'), supervisor: t('fo.report.supervisor', 'Supervisor'),
+    date: t('fo.report.date', 'Visit date'), day: t('fo.rep.day', 'Date'), status: t('fo.rep.status', 'Status'), supervisor: t('fo.report.supervisor', 'Supervisor'),
     client: t('fo.report.client', 'Client'), total: t('fo.total', 'Total'), free: t('fo.rep.freeDays', 'Unallocated days'),
     task: t('fo.rep.task', 'Task'), note: t('fo.rep.note', 'Note'), due: t('fo.pd.nextDue', 'Next due'), report: t('fo.report.number', 'Report no.'),
   };
@@ -116,7 +116,7 @@ export function ReportsScreen() {
         footer: [[H.total, ...f.matrix.projectIds.map((p) => f.matrix.colTotals.get(p) ?? 0), f.matrix.total]],
       },
       unallocated: {
-        name: tabs[3].label, header: [H.date, H.worker, H.free],
+        name: tabs[3].label, header: [H.day, H.worker, H.free],
         rows: f.unalloc.flatMap((d) => d.items.map((x) => [d.date, names.employee(x.employeeId), x.free])),
         footer: [[H.total, '', f.unallocSummary.reduce((s, x) => s + x.freeDays, 0)]],
       },

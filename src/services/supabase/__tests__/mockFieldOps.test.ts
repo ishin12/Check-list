@@ -132,10 +132,28 @@ describe('review fixes mirrored in the demo backend', () => {
     expect(data.status).toBe('needs_follow_up');
   });
 
-  it('a task with photos cannot be deleted', async () => {
-    await sb.from('task_photos').insert({ task_id: 'pt-5', project_id: 'pr-2', storage_path: 'x', mime: 'image/png', captured_at: new Date().toISOString() });
-    const { error } = await sb.from('project_tasks').delete().eq('id', 'pt-5');
-    expect(error?.message).toMatch(/foreign key/);
+  it('C03: no task can be deleted, used or not (BR-014, migration 0008)', async () => {
+    const { data: fresh } = await sb.from('project_tasks').insert({ project_id: 'pr-1', description: 'Edging', source: 'checklist', required: false }).select().single();
+    for (const id of ['pt-5', fresh.id]) {
+      const { error } = await sb.from('project_tasks').delete().eq('id', id);
+      expect(error?.message).toMatch(/BR-014/);
+    }
+  });
+
+  it('I04: a completed / closed project takes no new visit (BR-008)', async () => {
+    // pr-3 is completed in the seed.
+    const { error } = await sb.from('visits').insert({ project_id: 'pr-3', visit_date: '2026-10-23', supervisor_id: 'u-wa' });
+    expect(error?.message).toMatch(/BR-008/);
+  });
+
+  it('I01: a project cannot move past a stage whose required items are not done', async () => {
+    // pr-2 is on the irrigation stage with its three required items open.
+    const { error } = await sb.from('projects').update({ stage_id: 'st-planting_ready' }).eq('id', 'pr-2');
+    expect(error?.message).toMatch(/STAGE-GATE/);
+    const skip = await sb.from('projects').update({ stage_id: 'st-handover' }).eq('id', 'pr-2');
+    expect(skip.error?.message).toMatch(/STAGE-GATE/);
+    // Moving back is allowed.
+    expect((await sb.from('projects').update({ stage_id: 'st-preparatory' }).eq('id', 'pr-2')).error).toBeNull();
   });
 
   it('supervisors cannot hand visits to others or rewrite issued reports', async () => {

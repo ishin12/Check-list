@@ -316,10 +316,6 @@ export async function updateTaskNote(id: string, note: string): Promise<void> {
   changed(await sb().from('project_tasks').update({ note: note.trim() || null }).eq('id', id).select('id'));
 }
 
-export async function deleteTasks(ids: string[]): Promise<void> {
-  if (ids.length === 0) return;
-  check(await sb().from('project_tasks').delete().in('id', ids));
-}
 
 // ---------------------------------------------------------------------------
 // Recurring items

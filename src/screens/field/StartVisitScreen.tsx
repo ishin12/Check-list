@@ -117,6 +117,9 @@ export function StartVisitScreen() {
     <AppShell>
       <AppHeader title={t('fo.start.title', 'Start visit')} showBack />
       <main className="app-main">
+        {project.status !== 'active' ? (
+          <div className="banner banner--error">{t('fo.start.notActive', 'Visits can only be started on active projects. This project is {{status}}.', { status: t(`fo.status.${project.status}`, project.status) })}</div>
+        ) : null}
         <div className="card">
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="grow">
@@ -165,7 +168,7 @@ export function StartVisitScreen() {
         {error ? <div className="banner banner--error">{error}</div> : null}
       </main>
       <div className="action-bar">
-        <button type="button" className="btn btn--primary btn--lg btn--block" disabled={saving || crew.size === 0} onClick={() => void start()}>
+        <button type="button" className="btn btn--primary btn--lg btn--block" disabled={saving || crew.size === 0 || project.status !== 'active'} onClick={() => void start()}>
           {saving ? t('common.saving', 'Saving…') : crew.size === 0 ? t('fo.start.pickCrew', 'Select the crew to start') : t('fo.start.go', 'Start visit with {{count}} worker(s)', { count: crew.size })}
         </button>
       </div>

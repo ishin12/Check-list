@@ -87,8 +87,9 @@ export function buildVisitTasks(input: BuildVisitInput): NewTask[] {
         description: labelText(item.label),
         status: 'open',
         photoRequired: item.photoRequired === true,
-        // Stage items gate the next stage, so they are always answered.
-        required: source === 'stage' ? true : item.required,
+        // Required stage items gate the next stage; an item that may not apply
+        // (e.g. agricultural wool) is left optional by management.
+        required: item.required === true,
       });
     }
   }
@@ -193,4 +194,33 @@ export function buildReportContent(input: ReportInput): VisitReportContent {
     crew: input.crew,
     clientRepName: input.clientRepName,
   };
+}
+
+export interface StageProgress {
+  stageId: string;
+  /** Required checklist items of the stage (non-periodic). */
+  required: { templateId: string; itemId: string; label: Partial<LocalizedText> & { ur?: string } }[];
+  /** The subset not completed on this project yet. */
+  missing: StageProgress['required'];
+}
+
+/**
+ * What stands between a project and its next stage (§9, mirrors migration
+ * 0008 stage_missing_items): every required item of the stage's active
+ * checklists must be completed on the project.
+ */
+export function stageProgress(
+  projectId: string,
+  stageId: string,
+  templates: ScopedTemplate[],
+  tasks: Pick<ProjectTask, 'projectId' | 'templateId' | 'templateItemId' | 'status'>[],
+): StageProgress {
+  const required = templates
+    .filter((t) => t.stageId === stageId && t.active !== false)
+    .flatMap((t) => t.tasks
+      .filter((i) => i.required === true && (!i.recurrence || i.recurrence === 'none'))
+      .map((i) => ({ templateId: t.id, itemId: i.id, label: i.label })));
+  const missing = required.filter((r) => !tasks.some((x) => x.projectId === projectId && x.templateId === r.templateId
+    && x.templateItemId === r.itemId && x.status === 'completed'));
+  return { stageId, required, missing };
 }

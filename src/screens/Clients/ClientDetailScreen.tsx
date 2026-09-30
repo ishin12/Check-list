@@ -11,6 +11,7 @@ import { NoteComposer, resolveNote } from '@/components/NoteComposer';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import { FieldStatusPill } from '@/components/field/FieldStatusPill';
 import { useFieldData } from '@/app/providers/FieldDataContext';
+import { APP_TIME_ZONE } from '@/lib/dates';
 
 export function ClientDetailScreen() {
   const { t } = useTranslation();
@@ -79,7 +80,7 @@ export function ClientDetailScreen() {
                 <div key={n.id} className="note-card">
                   <div>{n.body}</div>
                   <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
-                    <span className="card__meta">{new Date(n.createdAt).toLocaleDateString()}</span>
+                    <span className="card__meta">{new Date(n.createdAt).toLocaleDateString(undefined, { timeZone: APP_TIME_ZONE })}</span>
                     <button className="btn btn--ghost" onClick={async () => { await resolveNote(n.id); await load(); }}>
                       {t('notes.resolve', 'Mark resolved')}
                     </button>
@@ -118,7 +119,7 @@ export function ClientDetailScreen() {
                   <div style={{ flex: 1 }}>
                     <div className="card__title">{x.title}</div>
                     <TaskWhoLine task={x} hideClient />
-                    <div className="card__meta">{new Date(x.scheduledAt).toLocaleString()}</div>
+                    <div className="card__meta">{new Date(x.scheduledAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: APP_TIME_ZONE })}</div>
                   </div>
                   <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
                 </Link>
@@ -139,7 +140,7 @@ export function ClientDetailScreen() {
                   <div style={{ flex: 1 }}>
                     <div className="card__title">{x.title}</div>
                     <TaskWhoLine task={x} hideClient />
-                    <div className="card__meta">{new Date(x.scheduledAt).toLocaleDateString()}</div>
+                    <div className="card__meta">{new Date(x.scheduledAt).toLocaleDateString(undefined, { timeZone: APP_TIME_ZONE })}</div>
                   </div>
                   <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
                 </Link>

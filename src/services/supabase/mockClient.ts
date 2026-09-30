@@ -15,6 +15,7 @@
  * Exposes window.__demo for the role switcher and Settings reset button.
  */
 import { openDB, type IDBPDatabase } from 'idb';
+import { addDays, localToday } from '@/lib/dates';
 import {
   FIELD_OPS_TABLES,
   fieldOpsAfter,
@@ -27,7 +28,7 @@ import {
 
 const DB_NAME = 'checklist-demo';
 // Re-seed when this changes (bump on each schema-affecting change).
-const SEED_VERSION = 'v10';
+const SEED_VERSION = 'v11';
 const DB_VERSION = 2; // 2: field-ops tables (0006)
 
 const TABLES = [
@@ -806,11 +807,11 @@ if (typeof window !== 'undefined') {
 // ---------------------------------------------------------------------------
 
 async function seedDemo(): Promise<void> {
-  const now = new Date();
-  const iso = (d: Date) => d.toISOString();
-  const day = (offset: number, hour = 9, min = 0) => {
-    const d = new Date(now); d.setDate(d.getDate() + offset); d.setHours(hour, min, 0, 0); return iso(d);
-  };
+  // Seed times are Riyadh times so "today" matches on any device (UAT I05).
+  const today = localToday();
+  const pad2 = (n: number) => String(n).padStart(2, '0');
+  const day = (offset: number, hour = 9, min = 0) =>
+    new Date(`${addDays(today, offset)}T${pad2(hour)}:${pad2(min)}:00+03:00`).toISOString();
 
   state.profiles = [
     { id: 'u-mgr', role: 'manager', full_name: 'Faisal (Manager)', email: 'faisal@demo.com', phone: null, client_id: null, active: true, finance_access: true },
@@ -848,7 +849,7 @@ async function seedDemo(): Promise<void> {
     mkTask('k-6', 'Leak inspection',               'u-wa', 'c-3', day(-2, 13),'rejected',    { started_at: day(-2, 13, 10), finished_at: day(-2, 14, 0), decision_at: day(-2, 15), decision_note: 'Photos unclear — please re-shoot.' }),
     mkTask('k-7', 'Follow-up AC',                  'u-wb', 'c-1', day(1, 9),  'not_started', { recurrence: 'monthly', series_id: 's-7' }),
     mkTask('k-8', 'Quote walk-through',            'u-wa', 'c-3', day(1, 13), 'not_started'),
-    mkTask('k-9', 'Garden upkeep',                 'u-wb', 'c-2', day(-4, 10),'approved',    { started_at: day(-4, 10, 5), finished_at: day(-4, 11, 0), decision_at: day(-1, 3), decision_note: 'Auto-approved after 3 days — client did not respond', approval_method: 'auto_no_response' }),
+    mkTask('k-9', 'Garden upkeep',                 'u-wb', 'c-2', day(-4, 10),'approved',    { started_at: day(-4, 10, 5), finished_at: day(-4, 11, 0), decision_at: day(-1, 3), decision_note: 'Response window expired after 3 days — the client did not sign or reply', approval_method: 'auto_no_response' }),
   ];
 
   state.client_notes = [

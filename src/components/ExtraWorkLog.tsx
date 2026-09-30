@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getSupabase } from '@/services/supabase/client';
 import type { ExtraWorkEntry } from '@/domain/models/ops';
+import { APP_TIME_ZONE } from '@/lib/dates';
 
 interface Props {
   taskId: string;
@@ -72,7 +73,7 @@ export function ExtraWorkLog({
                 <div style={{ flex: 1 }}>
                   <div>{e.body}</div>
                   <div className="card__meta" style={{ marginTop: 2 }}>
-                    {(e.addedByName ?? e.addedBy)} · {new Date(e.addedAt).toLocaleString(undefined, {
+                    {(e.addedByName ?? e.addedBy)} · {new Date(e.addedAt).toLocaleString(undefined, { timeZone: APP_TIME_ZONE,
                       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                     })}
                   </div>

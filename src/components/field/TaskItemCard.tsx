@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ProjectTask, TaskPhoto, VisitStatus } from '@/domain/models/ops';
 import { answerOnVisit, answerTask, updateTaskNote, type TaskAnswer } from '@/services/data/fieldOps';
+import { saveOptionalItem } from '@/services/data/visitFlow';
 import { canCorrectCompleted } from '@/domain/fieldops/fieldOps';
 import { friendlyError } from '@/lib/ruleErrors';
 import { FieldStatusPill } from './FieldStatusPill';
@@ -32,6 +33,14 @@ export function TaskItemCard({ task, label, photos, visitId, visitStatus, editab
   const [note, setNote] = useState(task.note ?? '');
   const [showNote, setShowNote] = useState(!!task.note);
   const [viewer, setViewer] = useState<string | null>(null);
+  // An optional item is saved the first time it is used (once, even if the
+  // supervisor taps twice quickly).
+  const saved = useRef<Promise<ProjectTask> | null>(null);
+  function savedTask(): Promise<ProjectTask> {
+    if (!task.pending) return Promise.resolve(task);
+    saved.current ??= saveOptionalItem(task).catch((e) => { saved.current = null; throw e; });
+    return saved.current;
+  }
 
   const answer = visitId ? answerOnVisit(task, visitId) : null;
   const locked = task.status === 'completed' && !canCorrectCompleted(task, visitStatus);
@@ -46,7 +55,7 @@ export function TaskItemCard({ task, label, photos, visitId, visitStatus, editab
     if (!visitId || saving) return;
     setSaving(true); setError(null);
     try {
-      await answerTask(task, visitId, a, showNote ? note : undefined);
+      await answerTask(await savedTask(), visitId, a, showNote ? note : undefined);
       if (a !== 'done') setShowNote(true);
       onChanged();
     } catch (e) {
@@ -57,10 +66,10 @@ export function TaskItemCard({ task, label, photos, visitId, visitStatus, editab
   }
 
   async function saveNote() {
-    if ((task.note ?? '') === note) return;
+    if ((task.note ?? '') === note.trim()) return;
     setError(null);
     try {
-      await updateTaskNote(task.id, note);
+      await updateTaskNote((await savedTask()).id, note);
       onChanged();
     } catch (e) {
       setError(friendlyError(e, t));
@@ -73,7 +82,7 @@ export function TaskItemCard({ task, label, photos, visitId, visitStatus, editab
     <div className={`task-item task-item--${stateClass}`}>
       <div className="task-item__head">
         <div className="task-item__title">{label}</div>
-        {!answerable || answer === null ? <FieldStatusPill status={task.status} /> : null}
+        {(!answerable || answer === null) && !task.pending ? <FieldStatusPill status={task.status} /> : null}
       </div>
       <div className="task-item__tags">
         {task.required ? <span className="tag">{t('fo.task.required', 'Required')}</span> : <span className="tag">{t('fo.task.optional', 'Optional')}</span>}
@@ -121,8 +130,8 @@ export function TaskItemCard({ task, label, photos, visitId, visitStatus, editab
         {visitPhotos.map((p) => <PhotoThumb key={p.id} photo={p} onOpen={setViewer} />)}
         {answerable ? (
           <>
-            <PhotoCapture taskId={task.id} projectId={task.projectId} visitId={visitId} kind="before" onUploaded={onChanged} />
-            <PhotoCapture taskId={task.id} projectId={task.projectId} visitId={visitId} kind="after" onUploaded={onChanged} />
+            <PhotoCapture taskId={task.id} resolveTaskId={async () => (await savedTask()).id} projectId={task.projectId} visitId={visitId} kind="before" onUploaded={onChanged} />
+            <PhotoCapture taskId={task.id} resolveTaskId={async () => (await savedTask()).id} projectId={task.projectId} visitId={visitId} kind="after" onUploaded={onChanged} />
             {!showNote ? (
               <button type="button" className="thumb-add" onClick={() => setShowNote(true)}>
                 <span aria-hidden>✎</span><span>{t('fo.task.note', 'Note')}</span>

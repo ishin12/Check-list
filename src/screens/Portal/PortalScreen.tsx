@@ -7,6 +7,7 @@ import { useAuth } from '@/app/providers/AuthContext';
 import { listTasks } from '@/services/data/tasks';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
+import { APP_TIME_ZONE } from '@/lib/dates';
 
 export function PortalScreen() {
   const { t } = useTranslation();
@@ -39,7 +40,7 @@ export function PortalScreen() {
                     <div>
                       <div className="card__title">{x.title}</div>
                       <TaskWhoLine task={x} hideClient />
-                      <div className="card__meta">{new Date(x.scheduledAt).toLocaleString()}</div>
+                      <div className="card__meta">{new Date(x.scheduledAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: APP_TIME_ZONE })}</div>
                     </div>
                     <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
                   </div>
@@ -59,7 +60,7 @@ export function PortalScreen() {
                 <div key={x.id} className="card">
                   <div className="card__title">{x.title}</div>
                   <TaskWhoLine task={x} hideClient />
-                  <div className="card__meta">{new Date(x.scheduledAt).toLocaleDateString()}</div>
+                  <div className="card__meta">{new Date(x.scheduledAt).toLocaleDateString(undefined, { timeZone: APP_TIME_ZONE })}</div>
                   {x.extraWork.length > 0 ? (
                     <div style={{ marginTop: 12 }}>
                       <div className="section-title">{t('extras.title', 'Extra work done')}</div>

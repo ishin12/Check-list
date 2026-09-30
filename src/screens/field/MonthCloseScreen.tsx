@@ -8,7 +8,7 @@ import { useFieldData } from '@/app/providers/FieldDataContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { closeMonth, getWorkDays, listLabor, listMonthCloses, listVisits } from '@/services/data/fieldOps';
 import { unallocatedByWorker, unallocatedReport } from '@/domain/reports/reports';
-import { addMonths, eachDay, formatDateTimeShort, formatMonth, localToday, monthEnd, monthStart, weekday } from '@/lib/dates';
+import { addMonths, eachDay, formatDateTimeShort, formatMonth, localToday, monthEnd, monthStart, weekday, formatDate } from '@/lib/dates';
 import { friendlyError } from '@/lib/ruleErrors';
 import { useAsync } from '@/lib/useAsync';
 import { useNames, useRoles } from './common';
@@ -114,6 +114,27 @@ export function MonthCloseScreen() {
             </details>
           ) : null}
 
+          {!closedRow && detail.data?.unclosedVisits.length ? (
+            // Whether a month may close with visits still open is an owner decision
+            // (UAT C02 / §36): the screen states the effect instead of deciding it.
+            <div className="banner banner--error" id="unclosed-visits">
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>
+                {t('fo.close.unclosedWarnTitle', '{{count}} visit(s) in this month are not completed', { count: detail.data.unclosedVisits.length })}
+              </div>
+              <ul style={{ margin: '0 0 6px', paddingInlineStart: 18 }}>
+                {detail.data.unclosedVisits.map((v) => (
+                  <li key={v.id}>
+                    <Link to={`/visits/${v.id}`}>{fd.project(v.projectId)?.name ?? '—'}</Link>
+                    {' · '}{formatDate(v.visitDate, language)} · {names.person(v.supervisorId)} · {t(`fo.status.${v.status}`, v.status)}
+                  </li>
+                ))}
+              </ul>
+              <div>{t('fo.close.unclosedWarnBody', 'If you close now, their supervisors can still finish the work, but can no longer add, remove or change the crew. Only finance can then correct those days, with a reason.')}</div>
+            </div>
+          ) : null}
+          {!closedRow && !isFuture && monthEnd(selected) >= today ? (
+            <div className="banner banner--info">{t('fo.close.notEnded', 'This month has not ended yet. Days after today have no labor recorded.')}</div>
+          ) : null}
           {!closedRow && isFinance ? (
             <button type="button" className="btn btn--primary btn--lg btn--block" disabled={isFuture} onClick={() => setConfirm(true)}>
               🔒 {t('fo.close.closeMonth', 'Close {{month}}', { month: formatMonth(selected, language) })}
@@ -125,7 +146,12 @@ export function MonthCloseScreen() {
       <ConfirmDialog
         open={confirm}
         title={t('fo.close.confirmTitle', 'Close {{month}}?', { month: formatMonth(selected, language) })}
-        body={t('fo.close.confirmBody', 'Supervisors will no longer be able to change this month’s labor. Finance can still correct it with a reason, and every change is logged. This cannot be undone.') ?? ''}
+        body={[
+          detail.data?.unclosedVisits.length
+            ? t('fo.close.confirmUnclosed', '{{count}} visit(s) in this month are still not completed.', { count: detail.data.unclosedVisits.length })
+            : '',
+          t('fo.close.confirmBody', 'Supervisors will no longer be able to change this month’s labor. Finance can still correct it with a reason, and every change is logged. This cannot be undone.'),
+        ].filter(Boolean).join(' ')}
         confirmLabel={t('fo.close.confirm', 'Close month') ?? ''}
         onConfirm={() => void doClose()}
         onCancel={() => setConfirm(false)}

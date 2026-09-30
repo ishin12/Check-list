@@ -6,13 +6,11 @@
 import type { LaborDuration, Project, ProjectTask, Visit, VisitReport } from '@/domain/models/ops';
 import type { Language } from '@/domain/models/types';
 import { buildReportContent, buildVisitTasks, labelText } from '@/domain/fieldops/visitPlan';
-import { skippedOptionalItems } from '@/domain/fieldops/fieldOps';
 import {
   createReport,
   createTasks,
   createVisit,
   deletePlannedVisit,
-  deleteTasks,
   getReportForVisit,
   insertCrew,
   listFieldTemplates,
@@ -62,7 +60,12 @@ export async function startVisit(input: StartVisitInput): Promise<string> {
   return visit.id;
 }
 
-/** Adds any checklist / due periodic items missing from the visit. Safe to repeat. */
+/**
+ * Adds the required checklist / stage / due periodic items missing from the
+ * visit. Safe to repeat. Optional checklist items are not saved here: they are
+ * offered on the visit (optionalVisitItems) and saved only when the supervisor
+ * uses one, so nothing ever has to be deleted afterwards (BR-014).
+ */
 export async function syncVisitTasks(
   project: Pick<Project, 'id' | 'projectTypeId' | 'stageId'>,
   visitId: string,
@@ -73,9 +76,42 @@ export async function syncVisitTasks(
   ]);
   const rows = buildVisitTasks({
     project, visitId, date, templates, projectTasks, recurringItems, newId: () => crypto.randomUUID(),
-  });
+  }).filter((r) => r.required);
   await createTasks(rows);
   return rows.length;
+}
+
+/**
+ * Optional checklist items the visit can use, not saved yet (`pending`). Their
+ * ids are stable per template item so the screen keeps its state between loads.
+ */
+export async function optionalVisitItems(
+  project: Pick<Project, 'id' | 'projectTypeId' | 'stageId'>,
+  visitId: string,
+  date: string,
+): Promise<ProjectTask[]> {
+  const [templates, projectTasks, recurringItems] = await Promise.all([
+    listFieldTemplates(), listTasks({ projectId: project.id }), listRecurring({ projectId: project.id }),
+  ]);
+  return buildVisitTasks({ project, visitId, date, templates, projectTasks, recurringItems, newId: () => '' })
+    .filter((r) => !r.required)
+    .map((r) => ({
+      ...r,
+      id: `optional:${r.templateId}:${r.templateItemId}`,
+      pending: true,
+      createdAt: '',
+    }));
+}
+
+/** Saves an optional item the supervisor started using; returns the saved task. */
+export async function saveOptionalItem(task: ProjectTask): Promise<ProjectTask> {
+  if (!task.pending) return task;
+  const id = crypto.randomUUID();
+  await createTasks([{
+    id, projectId: task.projectId, visitId: task.visitId, source: task.source, templateId: task.templateId,
+    templateItemId: task.templateItemId, description: task.description, required: false, photoRequired: task.photoRequired,
+  }]);
+  return { ...task, id, pending: false };
 }
 
 export interface ReportNames {
@@ -110,12 +146,10 @@ export async function generateReportContent(visit: Visit, names: ReportNames, re
 }
 
 /**
- * Completes the visit: drops untouched optional items, closes the visit
- * (follow-ups stay open — BR-005) and issues the report with frozen content.
+ * Completes the visit (follow-ups stay open — BR-005) and issues the report
+ * with frozen content. Nothing recorded on the visit is deleted (BR-014).
  */
 export async function completeVisit(visit: Visit, names: ReportNames): Promise<VisitReport> {
-  const [tasks, photos] = await Promise.all([listTasks({ projectId: visit.projectId }), listPhotos({ visitId: visit.id })]);
-  await deleteTasks(skippedOptionalItems(visit.id, tasks, new Set(photos.map((p) => p.taskId))));
   await updateVisit(visit.id, { status: 'completed' });
   const closed: Visit = { ...visit, status: 'completed', completedAt: new Date().toISOString() };
   const existing = await getReportForVisit(visit.id);

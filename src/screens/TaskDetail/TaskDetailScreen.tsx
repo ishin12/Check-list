@@ -18,6 +18,7 @@ import { TemplateRunner } from '@/components/TemplateRunner';
 import { ExtraWorkLog } from '@/components/ExtraWorkLog';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import { ApprovalBadge } from '@/components/ApprovalBadge';
+import { APP_TIME_ZONE } from '@/lib/dates';
 
 export function TaskDetailScreen() {
   const { t } = useTranslation();
@@ -159,7 +160,7 @@ export function TaskDetailScreen() {
 
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <span className="card__meta">
-            {new Date(task.scheduledAt).toLocaleString(undefined, {
+            {new Date(task.scheduledAt).toLocaleString(undefined, { timeZone: APP_TIME_ZONE,
               weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
             })}
           </span>
@@ -206,7 +207,7 @@ export function TaskDetailScreen() {
                 <div key={n.id} className="note-card">
                   <div>{n.body}</div>
                   <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
-                    <span className="card__meta">{new Date(n.createdAt).toLocaleDateString()}</span>
+                    <span className="card__meta">{new Date(n.createdAt).toLocaleDateString(undefined, { timeZone: APP_TIME_ZONE })}</span>
                     <button
                       className="btn btn--ghost"
                       onClick={async () => { await resolveNote(n.id, task!.id); await load(); }}
@@ -346,7 +347,7 @@ function ProofRow({ kind, proofs, taskId, canEdit }: { kind: 'start' | 'finish';
         </span>
         <span className="card__meta">
           {found
-            ? new Date(found.capturedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+            ? new Date(found.capturedAt).toLocaleTimeString(undefined, { timeZone: APP_TIME_ZONE, hour: '2-digit', minute: '2-digit' })
             : 'Missing'}
         </span>
         {canEdit && found ? (

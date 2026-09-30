@@ -9,6 +9,7 @@ import { listTasks } from '@/services/data/tasks';
 import { getSupabase } from '@/services/supabase/client';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
+import { APP_TIME_ZONE } from '@/lib/dates';
 
 interface Option { id: string; label: string }
 
@@ -114,7 +115,7 @@ export function CalendarScreen() {
                       <div className="card__title">{x.title}</div>
                       <TaskWhoLine task={x} hideWorker={!isManager} />
                       <div className="card__meta">
-                        {new Date(x.scheduledAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(x.scheduledAt).toLocaleTimeString(undefined, { timeZone: APP_TIME_ZONE, hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
                     <StatusPill status={x.status} approvalMethod={x.approvalMethod} />

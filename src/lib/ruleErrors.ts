@@ -13,6 +13,8 @@ export function friendlyError(e: unknown, t: TFunction): string {
     [/labor_one_per_visit/, 'err.duplicateCrew', 'This worker is already on this visit.'],
     [/BR-009/, 'err.br009', 'This month is closed. Only finance can change its labor.'],
     [/BR-010/, 'err.br010', 'Enter a reason to change labor in a closed month.'],
+    [/BR-008/, 'err.br008', 'This project is completed or closed. It keeps its history but takes no new visits.'],
+    [/STAGE-GATE/, 'err.stageGate', 'The current stage checklist is not finished. Complete its required items on a visit first.'],
     [/BR-014/, 'err.br014', 'Completed records cannot be deleted. Archive, close or void instead.'],
     [/cannot be closed/, 'err.projectOpenTasks', 'This project still has open or follow-up tasks.'],
     [/cannot move from/, 'err.visitState', 'This visit cannot change to that status.'],

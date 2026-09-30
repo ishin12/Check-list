@@ -10,6 +10,7 @@ export function formatDateTime(iso: string, language: Language): string {
     return new Intl.DateTimeFormat(locale, {
       dateStyle: 'medium',
       timeStyle: 'short',
+      timeZone: 'Asia/Riyadh',
     }).format(new Date(iso));
   } catch {
     return iso;

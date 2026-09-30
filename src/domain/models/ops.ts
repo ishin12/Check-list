@@ -202,6 +202,8 @@ export interface ProjectTask {
   completedInVisitId?: string;
   lastVisitId?: string;
   createdAt: string;
+  /** Optional checklist item offered on a visit but not saved until used. */
+  pending?: boolean;
 }
 
 export interface ProjectRecurringItem {

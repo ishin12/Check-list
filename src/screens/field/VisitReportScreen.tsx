@@ -140,6 +140,7 @@ export function VisitReportScreen() {
     signature: t('fo.report.signature', 'Signature'),
     approval: t('fo.report.approval', 'approval'),
     generated: t('fo.report.generated', 'Generated automatically from the recorded visit.'),
+    riyadhTime: t('fo.report.riyadhTime', 'Riyadh time'),
   };
 
   const banner = outcome === 'shared' ? { cls: 'banner--success', msg: t('report.shared', 'Shared successfully.') }

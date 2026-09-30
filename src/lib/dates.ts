@@ -1,6 +1,7 @@
 /**
- * Calendar dates as YYYY-MM-DD in the device's local time zone. Work dates are
- * local days (a 01:00 save in Riyadh is that day, not yesterday in UTC).
+ * Calendar dates as YYYY-MM-DD. Work dates and every time shown to users are
+ * in Riyadh time (UAT I05), whatever the device's time zone: a 01:00 save in
+ * Riyadh is that day, and a report reads the same on every device.
  */
 import type { Language } from '@/domain/models/types';
 
@@ -10,8 +11,22 @@ export function toDateString(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+export const APP_TIME_ZONE = 'Asia/Riyadh';
+
+/** Today's date in Riyadh. */
 export function localToday(): string {
-  return toDateString(new Date());
+  return riyadhDate(new Date());
+}
+
+/** The Riyadh calendar date of an instant. */
+export function riyadhDate(d: Date): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: APP_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
+    const get = (type: string) => parts.find((x) => x.type === type)?.value ?? '';
+    return `${get('year')}-${get('month')}-${get('day')}`;
+  } catch {
+    return toDateString(d);
+  }
 }
 
 export function parseDate(s: string): Date {
@@ -69,7 +84,16 @@ export function formatMonth(s: string, language: Language): string {
 
 export function formatDateTimeShort(iso: string, language: Language): string {
   try {
-    return new Intl.DateTimeFormat(locale(language), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+    return new Intl.DateTimeFormat(locale(language), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: APP_TIME_ZONE }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
+}
+
+/** Date and time of an instant in Riyadh time, e.g. "27 Sept 2026, 13:00". */
+export function formatDateTime(iso: string, language: Language): string {
+  try {
+    return new Intl.DateTimeFormat(locale(language), { dateStyle: 'medium', timeStyle: 'short', timeZone: APP_TIME_ZONE }).format(new Date(iso));
   } catch {
     return iso;
   }

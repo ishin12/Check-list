@@ -7,6 +7,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { listTasks } from '@/services/data/tasks';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
+import { APP_TIME_ZONE } from '@/lib/dates';
 
 export function ApprovalsScreen() {
   const { t } = useTranslation();
@@ -32,7 +33,7 @@ export function ApprovalsScreen() {
                 <div style={{ flex: 1 }}>
                   <div className="card__title">{x.title}</div>
                   <TaskWhoLine task={x} />
-                  <div className="card__meta">{new Date(x.scheduledAt).toLocaleString()}</div>
+                  <div className="card__meta">{new Date(x.scheduledAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: APP_TIME_ZONE })}</div>
                 </div>
                 <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
               </Link>

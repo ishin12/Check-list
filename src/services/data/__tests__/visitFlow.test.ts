@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { completeVisit, startVisit, syncVisitTasks } from '@/services/data/visitFlow';
+import { completeVisit, optionalVisitItems, saveOptionalItem, startVisit, syncVisitTasks } from '@/services/data/visitFlow';
 import {
   answerTask,
   createVisit,
@@ -44,10 +44,15 @@ describe('supervisor visit cycle (demo backend)', () => {
 
     const tasks = await listTasks({ projectId: 'pr-1' });
     const onVisit = tasks.filter((t) => t.status !== 'completed');
-    // Carried follow-up + open recurring irrigation check + due periodic items + type checklist.
+    // Carried follow-up + open recurring irrigation check + due periodic items + required checklist items.
     expect(onVisit.map((t) => t.description)).toEqual(expect.arrayContaining([
-      'Fertilizing', 'Irrigation network check', 'Plant and general condition check', 'Cleaning', 'Pruning',
+      'Fertilizing', 'Irrigation network check', 'Plant and general condition check', 'Cleaning',
     ]));
+    // Optional items are offered, not saved (C03: nothing to delete later).
+    expect(onVisit.some((t) => t.description === 'Pruning')).toBe(false);
+    const optional = await optionalVisitItems(project, visitId, today);
+    expect(optional.map((t) => t.description)).toEqual(expect.arrayContaining(['Pruning', 'Weeding']));
+    expect(optional.every((t) => t.pending && !t.required)).toBe(true);
     // No duplicates when syncing again.
     expect(await syncVisitTasks(project, visitId, today)).toBe(0);
 
@@ -77,7 +82,7 @@ describe('supervisor visit cycle (demo backend)', () => {
     // TC-04: the follow-up is still open after completion.
     after = await listTasks({ projectId: 'pr-1' });
     expect(after.find((t) => t.description === 'Fertilizing' && t.status === 'needs_follow_up')).toBeTruthy();
-    // Untouched optional checklist items were dropped, not left open.
+    // Untouched optional items were never saved, so nothing was deleted or left open.
     expect(after.filter((t) => t.visitId === visitId && !t.required && t.status === 'open')).toEqual([]);
     // BR-011: the completed irrigation check rolled its dates.
     const irr = (await listRecurring({ projectId: 'pr-1' })).find((r) => r.id === 'ri-1')!;
@@ -109,12 +114,16 @@ describe('supervisor visit cycle (demo backend)', () => {
     expect((await listLabor({ visitId: id }))[0].workDate).toBe(today);
   });
 
-  it('completing keeps an optional item that has a photo', async () => {
+  it('an optional item is saved when used and kept after completion', async () => {
     const project = (await getProject('pr-1'))!;
     const visitId = await startVisit({ project, supervisorId: 'u-wa', date: today, crew: [{ employeeId: 'em-5', duration: 1 }] });
-    const tasks = await listTasks({ projectId: 'pr-1' });
-    const optional = tasks.find((t) => t.visitId === visitId && !t.required)!;
+    const pending = (await optionalVisitItems(project, visitId, today)).find((t) => t.description === 'Pruning')!;
+    const optional = await saveOptionalItem(pending);
+    expect(optional.pending).toBe(false);
     await uploadTaskPhoto({ taskId: optional.id, visitId, projectId: 'pr-1', kind: 'before', file: new Blob(['x']), mime: 'image/png' });
+    // Once saved it is no longer offered as a new optional item.
+    expect((await optionalVisitItems(project, visitId, today)).some((t) => t.description === 'Pruning')).toBe(false);
+    const tasks = await listTasks({ projectId: 'pr-1' });
     for (const t of tasks.filter((x) => x.required && x.status !== 'completed')) {
       await answerTask(t, visitId, 'not_done');
     }

@@ -6,6 +6,7 @@
  * rejects exactly what Postgres rejects (BR-001/002/009/010/014, state
  * machines, recurring roll-forward). RLS is not emulated.
  */
+import { STAGE_CHECKLISTS } from './stageChecklists';
 import { checkAllocation, isMonthClosed } from '@/domain/labor/allocation';
 import { canCorrectCompleted, canMoveProject, canMoveTask, canMoveVisit, nextDueDate } from '@/domain/fieldops/fieldOps';
 import type { LaborAllocation } from '@/domain/models/ops';
@@ -65,7 +66,7 @@ function actorHasFinance(ctx: GuardContext): boolean {
   return !!p && p.active && (p.role === 'finance' || p.finance_access === true);
 }
 
-const NO_DELETE = new Set(['projects', 'employees', 'labor_allocations', 'month_closes', 'visit_reports']);
+const NO_DELETE = new Set(['projects', 'employees', 'labor_allocations', 'month_closes', 'visit_reports', 'project_tasks']);
 
 /** Fills column defaults the SQL schema would. */
 export function fieldOpsDefaults(table: string, row: Row, actorId: string, state: State): Row {
@@ -124,6 +125,26 @@ export function fieldOpsDefaults(table: string, row: Row, actorId: string, state
  * Runs the BEFORE-trigger logic. May adjust `next` in place (timestamps).
  * Throws with the same rule code as Postgres when the write is refused.
  */
+/** Mirrors 0008 stage_missing_items / projects_stage_guard: the first stage (from `from` up to, not including, `to`) with a required item not completed. */
+function stageGateBlocker(state: State, projectId: string, typeId: string, from: string, to: string): string | null {
+  const order = (id: string) => Number(state.project_stages.find((s) => s.id === id)?.sort_order ?? 0);
+  const [a, b] = [order(from), order(to)];
+  if (b <= a) return null;
+  const stages = state.project_stages
+    .filter((s) => s.project_type_id === typeId && Number(s.sort_order) >= a && Number(s.sort_order) < b)
+    .sort((x, y) => Number(x.sort_order) - Number(y.sort_order));
+  for (const stage of stages) {
+    const missing = state.templates
+      .filter((t) => t.stage_id === stage.id && t.active !== false)
+      .some((t) => ((t.tasks as Row[]) ?? []).some((item) => item.required === true
+        && (!item.recurrence || item.recurrence === 'none')
+        && !state.project_tasks.some((pt) => pt.project_id === projectId && pt.template_id === t.id
+          && pt.template_item_id === item.id && pt.status === 'completed')));
+    if (missing) return String((stage.name as Row | undefined)?.en ?? stage.code);
+  }
+  return null;
+}
+
 export function fieldOpsBefore(table: string, op: Op, prev: Row | null, next: Row | null, ctx: GuardContext): void {
   if (op === 'DELETE' && NO_DELETE.has(table)) {
     fail(`BR-014: ${table} rows cannot be deleted; archive, close or void instead`);
@@ -138,6 +159,13 @@ export function fieldOpsBefore(table: string, op: Op, prev: Row | null, next: Ro
         const hasLabor = ctx.state.labor_allocations.some((a) => a.visit_id === prev!.id);
         if (prev!.status !== 'planned' || hasLabor) fail('BR-014: only a planned visit with no labor can be deleted');
         return;
+      }
+      // 0008 visits_project_open_guard (BR-008 / UAT I04)
+      if (op === 'INSERT' || (op === 'UPDATE' && prev!.status === 'planned' && next!.status === 'in_progress')) {
+        const project = ctx.state.projects.find((p) => p.id === next!.project_id);
+        if (project && (project.status === 'completed' || project.status === 'closed')) {
+          fail(`BR-008: project is ${project.status} and cannot take new visits`);
+        }
       }
       if (op === 'UPDATE' && prev!.status !== next!.status) {
         if (!canMoveVisit(prev!.status, next!.status)) fail(`Visit cannot move from ${prev!.status} to ${next!.status}`);
@@ -158,13 +186,6 @@ export function fieldOpsBefore(table: string, op: Op, prev: Row | null, next: Ro
       return;
     }
     case 'project_tasks': {
-      if (op === 'DELETE') {
-        if (prev!.status === 'completed') fail('BR-014: a completed task cannot be deleted');
-        if (ctx.state.task_photos.some((ph) => ph.task_id === prev!.id)) {
-          fail('update or delete on table "project_tasks" violates foreign key constraint "task_photos_task_id_fkey"');
-        }
-        return;
-      }
       if (op === 'INSERT') {
         // 0007 project_tasks_insert_guard
         if (!actorIsManager(ctx)) {
@@ -200,6 +221,11 @@ export function fieldOpsBefore(table: string, op: Op, prev: Row | null, next: Ro
       return;
     }
     case 'projects': {
+      // 0008 projects_stage_guard (§9 / UAT I01)
+      if (op === 'UPDATE' && prev!.stage_id && next!.stage_id && prev!.stage_id !== next!.stage_id) {
+        const blocked = stageGateBlocker(ctx.state, String(next!.id), String(next!.project_type_id), String(prev!.stage_id), String(next!.stage_id));
+        if (blocked) fail(`STAGE-GATE: required checklist items of stage "${blocked}" are not completed`);
+      }
       if (op === 'UPDATE' && prev!.status !== next!.status) {
         if (!canMoveProject(prev!.status, next!.status)) fail(`Project is ${prev!.status} and cannot change status`);
         if (next!.status === 'completed' || next!.status === 'closed') {
@@ -302,12 +328,6 @@ export function seedFieldOps(state: State, day: (offset: number, hour?: number, 
         item('m-clean', 6, 'Cleaning', 'النظافة', { required: true, photoRequired: true }, 'صفائی'),
         item('m-pump',  7, 'Pumps / site equipment check', 'فحص المضخات أو المعدات المرتبطة بالموقع', {}, 'پمپ / سائٹ کے آلات کا معائنہ'),
       ] },
-    { id: 't-irr', title: { en: 'Irrigation network — stage checklist', ar: 'شبكة الري — قائمة المرحلة' }, project_type_id: 'pt-est', stage_id: 'st-irrigation', active: true, version: 1,
-      created_by: 'u-mgr', created_at: day(-90), updated_at: day(-90), tasks: [
-        item('i-test',  0, 'Pressure-test irrigation lines', 'اختبار ضغط خطوط الري', { required: true, photoRequired: true }, 'آبپاشی کی لائنوں کا پریشر ٹیسٹ'),
-        item('i-drip',  1, 'Check drip emitters at each basin', 'فحص النقاطات عند كل حوض', { required: true }, 'ہر حوض پر ڈرپ ایمیٹرز کا معائنہ'),
-        item('i-notes', 2, 'Record defects and fixes needed', 'تسجيل الملاحظات والمعالجات المطلوبة', { required: true }, 'خرابیاں اور ضروری مرمت درج کریں'),
-      ] },
   );
 
   state.project_types = [
@@ -328,6 +348,18 @@ export function seedFieldOps(state: State, day: (offset: number, hour?: number, 
   state.project_stages = stages.map(([code, en, ar, ur], i) => ({
     id: `st-${code}`, project_type_id: 'pt-est', code, name: { en, ar, ur }, sort_order: i + 1, active: true,
   }));
+  // A checklist for every stage (§9; same draft content as migration 0008).
+  for (const [code, en, ar, ur] of stages) {
+    state.templates.push({
+      id: code === 'irrigation' ? 't-irr' : `t-stage-${code}`,
+      title: { en: `${en} — stage checklist`, ar: `قائمة مرحلة ${ar}`, ur: `${ur} — مرحلے کی چیک لسٹ` },
+      project_type_id: 'pt-est', stage_id: `st-${code}`, active: true, version: 1,
+      created_by: 'u-mgr', created_at: day(-90), updated_at: day(-90),
+      tasks: STAGE_CHECKLISTS[code].map((it, order) => ({
+        id: it.id, order, required: it.required, ...(it.photoRequired ? { photoRequired: true } : {}), label: it.label,
+      })),
+    });
+  }
 
   state.projects = [
     { id: 'pr-1', code: 'MNT-001', name: 'Khaled Residence — garden', client_id: 'c-1', project_type_id: 'pt-mnt', stage_id: null, status: 'active',  supervisor_id: 'u-wa', notes: null, closed_at: null, created_by: 'u-mgr', created_at: day(-60), updated_at: day(-60), updated_by: null },

@@ -4,6 +4,7 @@ import {
   buildReportContent,
   buildVisitTasks,
   recurringItemsFromTemplates,
+  stageProgress,
 } from '@/domain/fieldops/visitPlan';
 import type { ProjectRecurringItem } from '@/domain/models/ops';
 import type { Template } from '@/domain/models/types';
@@ -22,7 +23,7 @@ const maint = tpl('maint', { projectTypeId: 'mnt' }, [
   item('prune', { order: 0, required: true, photoRequired: true }),
   item('irrigation', { order: 2, recurrence: 'weekly' }),
 ]);
-const stage = tpl('irr-stage', { stageId: 'st-irr' }, [item('pressure-test')]);
+const stage = tpl('irr-stage', { stageId: 'st-irr' }, [item('pressure-test', { required: true }), item('wool')]);
 const other = tpl('other', { projectTypeId: 'est' }, [item('x')]);
 const inactive = tpl('old', { projectTypeId: 'mnt', active: false }, [item('y')]);
 const all = [maint, stage, other, inactive];
@@ -57,15 +58,31 @@ describe('buildVisitTasks', () => {
     expect(rows.map((r) => r.templateItemId)).toEqual(['clean']);
   });
 
-  it('stage items are created once per project and are always required', () => {
+  it('stage items are created once per project and keep their required flag', () => {
     const p = { id: 'P2', projectTypeId: 'est', stageId: 'st-irr' };
     const first = buildVisitTasks({ project: p, visitId: 'v1', date: '2026-10-05', templates: [stage], projectTasks: [], recurringItems: [], newId });
-    expect(first.map((r) => [r.source, r.required])).toEqual([['stage', true]]);
+    // An item that may not apply (e.g. agricultural wool) stays optional (UAT I01).
+    expect(first.map((r) => [r.templateItemId, r.source, r.required])).toEqual([['pressure-test', 'stage', true], ['wool', 'stage', false]]);
     const again = buildVisitTasks({
       project: p, visitId: 'v2', date: '2026-10-06', templates: [stage], recurringItems: [], newId,
-      projectTasks: [{ templateId: 'irr-stage', templateItemId: 'pressure-test', status: 'completed', source: 'stage' }],
+      projectTasks: [
+        { templateId: 'irr-stage', templateItemId: 'pressure-test', status: 'completed', source: 'stage' },
+        { templateId: 'irr-stage', templateItemId: 'wool', status: 'completed', source: 'stage' },
+      ],
     });
     expect(again).toEqual([]);
+  });
+
+  it('I01 stage progress lists the required items not completed yet', () => {
+    const tasks = [{ projectId: 'P2', templateId: 'irr-stage', templateItemId: 'wool', status: 'completed' as const }];
+    const before = stageProgress('P2', 'st-irr', [stage], tasks);
+    expect(before.required.map((r) => r.itemId)).toEqual(['pressure-test']);
+    expect(before.missing.map((r) => r.itemId)).toEqual(['pressure-test']);
+    const after = stageProgress('P2', 'st-irr', [stage], [...tasks,
+      { projectId: 'P2', templateId: 'irr-stage', templateItemId: 'pressure-test', status: 'completed' as const }]);
+    expect(after.missing).toEqual([]);
+    // Another project's work does not count.
+    expect(stageProgress('P3', 'st-irr', [stage], after.required.map(() => ({ projectId: 'P2', templateId: 'irr-stage', templateItemId: 'pressure-test', status: 'completed' as const }))).missing).toHaveLength(1);
   });
 
   it('TC-06 adds due recurring items once, overdue included', () => {

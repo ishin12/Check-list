@@ -154,10 +154,10 @@
   },
   "approval": {
     "signedShort": "Signed",
-    "autoShort": "Approved · no response",
-    "autoFull": "Auto-approved — client did not respond",
+    "autoShort": "Expired · not signed",
+    "autoFull": "Response window expired — the client did not sign or reply",
     "signedLine": "Signed by client on {{when}}",
-    "autoLine": "Auto-approved on {{when}} — client did not respond in time. No signature provided.",
+    "autoLine": "The response window closed on {{when}} without a reply from the client. This is not a signature or an approval by the client.",
     "managerLine": "Approved by manager on {{when}}"
   },
   "today": {
@@ -224,7 +224,63 @@
     "from": "From",
     "to": "To",
     "anyone": "Anyone",
-    "allTypes": "All"
+    "allTypes": "All",
+    "system": "System",
+    "riyadhNote": "Times are Riyadh time.",
+    "op": {
+      "insert": "created",
+      "update": "changed",
+      "delete": "deleted"
+    },
+    "entityName": {
+      "labor_allocations": "Labor day",
+      "month_closes": "Month close",
+      "projects": "Project",
+      "visits": "Visit",
+      "project_tasks": "Task",
+      "employees": "Worker",
+      "task": "Older task",
+      "client_note": "Client note",
+      "task_proofs": "Proof photo",
+      "client": "Client",
+      "profile": "User",
+      "visit_reports": "Visit report",
+      "task_photos": "Photo",
+      "project_recurring_items": "Periodic item"
+    },
+    "field": {
+      "duration": "Days",
+      "status": "Status",
+      "change_reason": "Reason",
+      "full_name": "Name",
+      "name": "Name",
+      "description": "Task",
+      "note": "Note",
+      "notes": "Notes",
+      "stage_id": "Stage",
+      "supervisor_id": "Supervisor",
+      "work_date": "Date",
+      "visit_date": "Visit date",
+      "voided_at": "Removed on",
+      "void_reason": "Removal reason",
+      "voided_by": "Removed by",
+      "project_id": "Project",
+      "employee_id": "Worker",
+      "code": "Code",
+      "phone": "Phone",
+      "required": "Required",
+      "photo_required": "Photo required",
+      "last_visit_id": "Last visit",
+      "completed_in_visit_id": "Done on visit",
+      "completed_at": "Completed on",
+      "closed_at": "Closed on",
+      "started_at": "Started",
+      "signer_name": "Client representative",
+      "next_due_on": "Next due",
+      "last_done_on": "Last done",
+      "recurrence": "Frequency",
+      "active": "Active"
+    }
   },
   "recurrence": {
     "none": "Does not repeat",
@@ -356,7 +412,9 @@
     "projectFinal": "This project is completed or closed and cannot change status.",
     "monthAlreadyClosed": "This month is already closed.",
     "permission": "You do not have permission to do this.",
-    "network": "Could not reach the server. Nothing was saved — check the connection and try again."
+    "network": "Could not reach the server. Nothing was saved — check the connection and try again.",
+    "br008": "This project is completed or closed. It keeps its history but takes no new visits.",
+    "stageGate": "The current stage checklist is not finished. Complete its required items on a visit first."
   },
   "fo": {
     "add": "Add",
@@ -428,7 +486,8 @@
       "date": "Visit date",
       "crew": "Crew with you today",
       "pickCrew": "Select the crew to start",
-      "go": "Start visit with {{count}} worker(s)"
+      "go": "Start visit with {{count}} worker(s)",
+      "notActive": "Visits can only be started on active projects. This project is {{status}}."
     },
     "crew": {
       "copyPrevious": "Copy last crew",
@@ -465,7 +524,9 @@
       "needPhotos": "Add a photo to {{count}} completed item(s) that require one.",
       "complete": "Complete visit",
       "confirmTitle": "Complete this visit?",
-      "confirmBody": "The report is generated from what you recorded. Follow-up and not-done items stay open for the next visit."
+      "confirmBody": "The report is generated from what you recorded. Follow-up and not-done items stay open for the next visit.",
+      "monthClosedCrew": "This month is closed: the crew can no longer be changed here. Ask finance for a correction.",
+      "monthClosedCrewFinance": "This month is closed. Correct its labor in the labor ledger, with a reason."
     },
     "task": {
       "required": "Required",
@@ -504,7 +565,8 @@
       "generated": "Generated automatically from the recorded visit.",
       "draft": "Draft — the visit is not completed yet.",
       "repPlaceholder": "Name of the person receiving the visit",
-      "share": "Share PDF"
+      "share": "Share PDF",
+      "riyadhTime": "Riyadh time"
     },
     "projects": {
       "title": "Projects",
@@ -622,7 +684,8 @@
       "overdue": "Overdue periodic",
       "status": "Status",
       "task": "Task",
-      "note": "Note"
+      "note": "Note",
+      "day": "Date"
     },
     "labor": {
       "title": "Labor",
@@ -656,7 +719,22 @@
       "financeOnly": "Only finance can close a month.",
       "confirmTitle": "Close {{month}}?",
       "confirmBody": "Supervisors will no longer be able to change this month’s labor. Finance can still correct it with a reason, and every change is logged. This cannot be undone.",
-      "confirm": "Close month"
+      "confirm": "Close month",
+      "unclosedWarnTitle": "{{count}} visit(s) in this month are not completed",
+      "unclosedWarnBody": "If you close now, their supervisors can still finish the work, but can no longer add, remove or change the crew. Only finance can then correct those days, with a reason.",
+      "notEnded": "This month has not ended yet. Days after today have no labor recorded.",
+      "confirmUnclosed": "{{count}} visit(s) in this month are still not completed."
+    },
+    "stage": {
+      "title": "Stage {{n}} of {{total}}",
+      "progress": "{{done}}/{{total}} required items done",
+      "noChecklist": "This stage has no required checklist items yet. Management can add them in Checklists.",
+      "missing": "Still to be done on a visit before moving on:",
+      "ready": "All required items of this stage are done.",
+      "next": "Move to next stage",
+      "confirmTitle": "Move to the next stage?",
+      "confirmBody": "The project moves to \"{{stage}}\". Its checklist will appear on the next visit.",
+      "editHint": "To move forward, use \"Move to next stage\" on the project page once the stage checklist is done."
     }
   }
 }

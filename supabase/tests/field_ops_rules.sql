@@ -286,8 +286,8 @@ values ('50000000-0000-0000-0000-000000000009', '20000000-0000-0000-0000-0000000
 select pg_temp.ok('Supervisor adds checklist tasks from templates',
   (select count(*) = 1 from public.project_tasks where id = '50000000-0000-0000-0000-000000000009'));
 delete from public.project_tasks where id = '50000000-0000-0000-0000-000000000009';
-select pg_temp.ok('Supervisor removes an untouched optional checklist item',
-  (select count(*) = 0 from public.project_tasks where id = '50000000-0000-0000-0000-000000000009'));
+select pg_temp.ok('C03 supervisor cannot remove a checklist item (BR-014, 0008)',
+  (select count(*) = 1 from public.project_tasks where id = '50000000-0000-0000-0000-000000000009'));
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');  -- supervises nothing now
 select pg_temp.ok('Day load shows bookings on projects the supervisor cannot see',
@@ -397,6 +397,100 @@ select pg_temp.ok('Supervisor records the client representative',
   (select signer_name = 'Khaled' from public.visit_reports where id = '70000000-0000-0000-0000-000000000001'));
 select pg_temp.expect_fail('An issued report cannot be rewritten', $$
   update public.visit_reports set content = '{"done":["fake"]}' where id = '70000000-0000-0000-0000-000000000001' $$, 'cannot be rewritten');
+
+-- ---------------------------------------------------------------------------
+-- 0008 — UAT fixes (C03, I01, I04)
+-- ---------------------------------------------------------------------------
+
+-- C03 / BR-014: tasks are never deleted, by anyone.
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');   -- manager
+select pg_temp.expect_fail('C03 manager cannot delete a task', $$
+  delete from public.project_tasks where id = '50000000-0000-0000-0000-000000000007' $$, 'BR-014');
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');   -- supervisor
+delete from public.project_tasks where id = '50000000-0000-0000-0000-000000000007';
+select pg_temp.act_as(null);
+select pg_temp.ok('C03 supervisor delete removes nothing (no delete policy)',
+  (select count(*) = 1 from public.project_tasks where id = '50000000-0000-0000-0000-000000000007'));
+select pg_temp.expect_fail('C03 not even the service role can delete a task', $$
+  delete from public.project_tasks where id = '50000000-0000-0000-0000-000000000007' $$, 'BR-014');
+
+-- I04 / BR-008: no new or restarted visits on a completed / closed project.
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
+insert into public.projects (id, code, name, client_id, project_type_id, supervisor_id) values
+  ('20000000-0000-0000-0000-000000000003', 'P-3', 'Project 3', '10000000-0000-0000-0000-000000000001',
+   (select id from public.project_types where code = 'maintenance'), '00000000-0000-0000-0000-00000000000b'),
+  ('20000000-0000-0000-0000-000000000004', 'P-4', 'Project 4', '10000000-0000-0000-0000-000000000001',
+   (select id from public.project_types where code = 'maintenance'), '00000000-0000-0000-0000-00000000000b');
+insert into public.visits (id, project_id, visit_date, supervisor_id, status)
+values ('40000000-0000-0000-0000-000000000007', '20000000-0000-0000-0000-000000000004', '2026-10-23',
+        '00000000-0000-0000-0000-00000000000b', 'planned');
+update public.projects set status = 'closed' where id in ('20000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000004');
+select pg_temp.expect_fail('I04 a closed project takes no new visit', $$
+  insert into public.visits (project_id, visit_date, supervisor_id)
+  values ('20000000-0000-0000-0000-000000000003', '2026-10-23', '00000000-0000-0000-0000-00000000000b') $$, 'BR-008');
+select pg_temp.expect_fail('I04 a planned visit on a closed project cannot be started', $$
+  update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000007' $$, 'BR-008');
+select pg_temp.expect_fail('I04 a closed project cannot be deleted', $$
+  delete from public.projects where id = '20000000-0000-0000-0000-000000000003' $$, 'BR-014');
+select pg_temp.ok('I04 a closed project stays searchable',
+  (select count(*) = 2 from public.projects where status = 'closed' and name like 'Project %'));
+
+-- I01 / §9: every stage has a checklist and gates progress.
+select pg_temp.ok('I01 each establishment stage has a checklist',
+  (select count(distinct t.stage_id) = 6 from public.templates t
+   join public.project_stages s on s.id = t.stage_id
+   join public.project_types pt on pt.id = s.project_type_id and pt.code = 'establishment'));
+insert into public.projects (id, code, name, client_id, project_type_id, stage_id, supervisor_id)
+values ('20000000-0000-0000-0000-000000000005', 'E-1', 'Est 1', '10000000-0000-0000-0000-000000000001',
+        (select id from public.project_types where code = 'establishment'),
+        (select s.id from public.project_stages s join public.project_types pt on pt.id = s.project_type_id
+         where pt.code = 'establishment' and s.code = 'site_handover'),
+        '00000000-0000-0000-0000-00000000000b');
+select pg_temp.expect_fail('I01 cannot advance before the stage checklist is done', $$
+  update public.projects set stage_id = (select s.id from public.project_stages s join public.project_types pt on pt.id = s.project_type_id
+    where pt.code = 'establishment' and s.code = 'preparatory')
+  where id = '20000000-0000-0000-0000-000000000005' $$, 'STAGE-GATE');
+select pg_temp.expect_fail('I01 cannot skip stages either', $$
+  update public.projects set stage_id = (select s.id from public.project_stages s join public.project_types pt on pt.id = s.project_type_id
+    where pt.code = 'establishment' and s.code = 'irrigation')
+  where id = '20000000-0000-0000-0000-000000000005' $$, 'STAGE-GATE');
+
+insert into public.visits (id, project_id, visit_date, supervisor_id, status)
+values ('40000000-0000-0000-0000-000000000008', '20000000-0000-0000-0000-000000000005', '2026-10-24',
+        '00000000-0000-0000-0000-00000000000b', 'planned');
+update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000008';
+insert into public.project_tasks (project_id, visit_id, source, template_id, template_item_id, description)
+select '20000000-0000-0000-0000-000000000005', '40000000-0000-0000-0000-000000000008', 'stage', t.id, item ->> 'id', item -> 'label' ->> 'en'
+from public.templates t
+join public.project_stages s on s.id = t.stage_id and s.code = 'site_handover'
+join public.project_types pt on pt.id = s.project_type_id and pt.code = 'establishment'
+cross join lateral jsonb_array_elements(t.tasks) item
+where (item ->> 'required')::boolean;
+-- Two of three done: still blocked.
+update public.project_tasks set status = 'completed', completed_in_visit_id = '40000000-0000-0000-0000-000000000008'
+where project_id = '20000000-0000-0000-0000-000000000005' and template_item_id in ('sh-receive', 'sh-condition');
+select pg_temp.expect_fail('I01 one missing required item still blocks', $$
+  update public.projects set stage_id = (select s.id from public.project_stages s join public.project_types pt on pt.id = s.project_type_id
+    where pt.code = 'establishment' and s.code = 'preparatory')
+  where id = '20000000-0000-0000-0000-000000000005' $$, 'Site handover');
+update public.project_tasks set status = 'completed', completed_in_visit_id = '40000000-0000-0000-0000-000000000008'
+where project_id = '20000000-0000-0000-0000-000000000005' and template_item_id = 'sh-obstacles';
+update public.projects set stage_id = (select s.id from public.project_stages s join public.project_types pt on pt.id = s.project_type_id
+  where pt.code = 'establishment' and s.code = 'preparatory')
+where id = '20000000-0000-0000-0000-000000000005';
+select pg_temp.ok('I01 advances once the required items are done',
+  (select s.code = 'preparatory' from public.projects p join public.project_stages s on s.id = p.stage_id
+   where p.id = '20000000-0000-0000-0000-000000000005'));
+select pg_temp.ok('I01 optional "agricultural wool" item does not gate',
+  (select public.stage_missing_items('20000000-0000-0000-0000-000000000005',
+     (select s.id from public.project_stages s join public.project_types pt on pt.id = s.project_type_id
+      where pt.code = 'establishment' and s.code = 'preparatory')) = 3));
+update public.projects set stage_id = (select s.id from public.project_stages s join public.project_types pt on pt.id = s.project_type_id
+  where pt.code = 'establishment' and s.code = 'site_handover')
+where id = '20000000-0000-0000-0000-000000000005';
+select pg_temp.ok('I01 management can move a project back a stage',
+  (select s.code = 'site_handover' from public.projects p join public.project_stages s on s.id = p.stage_id
+   where p.id = '20000000-0000-0000-0000-000000000005'));
 
 select pg_temp.act_as(null);
 \o

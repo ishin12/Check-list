@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import type { VisitReportContent, VisitReportTaskLine } from '@/domain/models/ops';
 import type { Language } from '@/domain/models/types';
-import { formatDate } from '@/lib/dates';
+import { formatDate, formatDateTime } from '@/lib/dates';
 
 export interface VisitReportLabels {
   title: string;
@@ -25,6 +25,8 @@ export interface VisitReportLabels {
   signature: string;
   approval: string;
   generated: string;
+  /** "Riyadh time" suffix for the completion time. */
+  riyadhTime: string;
 }
 
 interface Props {
@@ -169,7 +171,7 @@ export const VisitReportDocument = forwardRef<HTMLDivElement, Props>(({ content,
       </div>
 
       <div style={{ marginTop: 28, fontSize: 11, color: MUTED }}>
-        {labels.generated}{content.completedAt ? ` · ${new Date(content.completedAt).toLocaleString(language === 'en' ? 'en-GB' : `${language}-u-nu-latn`)}` : ''}
+        {labels.generated}{content.completedAt ? ` · ${formatDateTime(content.completedAt, language)} (${labels.riyadhTime})` : ''}
       </div>
     </div>
   );

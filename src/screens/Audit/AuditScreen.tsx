@@ -3,6 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
+import { addDays, formatDateTime, localToday } from '@/lib/dates';
+import { useLanguage } from '@/app/providers/LanguageContext';
+import { useFieldData } from '@/app/providers/FieldDataContext';
+import { configText } from '@/lib/configText';
+import { useNames } from '@/screens/field/common';
 
 interface Row {
   id: string;
@@ -17,21 +22,18 @@ interface Row {
 
 const ENTITY_OPTIONS = ['all', 'labor_allocations', 'month_closes', 'projects', 'visits', 'project_tasks', 'employees', 'task', 'client_note', 'task_proofs', 'client', 'profile'] as const;
 
-function startOfDayInput(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
 export function AuditScreen() {
   const { t } = useTranslation();
+  const { language } = useLanguage();
+  const fd = useFieldData();
+  const names = useNames();
   const [rows, setRows] = useState<Row[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const [entity, setEntity] = useState<string>('all');
-  const [from, setFrom] = useState<string>(() => {
-    const d = new Date(); d.setDate(d.getDate() - 14); return startOfDayInput(d);
-  });
-  const [to, setTo] = useState<string>(() => startOfDayInput(new Date()));
+  // Days are Riyadh days (UAT I05).
+  const [from, setFrom] = useState<string>(() => addDays(localToday(), -14));
+  const [to, setTo] = useState<string>(() => localToday());
   const [actor, setActor] = useState<string>('');
 
   async function load() {
@@ -42,8 +44,8 @@ export function AuditScreen() {
         .order('at', { ascending: false })
         .limit(500);
       if (entity !== 'all') q = q.eq('entity', entity);
-      if (from) q = q.gte('at', new Date(from + 'T00:00:00').toISOString());
-      if (to) q = q.lte('at', new Date(to + 'T23:59:59').toISOString());
+      if (from) q = q.gte('at', new Date(from + 'T00:00:00+03:00').toISOString());
+      if (to) q = q.lte('at', new Date(to + 'T23:59:59+03:00').toISOString());
       if (actor) q = q.eq('actor_id', actor);
       const { data, error } = await q;
       if (error) throw error;
@@ -65,6 +67,43 @@ export function AuditScreen() {
     return Array.from(seen.entries());
   }, [rows]);
 
+  /** "Labor day changed", "Task created"… instead of table.operation. */
+  function actionLabel(r: Row): string {
+    const [table, op] = r.action.includes('.') ? r.action.split('.') : [r.entity, r.action];
+    const verb = t(`audit.op.${op}`, op);
+    return `${t(`audit.entityName.${table}`, table)} · ${verb}`;
+  }
+
+  /** The record the change is about, by name. */
+  function recordName(r: Row): string {
+    const row = ((r.payload?.new ?? r.payload?.old) ?? {}) as Record<string, unknown>;
+    const s = (v: unknown) => (typeof v === 'string' ? v : undefined);
+    switch (r.entity) {
+      case 'projects': return s(row.name) ?? '';
+      case 'employees': return s(row.full_name) ?? '';
+      case 'project_tasks': return [s(row.description), names.project(s(row.project_id))].filter(Boolean).join(' · ');
+      case 'visits': return [names.project(s(row.project_id)), s(row.visit_date)].filter(Boolean).join(' · ');
+      case 'labor_allocations': return [names.employee(s(row.employee_id)), s(row.work_date), names.project(s(row.project_id))].filter(Boolean).join(' · ');
+      case 'month_closes': return s(row.month)?.slice(0, 7) ?? '';
+      default: return '';
+    }
+  }
+
+  /** A field value in words: statuses, days, yes/no and names instead of ids. */
+  function value(field: string, v: string): string {
+    if (v === '—') return v;
+    if (field === 'status') return t(`fo.status.${v}`, v);
+    if (field === 'duration') return v === '1' ? t('fo.crew.full', 'Full') : v === '0.5' ? t('fo.crew.half', 'Half') : v;
+    if (v === 'true') return t('common.yes', 'Yes');
+    if (v === 'false') return t('common.no', 'No');
+    if (field === 'employee_id') return names.employee(v);
+    if (field === 'project_id') return names.project(v);
+    if (field === 'supervisor_id' || field === 'voided_by') return names.person(v);
+    if (field === 'stage_id') return configText(fd.stage(v)?.name, language) || v;
+    if (field.endsWith('_at') && /^\d{4}-\d{2}-\d{2}T/.test(v)) return formatDateTime(v, language);
+    return v;
+  }
+
   return (
     <AppShell>
       <AppHeader title={t('audit.title', 'Audit log')} showBack />
@@ -78,7 +117,7 @@ export function AuditScreen() {
               <label className="field__label">{t('audit.entity', 'Type')}</label>
               <select className="input" value={entity} onChange={(e) => setEntity(e.target.value)}>
                 {ENTITY_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>{opt === 'all' ? t('audit.allTypes', 'All') : opt}</option>
+                  <option key={opt} value={opt}>{opt === 'all' ? t('audit.allTypes', 'All') : t(`audit.entityName.${opt}`, opt)}</option>
                 ))}
               </select>
             </div>
@@ -102,6 +141,7 @@ export function AuditScreen() {
           </div>
         </section>
 
+        <p className="hint">{t('audit.riyadhNote', 'Times are Riyadh time.')}</p>
         {rows.length === 0 ? (
           <div className="empty"><div className="empty__icon">◷</div><p>{t('audit.empty', 'Nothing logged yet.')}</p></div>
         ) : (
@@ -109,16 +149,17 @@ export function AuditScreen() {
             {rows.map((r) => (
               <div key={r.id} className="card">
                 <div className="row" style={{ justifyContent: 'space-between' }}>
-                  <span className="card__title">{r.action}</span>
-                  <span className="card__meta">{new Date(r.at).toLocaleString()}</span>
+                  <span className="card__title">{actionLabel(r)}</span>
+                  <span className="card__meta">{formatDateTime(r.at, language)}</span>
                 </div>
                 <div className="card__meta">
-                  {r.actor?.[0]?.full_name ?? r.actor?.[0]?.email ?? r.actor_id ?? 'system'} · {r.entity}
+                  {r.actor?.[0]?.full_name ?? r.actor?.[0]?.email ?? (r.actor_id ? r.actor_id : t('audit.system', 'System'))}
+                  {recordName(r) ? ` · ${recordName(r)}` : ''}
                 </div>
                 {changes(r.payload).length ? (
                   <ul className="card__meta" style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>
                     {changes(r.payload).map(([k, from, to]) => (
-                      <li key={k}><strong>{k}</strong>: {from} → {to}</li>
+                      <li key={k}><strong>{t(`audit.field.${k}`, k)}</strong>: {value(k, from)} → {value(k, to)}</li>
                     ))}
                   </ul>
                 ) : null}

@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { ApprovalMethod } from '@/domain/models/ops';
+import { APP_TIME_ZONE } from '@/lib/dates';
 
 interface Props {
   approvalMethod?: ApprovalMethod;
@@ -21,8 +22,8 @@ export function ApprovalBadge({ approvalMethod, pill, decidedAt, note }: Props) 
   if (pill) {
     if (method === 'auto_no_response') {
       return (
-        <span className="status-pill status-pill--auto" title={t('approval.autoFull', 'Auto-approved — client did not respond')}>
-          {t('approval.autoShort', 'Approved · no response')}
+        <span className="status-pill status-pill--auto" title={t('approval.autoFull', 'Response window expired — the client did not sign or reply')}>
+          {t('approval.autoShort', 'Expired · not signed')}
         </span>
       );
     }
@@ -34,7 +35,7 @@ export function ApprovalBadge({ approvalMethod, pill, decidedAt, note }: Props) 
   }
 
   // Full subtitle line for TaskDetail.
-  const when = decidedAt ? new Date(decidedAt).toLocaleString(undefined, {
+  const when = decidedAt ? new Date(decidedAt).toLocaleString(undefined, { timeZone: APP_TIME_ZONE,
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   }) : '';
 
@@ -42,7 +43,7 @@ export function ApprovalBadge({ approvalMethod, pill, decidedAt, note }: Props) 
     return (
       <div className="approval-line approval-line--auto">
         <span className="approval-line__icon" aria-hidden>●</span>
-        <span>{t('approval.autoLine', 'Auto-approved on {{when}} — client did not respond in time. No signature provided.', { when })}</span>
+        <span>{t('approval.autoLine', 'The response window closed on {{when}} without a reply from the client. This is not a signature or an approval by the client.', { when })}</span>
       </div>
     );
   }
