@@ -144,11 +144,11 @@ export function ProjectEditScreen() {
             {supervisors.map((w) => <option key={w.id} value={w.id}>{w.fullName ?? w.email}</option>)}
           </select>
           {existing && existing.supervisorId && existing.supervisorId !== supervisorId ? (
-            <div className="card__meta">{t('fo.projects.handover', 'The new supervisor sees the full history and open work (BR-007).')}</div>
+            <div className="card__meta">{t('fo.projects.handover', 'The new supervisor sees the full history and open work.')}</div>
           ) : null}
           {reassigning && openVisits.data?.length ? (
             <div className="banner banner--warn">
-              {t('fo.projects.reassignOpenVisit', '{{count}} visit(s) of this project are still in progress with the current supervisor. They stay with them until completed; you can complete them as manager.', { count: openVisits.data.length })}
+              {t('fo.projects.reassignOpenVisit', '{{count}} visit(s) of this project are in progress. After saving, the new supervisor (or you, as manager) finishes them, and the current supervisor no longer sees this project.', { count: openVisits.data.length })}
             </div>
           ) : null}
         </div>

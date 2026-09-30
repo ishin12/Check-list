@@ -136,7 +136,8 @@ function stageGateBlocker(state: State, projectId: string, typeId: string, from:
       .some((t) => ((t.tasks as Row[]) ?? []).some((item) => item.required === true
         && (!item.recurrence || item.recurrence === 'none')
         && !state.project_tasks.some((pt) => pt.project_id === projectId && pt.template_id === t.id
-          && pt.template_item_id === item.id && pt.status === 'completed')));
+          && pt.template_item_id === item.id && pt.status === 'completed'
+          && (!pt.completed_in_visit_id || state.visits.some((v) => v.id === pt.completed_in_visit_id && v.status === 'completed')))));
     if (missing) return String((stage.name as Row | undefined)?.en ?? stage.code);
   }
   return null;
@@ -350,7 +351,7 @@ export function seedFieldOps(state: State, day: (offset: number, hour?: number, 
   const item = (id: string, order: number, en: string, ar: string, extra: Partial<Row> = {}, ur?: string) =>
     ({ id, order, required: false, label: ur ? { en, ar, ur } : { en, ar }, ...extra });
   state.templates.push(
-    { id: 't-mnt', title: { en: 'Maintenance — standard', ar: 'صيانة — القائمة الأساسية' }, project_type_id: 'pt-mnt', stage_id: null, active: true, version: 1,
+    { id: 't-mnt', title: { en: 'Maintenance — standard', ar: 'صيانة — القائمة الأساسية', ur: 'دیکھ بھال — معیاری فہرست' }, project_type_id: 'pt-mnt', stage_id: null, active: true, version: 1,
       created_by: 'u-mgr', created_at: day(-90), updated_at: day(-90), tasks: [
         item('m-irr',   0, 'Irrigation network check', 'فحص شبكة الري', { recurrence: 'weekly' }, 'آبپاشی کے نظام کا معائنہ'),
         item('m-plant', 1, 'Plant and general condition check', 'فحص النباتات والحالة العامة', { required: true }, 'پودوں اور عمومی حالت کا معائنہ'),
@@ -423,8 +424,8 @@ export function seedFieldOps(state: State, day: (offset: number, hour?: number, 
     follow_up_visit_id: status === 'needs_follow_up' ? (extra.last_visit_id ?? null) : null,
   });
   state.project_tasks = [
-    t('pt-1', 'pr-1', 'Fertilizing', 'needs_follow_up', { visit_id: 'vi-1', last_visit_id: 'vi-1', note: 'Fertilizer not delivered yet' }),
-    t('pt-2', 'pr-1', 'Pruning', 'completed', { visit_id: 'vi-1', completed_at: day(-1, 11), completed_in_visit_id: 'vi-1' }),
+    t('pt-1', 'pr-1', 'Fertilizing', 'needs_follow_up', { visit_id: 'vi-1', last_visit_id: 'vi-1', note: 'Fertilizer not delivered yet', template_id: 't-mnt', template_item_id: 'm-fert' }),
+    t('pt-2', 'pr-1', 'Pruning', 'completed', { visit_id: 'vi-1', completed_at: day(-1, 11), completed_in_visit_id: 'vi-1', template_id: 't-mnt', template_item_id: 'm-prune' }),
     t('pt-3', 'pr-1', 'Irrigation network check', 'open', { source: 'recurring', recurring_item_id: 'ri-1', template_id: 't-mnt', template_item_id: 'm-irr' }),
     t('pt-4', 'pr-2', 'Pressure-test irrigation lines', 'open', { source: 'stage', visit_id: 'vi-2', photo_required: true, template_id: 't-irr', template_item_id: 'i-test' }),
     t('pt-5', 'pr-2', 'Check drip emitters at each basin', 'open', { source: 'stage', visit_id: 'vi-2', template_id: 't-irr', template_item_id: 'i-drip' }),

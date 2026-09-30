@@ -1527,3 +1527,7 @@ a.btn--ghost { color: var(--color-text); }
 
 /* UAT N-7: a Latin title in an RTL header truncates at its end, not its start. */
 .app-header__title { unicode-bidi: plaintext; }
+
+/* UAT L5: working-day chips wrap on narrow screens. */
+.weekdays { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.weekdays .chip { padding: 6px 12px; }

@@ -26,7 +26,9 @@ export function TemplateListScreen() {
   // task system is hidden (UAT D-34).
   const reload = () => storage.listTemplates().then((list) =>
     setTemplates(features.legacyTasks ? list : list.filter((x) => x.projectTypeId || x.stageId)));
-  const shown = templates.filter((x) => showInactive || x.active !== false);
+  // Stable order by name, so switching one on or off does not move it (UAT L9).
+  const shown = templates.filter((x) => showInactive || x.active !== false)
+    .sort((a, b) => templateTitle(a, language).localeCompare(templateTitle(b, language)));
 
   useEffect(() => {
     reload();

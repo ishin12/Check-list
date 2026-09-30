@@ -53,6 +53,16 @@ describe('labor reports (§14, §21)', () => {
     expect(days[2].items).toEqual([{ employeeId: 'e1', free: 1 }, { employeeId: 'e2', free: 1 }]);
     expect(unallocatedByWorker(days)).toEqual([{ employeeId: 'e2', freeDays: 2 }, { employeeId: 'e1', freeDays: 1 }]);
   });
+
+  it('D-18 / L8 counts a worker only from joining until being switched off', () => {
+    const weekdayOf = (d: string) => new Date(`${d}T12:00:00`).getDay();
+    const staff = [
+      { id: 'new', status: 'active' as const, createdAt: '2026-09-02T08:00:00Z' },
+      { id: 'left', status: 'inactive' as const, createdAt: '2026-01-01T08:00:00Z', updatedAt: '2026-09-02T08:00:00Z' },
+    ];
+    const days = unallocatedReport(staff, [], ['2026-09-01', '2026-09-02', '2026-09-03'], [0, 1, 2, 3, 4, 6], weekdayOf);
+    expect(days.map((d) => d.items.map((x) => x.employeeId))).toEqual([['left'], ['new'], ['new']]);
+  });
 });
 
 describe('open work report', () => {

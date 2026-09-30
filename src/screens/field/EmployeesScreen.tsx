@@ -33,6 +33,9 @@ export function EmployeesScreen() {
   const duplicate = !!editing?.fullName?.trim()
     && fd.employees.some((x) => x.id !== editing.id && norm(x.fullName) === norm(editing.fullName));
   const needsCode = duplicate && !editing?.code?.trim();
+  // Employee numbers are unique (UAT M1; also enforced by the database, 0008).
+  const codeTaken = !!editing?.code?.trim()
+    && fd.employees.some((x) => x.id !== editing.id && norm(x.code) === norm(editing.code));
 
   const list = fd.employees
     .filter((e) => showInactive || e.status === 'active')
@@ -92,11 +95,12 @@ export function EmployeesScreen() {
             </div>
             <div className="field"><label className="field__label" htmlFor="e-notes">{t('fo.projects.notes', 'Notes (optional)')}</label>
               <input id="e-notes" className="input" value={editing.notes ?? ''} onChange={(e) => setEditing({ ...editing, notes: e.target.value })} /></div>
+            {codeTaken ? <div className="banner banner--error">{t('fo.emp.codeTaken', 'This employee no. already belongs to another worker.')}</div> : null}
             {duplicate ? (
               <div className="banner banner--warn">{t('fo.emp.duplicate', 'Another worker already has this name. Enter an employee no. so the two can be told apart.')}</div>
             ) : null}
             <div className="row" style={{ gap: 8 }}>
-              <button type="button" className="btn btn--primary" disabled={busy || !editing.fullName?.trim() || needsCode} onClick={() => void save()}>{t('common.save', 'Save')}</button>
+              <button type="button" className="btn btn--primary" disabled={busy || !editing.fullName?.trim() || needsCode || codeTaken} onClick={() => void save()}>{t('common.save', 'Save')}</button>
               <button type="button" className="btn btn--ghost" onClick={() => setEditing(null)}>{t('common.cancel', 'Cancel')}</button>
             </div>
           </div>

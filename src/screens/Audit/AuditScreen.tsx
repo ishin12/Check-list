@@ -22,7 +22,7 @@ interface Row {
 }
 
 const LEGACY_ENTITIES = ['task', 'client_note', 'task_proofs', 'client'];
-const ENTITY_OPTIONS = ['all', 'labor_allocations', 'month_closes', 'projects', 'visits', 'project_tasks', 'employees', 'templates', 'profile',
+const ENTITY_OPTIONS = ['all', 'labor_allocations', 'month_closes', 'projects', 'visits', 'project_tasks', 'employees', 'templates', 'profiles', 'project_types', 'project_stages',
   ...(features.legacyTasks ? LEGACY_ENTITIES : [])];
 
 export function AuditScreen() {
@@ -100,6 +100,9 @@ export function AuditScreen() {
       case 'labor_allocations': return [names.employee(s(row.employee_id)), day(s(row.work_date)), names.project(s(row.project_id))].filter(Boolean).join(' · ');
       case 'month_closes': return s(row.month)?.slice(0, 7) ?? '';
       case 'templates': return configText(row.title as never, language) || '';
+      case 'profiles': return s(row.full_name) ?? s(row.email) ?? '';
+      case 'project_types':
+      case 'project_stages': return configText(row.name as never, language) || s(row.code) || '';
       default: return '';
     }
   }
@@ -108,6 +111,8 @@ export function AuditScreen() {
   function value(field: string, v: string): string {
     if (v === '—') return v;
     if (field === 'status') return t(`fo.status.${v}`, v);
+    if (field === 'role') return t(`demo.role.${v}`, v);
+    if (field === 'name') { try { return configText(JSON.parse(v), language) || v; } catch { return v; } }
     if (field === 'title') { try { return configText(JSON.parse(v), language) || v; } catch { return v; } }
     if (field === 'tasks') { try { return t('templates.tasksCount', { count: (JSON.parse(v) as unknown[]).length }); } catch { return v; } }
     if (field === 'duration') return v === '1' ? t('fo.crew.full', 'Full') : v === '0.5' ? t('fo.crew.half', 'Half') : v;

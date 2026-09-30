@@ -63,7 +63,7 @@ export const toProject = (r: Row): Project => ({
 
 export const toEmployee = (r: Row): Employee => ({
   id: r.id, code: u(r.code), fullName: r.full_name, phone: u(r.phone), status: r.status, notes: u(r.notes),
-  createdAt: u(r.created_at),
+  createdAt: u(r.created_at), updatedAt: u(r.updated_at),
 });
 
 export const toVisit = (r: Row): Visit => ({
@@ -313,6 +313,19 @@ export function answerOnVisit(t: Pick<ProjectTask, 'status' | 'lastVisitId' | 'c
   if (t.completedInVisitId === visitId && t.status === 'completed') return 'done';
   if (t.lastVisitId !== visitId) return null;
   return t.status === 'needs_follow_up' ? 'follow_up' : t.status === 'open' ? 'not_done' : null;
+}
+
+/** Manager corrects the wording of a task that has not been on a visit yet. */
+export async function updateTaskDescription(id: string, description: string): Promise<void> {
+  changed(await sb().from('project_tasks').update({ description: description.trim() }).eq('id', id).select('id'));
+}
+
+/**
+ * Manager closes a task that is no longer needed. Tasks are never deleted
+ * (BR-014): it is completed with the reason as its note, and stays on record.
+ */
+export async function closeTaskNotNeeded(id: string, reason: string): Promise<void> {
+  changed(await sb().from('project_tasks').update({ status: 'completed', note: reason.trim() }).eq('id', id).select('id'));
 }
 
 export async function updateTaskNote(id: string, note: string): Promise<void> {

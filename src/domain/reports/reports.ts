@@ -93,7 +93,7 @@ export interface UnallocatedDay {
  * only configured working days. A half-booked worker shows 0.5 free.
  */
 export function unallocatedReport(
-  employees: (Pick<Employee, 'id' | 'status'> & Partial<Pick<Employee, 'createdAt'>>)[],
+  employees: (Pick<Employee, 'id' | 'status'> & Partial<Pick<Employee, 'createdAt' | 'updatedAt'>>)[],
   allocations: Alloc[],
   days: string[],
   workDays: number[],
@@ -107,14 +107,18 @@ export function unallocatedReport(
     const k = `${a.employeeId}|${a.workDate}`;
     load.set(k, (load.get(k) ?? 0) + Number(a.duration));
   }
-  const active = employees.filter((e) => e.status === 'active');
+  // An inactive worker still counts on the days before they were switched off,
+  // so a past month does not change when someone leaves (UAT L8).
+  const active = employees.filter((e) => e.status === 'active' || !!e.updatedAt);
+  const workedOn = (e: (typeof employees)[number], date: string) =>
+    e.status === 'active' || (!!e.updatedAt && date < dayOf(e.updatedAt));
   return days
     .filter((d) => workDays.includes(weekdayOf(d)))
     .map((date) => ({
       date,
       items: active
         // A worker is not unallocated before they were added (UAT D-18).
-        .filter((e) => !e.createdAt || dayOf(e.createdAt) <= date)
+        .filter((e) => (!e.createdAt || dayOf(e.createdAt) <= date) && workedOn(e, date))
         .map((e) => ({ employeeId: e.id, free: Math.max(0, 1 - (load.get(`${e.id}|${date}`) ?? 0)) }))
         .filter((x) => x.free > 0),
     }));

@@ -215,7 +215,9 @@ export function stageProgress(
   projectId: string,
   stageId: string,
   templates: ScopedTemplate[],
-  tasks: Pick<ProjectTask, 'projectId' | 'templateId' | 'templateItemId' | 'status'>[],
+  tasks: (Pick<ProjectTask, 'projectId' | 'templateId' | 'templateItemId' | 'status'> & Partial<Pick<ProjectTask, 'completedInVisitId'>>)[],
+  /** Visits not completed yet: items done on them do not count until they are (UAT L2). */
+  openVisitIds: Set<string> = new Set(),
 ): StageProgress {
   const required = templates
     .filter((t) => t.stageId === stageId && t.active !== false)
@@ -223,6 +225,7 @@ export function stageProgress(
       .filter((i) => i.required === true && (!i.recurrence || i.recurrence === 'none'))
       .map((i) => ({ templateId: t.id, itemId: i.id, label: i.label })));
   const missing = required.filter((r) => !tasks.some((x) => x.projectId === projectId && x.templateId === r.templateId
-    && x.templateItemId === r.itemId && x.status === 'completed'));
+    && x.templateItemId === r.itemId && x.status === 'completed'
+    && !(x.completedInVisitId && openVisitIds.has(x.completedInVisitId))));
   return { stageId, required, missing };
 }

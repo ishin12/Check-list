@@ -91,8 +91,13 @@ export function LaborScreen() {
                     <div className="card__title" style={{ fontSize: '1rem' }}>{names.employee(r.employeeId)} · {r.duration === 1 ? t('fo.crew.full', 'Full') : t('fo.crew.half', 'Half')}</div>
                     <div className="card__meta">
                       {formatDate(r.workDate, language, { weekday: 'short', day: 'numeric', month: 'short' })}
-                      {' · '}<Link to={`/projects/${r.projectId}`}>{names.project(r.projectId)}</Link>
-                      {r.visitId ? <> · <Link to={`/visits/${r.visitId}`}>{t('fo.visit.title', 'Visit')}</Link></> : null}
+                      {/* A project reassigned to someone else stays in their own labor history, without dead links (UAT M2). */}
+                      {fd.project(r.projectId) ? (
+                        <>
+                          {' · '}<Link to={`/projects/${r.projectId}`}>{names.project(r.projectId)}</Link>
+                          {r.visitId ? <> · <Link to={`/visits/${r.visitId}`}>{t('fo.visit.title', 'Visit')}</Link></> : null}
+                        </>
+                      ) : <> · {t('fo.labor.otherProject', 'A project no longer assigned to you')}</>}
                       {' · '}{names.person(r.supervisorId)}
                     </div>
                     {r.notes ? <div className="card__meta">📝 {r.notes}</div> : null}

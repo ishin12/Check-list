@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useCallback, useMemo } from 'react';
 import { useAuth } from '@/app/providers/AuthContext';
 import { useDirectory } from '@/app/providers/DirectoryContext';
@@ -20,6 +21,7 @@ export function useRoles() {
 
 /** Display names for ids, with safe fallbacks. */
 export function useNames() {
+  const { t } = useTranslation();
   const { workers, clients } = useDirectory();
   const fd = useFieldData();
   const { language } = useLanguage();
@@ -27,8 +29,14 @@ export function useNames() {
   return {
     person: useCallback((id?: string) => (id ? workers.get(id)?.fullName ?? workers.get(id)?.email ?? '—' : '—'), [workers]),
     client: useCallback((id?: string) => (id ? clients.get(id)?.name ?? '—' : '—'), [clients]),
-    employee: useCallback((id?: string) => (id ? fd.employee(id)?.fullName ?? '—' : '—'), [fd]),
-    project: useCallback((id?: string) => (id ? fd.project(id)?.name ?? '—' : '—'), [fd]),
+    // Two workers with the same name are told apart by their employee no. (UAT M1).
+    employee: useCallback((id?: string) => {
+      const e = id ? fd.employee(id) : undefined;
+      if (!e) return '—';
+      const same = fd.employees.some((x) => x.id !== e.id && x.fullName.trim().toLowerCase() === e.fullName.trim().toLowerCase());
+      return same && e.code ? `${e.fullName} (${e.code})` : e.fullName;
+    }, [fd]),
+    project: useCallback((id?: string) => (id ? fd.project(id)?.name ?? t('fo.labor.otherProject', 'A project no longer assigned to you') : '—'), [fd, t]),
     taskLabel: labeler,
   };
 }

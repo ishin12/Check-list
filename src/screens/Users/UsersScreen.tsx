@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/AppShell';
+import { useAuth } from '@/app/providers/AuthContext';
 import { features } from '@/config/features';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
@@ -11,6 +12,7 @@ import type { AppUser, Role } from '@/domain/models/ops';
 interface ClientOpt { id: string; name: string }
 
 export function UsersScreen() {
+  const { user: me } = useAuth();
   const { t } = useTranslation();
   const directory = useDirectory();
   const [users, setUsers] = useState<AppUser[]>([]);
@@ -165,9 +167,12 @@ export function UsersScreen() {
                       {t('users.setPassword', 'Set password')}
                     </button>
                   ) : null}
-                  <button className="btn btn--ghost" onClick={() => toggleActive(u)}>
-                    {u.active ? t('users.deactivate', 'Deactivate') : t('users.activate', 'Activate')}
-                  </button>
+                  {/* Nobody can switch off their own account (UAT M4; the database refuses it too). */}
+                  {u.id !== me?.id ? (
+                    <button className="btn btn--ghost" onClick={() => toggleActive(u)}>
+                      {u.active ? t('users.deactivate', 'Deactivate') : t('users.activate', 'Activate')}
+                    </button>
+                  ) : null}
                 </div>
               </div>
               {u.role !== 'client' ? (

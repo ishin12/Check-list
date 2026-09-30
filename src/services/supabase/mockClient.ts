@@ -28,7 +28,7 @@ import {
 
 const DB_NAME = 'checklist-demo';
 // Re-seed when this changes (bump on each schema-affecting change).
-const SEED_VERSION = 'v12';
+const SEED_VERSION = 'v13';
 const DB_VERSION = 2; // 2: field-ops tables (0006)
 
 const TABLES = [
@@ -115,6 +115,9 @@ function ensureReady(): Promise<void> {
   if (!ready) ready = loadAll().then(async () => { localRev = Number((await (await db()).get('meta', 'rev')) ?? 0); });
   return ready;
 }
+
+/** Tables audited like migration 0008 (checklists, team, setup). */
+const EXTRA_AUDITED = new Set<string>(['templates', 'profiles', 'project_types', 'project_stages']);
 
 /**
  * Row-level security for supervisors, as in 0006/0007: they see only the
@@ -424,6 +427,7 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
             throw e;
           }
           for (const row of inserted) {
+            if (EXTRA_AUDITED.has(this.table)) audit(`${this.table}.insert`, this.table, String(row.id), { old: null, new: row });
             if (this.table === 'tasks') onTaskInsert(row);
             if (fieldOps) fieldOpsAfter(this.table, 'INSERT', null, row, guardCtx());
           }
@@ -438,6 +442,10 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
             for (const row of target) {
               const prev = { ...row };
               const next: Row = { ...row, ...(this.payload as Row), updated_at: new Date().toISOString() };
+              // 0008 profiles_self_guard (UAT M4)
+              if (this.table === 'profiles' && row.id === activeUserId && row.active !== false && next.active === false) {
+                throw new Error('You cannot deactivate your own account');
+              }
               if (fieldOps) {
                 next.updated_by = activeUserId;
                 fieldOpsBefore(this.table, 'UPDATE', prev, next, guardCtx());
@@ -451,7 +459,7 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
             throw e;
           }
           updated.forEach((row, i) => {
-            if (this.table === 'templates') audit('templates.update', 'templates', String(row.id), { old: prevs[i], new: row });
+            if (EXTRA_AUDITED.has(this.table)) audit(`${this.table}.update`, this.table, String(row.id), { old: prevs[i], new: row });
             if (this.table === 'tasks') onTaskUpdate(prevs[i], row);
             if (fieldOps) fieldOpsAfter(this.table, 'UPDATE', prevs[i], row, guardCtx());
           });
@@ -469,11 +477,11 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
               const prev = { ...state[this.table][idx] };
               Object.assign(state[this.table][idx], data, { updated_at: new Date().toISOString() });
               out.push(state[this.table][idx]);
-              if (this.table === 'templates') audit('templates.update', 'templates', String(data.id), { old: prev, new: state[this.table][idx] });
+              if (EXTRA_AUDITED.has(this.table)) audit(`${this.table}.update`, this.table, String(data.id), { old: prev, new: state[this.table][idx] });
             } else {
               const row = withDefaults(this.table, { ...data, id: data.id ?? crypto.randomUUID() });
               state[this.table].push(row); out.push(row);
-              if (this.table === 'templates') audit('templates.insert', 'templates', String(row.id), { old: null, new: row });
+              if (EXTRA_AUDITED.has(this.table)) audit(`${this.table}.insert`, this.table, String(row.id), { old: null, new: row });
             }
           }
           return formatResult(out, this.singleMode);
@@ -828,6 +836,7 @@ function runFunction(name: string, body: Record<string, unknown>): { data: unkno
       phone: body.phone ?? null, client_id: body.client_id ?? null, active: true,
       finance_access: role === 'manager' && body.finance_access === true,
     });
+    audit('profiles.insert', 'profiles', id, { old: null, new: state.profiles[state.profiles.length - 1] });
     return { data: { user_id: id }, error: null };
   }
   return { data: null, error: { message: `unknown function ${name}` } };

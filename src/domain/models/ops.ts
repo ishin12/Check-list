@@ -166,6 +166,8 @@ export interface Employee {
   notes?: string;
   /** When the worker was added (YYYY-MM-DD…); earlier days are not "unallocated". */
   createdAt?: string;
+  /** Last change; for an inactive worker, when they were switched off. */
+  updatedAt?: string;
 }
 
 export type VisitStatus = 'planned' | 'in_progress' | 'completed';

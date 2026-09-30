@@ -17,7 +17,7 @@
     "chooseTemplate": "Choose a checklist"
   },
   "templates": {
-    "title": "Templates",
+    "title": "Checklists",
     "new": "New template",
     "empty": "No templates yet.",
     "emptyHint": "Create your first checklist template.",
@@ -252,7 +252,9 @@
       "visit_reports": "Visit report",
       "task_photos": "Photo",
       "project_recurring_items": "Periodic item",
-      "templates": "Checklist"
+      "templates": "Checklist",
+      "project_types": "Project type",
+      "project_stages": "Stage"
     },
     "field": {
       "duration": "Days",
@@ -288,7 +290,12 @@
       "active": "Active",
       "title": "Title",
       "tasks": "Items",
-      "version": "Version"
+      "version": "Version",
+      "role": "Role",
+      "email": "Email",
+      "finance_access": "Finance access",
+      "sort_order": "Order",
+      "uses_stages": "Has stages"
     }
   },
   "recurrence": {
@@ -612,9 +619,9 @@
       "type": "Project type",
       "stage": "Current stage",
       "notes": "Notes (optional)",
-      "handover": "The new supervisor sees the full history and open work (BR-007).",
+      "handover": "The new supervisor sees the full history and open work.",
       "notFound": "Project not found or not assigned to you.",
-      "reassignOpenVisit": "{{count}} visit(s) of this project are still in progress with the current supervisor. They stay with them until completed; you can complete them as manager.",
+      "reassignOpenVisit": "{{count}} visit(s) of this project are in progress. After saving, the new supervisor (or you, as manager) finishes them, and the current supervisor no longer sees this project.",
       "stageRequired": "Choose the stage this project is at."
     },
     "pd": {
@@ -657,7 +664,9 @@
       "noVisits": "No visits yet.",
       "completeTitle": "Mark this project as completed?",
       "closeVisitOpen": "A visit is in progress; it must be completed before the project can be completed or closed.",
-      "openCount": "{{count}} open"
+      "openCount": "{{count}} open",
+      "notNeeded": "Not needed",
+      "notNeededReason": "Why is it not needed? (required)"
     },
     "emp": {
       "title": "Workers",
@@ -670,7 +679,8 @@
       "showInactive": "Show inactive",
       "count": "{{count}} worker(s)",
       "duplicate": "Another worker already has this name. Enter an employee no. so the two can be told apart.",
-      "onCrewToday": "{{name}} is on today's crew ({{projects}}). Deactivating keeps today's record; they will not be offered for new visits."
+      "onCrewToday": "{{name}} is on today's crew ({{projects}}). Deactivating keeps today's record; they will not be offered for new visits.",
+      "codeTaken": "This employee no. already belongs to another worker."
     },
     "config": {
       "title": "Setup",
@@ -737,7 +747,8 @@
       "void": "Void",
       "add": "Add labor",
       "booked": "Already booked that day: {{days}}",
-      "financeOpenMonth": "Finance can add labor only to closed months. In an open month the supervisor records it on the visit."
+      "financeOpenMonth": "Finance can add labor only to closed months. In an open month the supervisor records it on the visit.",
+      "otherProject": "A project no longer assigned to you"
     },
     "close": {
       "open": "Open",

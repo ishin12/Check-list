@@ -61,7 +61,10 @@ language sql stable as $$
       where pt.project_id = p_project
         and pt.template_id = t.id
         and pt.template_item_id = item ->> 'id'
-        and pt.status = 'completed');
+        and pt.status = 'completed'
+        -- Done on a visit counts once that visit is completed (UAT L2).
+        and (pt.completed_in_visit_id is null or exists (
+          select 1 from public.visits v where v.id = pt.completed_in_visit_id and v.status = 'completed')));
 $$;
 
 create or replace function public.projects_stage_guard() returns trigger
@@ -280,4 +283,46 @@ $$;
 create trigger trg_templates_nodelete before delete on public.templates
   for each row execute function public.forbid_delete();
 create trigger trg_audit_templates after insert or update on public.templates
+  for each row execute function public.audit_row();
+
+-- ---------------------------------------------------------------------------
+-- UAT M1: employee numbers are unique (case-insensitive), so two workers with
+-- the same name can always be told apart. Skipped if existing data already
+-- has duplicates; the app checks too.
+-- ---------------------------------------------------------------------------
+do $$
+begin
+  if not exists (
+    select 1 from public.employees where coalesce(code, '') <> ''
+    group by lower(code) having count(*) > 1
+  ) then
+    create unique index if not exists employees_code_unique on public.employees (lower(code))
+      where coalesce(code, '') <> '';
+  else
+    raise notice 'employees_code_unique not created: duplicate employee numbers exist';
+  end if;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- UAT M4: nobody can switch off their own account (the last manager could
+-- otherwise lock everyone out). UAT L7: team and setup changes are audited.
+-- ---------------------------------------------------------------------------
+create or replace function public.profiles_self_guard() returns trigger
+language plpgsql as $$
+begin
+  if new.id = auth.uid() and old.active and not new.active then
+    raise exception 'You cannot deactivate your own account' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_profiles_self_guard before update on public.profiles
+  for each row execute function public.profiles_self_guard();
+
+create trigger trg_audit_profiles after insert or update on public.profiles
+  for each row execute function public.audit_row();
+create trigger trg_audit_project_types after insert or update on public.project_types
+  for each row execute function public.audit_row();
+create trigger trg_audit_project_stages after insert or update on public.project_stages
   for each row execute function public.audit_row();

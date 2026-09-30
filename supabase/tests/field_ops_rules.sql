@@ -477,6 +477,11 @@ select pg_temp.expect_fail('I01 one missing required item still blocks', $$
   where id = '20000000-0000-0000-0000-000000000005' $$, 'Site handover');
 update public.project_tasks set status = 'completed', completed_in_visit_id = '40000000-0000-0000-0000-000000000008'
 where project_id = '20000000-0000-0000-0000-000000000005' and template_item_id = 'sh-obstacles';
+select pg_temp.expect_fail('L2 items done on a visit still in progress do not count yet', $$
+  update public.projects set stage_id = (select s.id from public.project_stages s join public.project_types pt on pt.id = s.project_type_id
+    where pt.code = 'establishment' and s.code = 'preparatory')
+  where id = '20000000-0000-0000-0000-000000000005' $$, 'STAGE-GATE');
+update public.visits set status = 'completed' where id = '40000000-0000-0000-0000-000000000008';
 update public.projects set stage_id = (select s.id from public.project_stages s join public.project_types pt on pt.id = s.project_type_id
   where pt.code = 'establishment' and s.code = 'preparatory')
 where id = '20000000-0000-0000-0000-000000000005';
@@ -558,6 +563,17 @@ update public.visits set status = 'completed' where id = '40000000-0000-0000-000
 select pg_temp.ok('D-29 periodic item done on a visit rolls from the visit date',
   (select last_done_on = '2026-12-20' and next_due_on = '2027-01-20'
    from public.project_recurring_items where id = '60000000-0000-0000-0000-00000000000a'));
+
+-- M1 / M4 / L7
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
+insert into public.employees (full_name, code) values ('Imran Khan', 'W-003');
+select pg_temp.expect_fail('M1 employee numbers are unique (case-insensitive)', $$
+  insert into public.employees (full_name, code) values ('Imran Khan', 'w-003') $$, 'employees_code_unique');
+select pg_temp.expect_fail('M4 a manager cannot deactivate their own account', $$
+  update public.profiles set active = false where id = '00000000-0000-0000-0000-00000000000a' $$, 'your own account');
+update public.profiles set active = false where id = '00000000-0000-0000-0000-00000000000c';
+select pg_temp.ok('L7 team changes are audited',
+  (select count(*) >= 1 from public.audit_log where entity = 'profiles' and entity_id = '00000000-0000-0000-0000-00000000000c'));
 
 select pg_temp.act_as(null);
 \o

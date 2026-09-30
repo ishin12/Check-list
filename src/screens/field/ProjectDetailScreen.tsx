@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
@@ -12,6 +12,7 @@ import { useLanguage } from '@/app/providers/LanguageContext';
 import {
   createRecurring,
   createTasks,
+  closeTaskNotNeeded,
   createVisit,
   deletePlannedVisit,
   listLabor,
@@ -22,6 +23,7 @@ import {
   listVisits,
   updateProject,
   updateRecurring,
+  updateTaskDescription,
 } from '@/services/data/fieldOps';
 import { isOverdue, projectCloseBlockers } from '@/domain/fieldops/fieldOps';
 import { labelText, recurringItemsFromTemplates, stageProgress } from '@/domain/fieldops/visitPlan';
@@ -94,7 +96,7 @@ export function ProjectDetailScreen() {
   const typeStages = fd.stages.filter((s) => s.projectTypeId === project.projectTypeId && s.active).sort((a, b) => a.sortOrder - b.sortOrder);
   const stageIndex = typeStages.findIndex((s) => s.id === project.stageId);
   const nextStage = stageIndex >= 0 ? typeStages[stageIndex + 1] : undefined;
-  const progress = project.stageId && data ? stageProgress(project.id, project.stageId, fd.templates, data.tasks) : null;
+  const progress = project.stageId && data ? stageProgress(project.id, project.stageId, fd.templates, data.tasks, new Set(data.visits.filter((v) => v.status !== 'completed').map((v) => v.id))) : null;
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'overview', label: t('fo.pd.overview', 'Overview') },
@@ -229,7 +231,7 @@ export function ProjectDetailScreen() {
               </div>
             ) : null}
             {isManager && !final ? <AddRecurring projectId={project.id} onDone={reload} /> : null}
-            {data.recurring.length === 0 ? <p className="hint">{t('fo.pd.noPeriodic', 'No periodic items. Set a frequency on checklist items, or add one here.')}</p> : null}
+            {data.recurring.length === 0 ? <p className="hint">{final ? t('fo.report.none', 'None') : t('fo.pd.noPeriodic', 'No periodic items. Set a frequency on checklist items, or add one here.')}</p> : null}
             {data.recurring.map((r) => (
               <div key={r.id} className="card">
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -328,15 +330,48 @@ export function ProjectDetailScreen() {
               <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div className="grow">
                   <div className="card__title" style={{ fontSize: '1rem' }}>{names.taskLabel(x)}</div>
+                  {x.photoRequired ? <span className="tag tag--warn">📷 {t('fo.task.photoRequired', 'Photo required')}</span> : null}
                   <div className="card__meta">
                     {[x.note, v ? `${t('fo.pd.lastVisit', 'Last visit')} ${formatDate(v.visitDate, language)}` : null].filter(Boolean).join(' · ')}
                   </div>
                 </div>
                 <FieldStatusPill status={x.status} />
               </div>
+              {/* A manager's task not yet on any visit can be reworded, or closed as not needed with a reason (UAT L3). */}
+              {isManager && !final && x.status === 'open' && x.source === 'manual' && !x.lastVisitId ? (
+                <TaskFix task={x} />
+              ) : null}
             </div>
           );
         })}
+      </div>
+    );
+  }
+
+  function TaskFix({ task }: { task: ProjectTask }) {
+    const [mode, setMode] = useState<'none' | 'edit' | 'close'>('none');
+    const [text, setText] = useState('');
+    if (mode === 'none') {
+      return (
+        <div className="row wrap" style={{ gap: 8, marginTop: 8 }}>
+          <button type="button" className="btn btn--ghost" onClick={() => { setText(task.description); setMode('edit'); }}>{t('common.edit', 'Edit')}</button>
+          <button type="button" className="btn btn--ghost" onClick={() => { setText(''); setMode('close'); }}>{t('fo.pd.notNeeded', 'Not needed')}</button>
+        </div>
+      );
+    }
+    return (
+      <div className="stack" style={{ marginTop: 8 }}>
+        <input className="input" value={text} onChange={(e) => setText(e.target.value)}
+          placeholder={mode === 'close' ? t('fo.pd.notNeededReason', 'Why is it not needed? (required)') ?? '' : ''} />
+        <div className="row" style={{ gap: 8 }}>
+          <button type="button" className="btn btn--primary" disabled={busy || !text.trim()}
+            onClick={() => void run(() => (mode === 'edit'
+              ? updateTaskDescription(task.id, text)
+              : closeTaskNotNeeded(task.id, `${t('fo.pd.notNeeded', 'Not needed')}: ${text}`)))}>
+            {t('common.save', 'Save')}
+          </button>
+          <button type="button" className="btn btn--ghost" onClick={() => setMode('none')}>{t('common.cancel', 'Cancel')}</button>
+        </div>
       </div>
     );
   }
@@ -385,6 +420,7 @@ function PlanVisit({ projectId, defaultSupervisor, onDone }: { projectId: string
   const { workers } = useDirectory();
   const [date, setDate] = useState(localToday());
   const [sup, setSup] = useState(defaultSupervisor ?? '');
+  useEffect(() => { if (!sup && defaultSupervisor) setSup(defaultSupervisor); }, [defaultSupervisor, sup]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const sups = [...workers.values()].filter((w) => w.active && (isSupervisorRole(w.role) || w.role === 'manager'));
