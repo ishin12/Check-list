@@ -14,7 +14,7 @@ import { shareFile, type ShareOutcome } from '@/services/share/ShareService';
 import type { VisitReportContent } from '@/domain/models/ops';
 import { friendlyError } from '@/lib/ruleErrors';
 import { useAsync } from '@/lib/useAsync';
-import { useNames } from './common';
+import { useNames, useRoles } from './common';
 import { ErrorBanner } from '@/components/ErrorBanner';
 
 const WIDTH = 794;
@@ -46,6 +46,7 @@ export function VisitReportScreen() {
   const { id } = useParams();
   const fd = useFieldData();
   const names = useNames();
+  const { isManager, user } = useRoles();
 
   const { data, error, reload } = useAsync(async () => {
     const visit = id ? await getVisit(id) : null;
@@ -163,7 +164,7 @@ export function VisitReportScreen() {
             ) : null}
             {banner ? <div className={`banner ${banner.cls}`}>{banner.msg}</div> : null}
 
-            {data.report ? (
+            {data.report && (isManager || fd.project(data.visit.projectId)?.supervisorId === user?.id || data.visit.supervisorId === user?.id) ? (
               <div className="field">
                 <label className="field__label" htmlFor="rep">{t('fo.report.clientRep', 'Client representative')}</label>
                 <input id="rep" className="input" value={rep}

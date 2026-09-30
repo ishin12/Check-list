@@ -132,7 +132,7 @@ export function ReportsScreen() {
       visits: {
         name: tabs[5].label, header: [H.date, H.project, H.client, H.supervisor, H.status, H.report],
         rows: f.visits.map((v) => [v.visitDate, names.project(v.projectId), names.client(fd.project(v.projectId)?.clientId), names.person(v.supervisorId), statusText(v.status),
-          data!.reports.find((r) => r.visitId === v.id)?.reportNumber ?? '']),
+          (() => { const no = data!.reports.find((r) => r.visitId === v.id)?.reportNumber; return no ? `#${String(no).padStart(5, '0')}` : ''; })()]),
       },
     };
   }
@@ -218,8 +218,15 @@ export function ReportsScreen() {
           <div className="stack">
             <Table head={[H.worker, H.free]} numeric={[1]}
               rows={filtered.unallocSummary.map((x) => [names.employee(x.employeeId), fmt(x.freeDays)])}
-              empty={t('fo.home.allAllocated', 'Everyone is allocated.')} />
-            <div className="section-title">{t('fo.rep.byDay', 'By day')}</div>
+              empty={(() => {
+                // A worker added after the period was not working here yet (UAT L-4).
+                const w = fd.employee(employeeId || undefined);
+                const added = w?.createdAt ? riyadhDate(new Date(w.createdAt)) : '';
+                return added && added > to
+                  ? t('fo.rep.notYetAdded', '{{name}} was added on {{date}}, after this period.', { name: w!.fullName, date: formatDate(added, language) })
+                  : t('fo.home.allAllocated', 'Everyone is allocated.');
+              })()} />
+            {filtered.unalloc.some((d) => d.items.length) ? <div className="section-title">{t('fo.rep.byDay', 'By day')}</div> : null}
             {filtered.unalloc.filter((d) => d.items.length).map((d) => (
               <div key={d.date} className="card">
                 <div className="card__title" style={{ fontSize: '1rem' }}>{formatDate(d.date, language, { weekday: 'short', day: 'numeric', month: 'short' })}</div>
@@ -267,7 +274,7 @@ function Table({ head, rows, foot, numeric = [], empty }: {
   if (rows.length === 0) return <p className="hint">{empty}</p>;
   return (
     <>
-    {head.length > 3 ? <p className="hint scroll-hint">↔ {t('fo.rep.swipe', 'Swipe sideways to see every column.')}</p> : null}
+    {head.length >= 3 ? <p className="hint scroll-hint">↔ {t('fo.rep.swipe', 'Swipe sideways to see every column.')}</p> : null}
     <div className="table-wrap">
       <table className="data">
         <thead><tr>{head.map((h, i) => <th key={i} className={numeric.includes(i) ? 'num' : undefined}>{h}</th>)}</tr></thead>

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
-import { addDays, formatDateTime, localToday } from '@/lib/dates';
+import { addDays, formatDate, formatDateTime, localToday } from '@/lib/dates';
 import { features } from '@/config/features';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { useFieldData } from '@/app/providers/FieldDataContext';
@@ -78,6 +78,16 @@ export function AuditScreen() {
     return `${t(`audit.entityName.${table}`, table)} · ${verb}`;
   }
 
+  const day = (d?: string) => (d ? formatDate(d, language) : undefined);
+
+  /** Key values of a record that was created (old is empty, so there is no diff). */
+  function created(r: Row): [string, string][] {
+    const row = (r.payload?.old ? null : r.payload?.new) as Record<string, unknown> | null;
+    if (!row) return [];
+    return (CREATED_FIELDS[r.entity] ?? []).filter((k) => row[k] !== null && row[k] !== undefined && row[k] !== '')
+      .map((k) => [k, typeof row[k] === 'object' ? JSON.stringify(row[k]) : String(row[k])]);
+  }
+
   /** The record the change is about, by name. */
   function recordName(r: Row): string {
     const row = ((r.payload?.new ?? r.payload?.old) ?? {}) as Record<string, unknown>;
@@ -85,9 +95,9 @@ export function AuditScreen() {
     switch (r.entity) {
       case 'projects': return s(row.name) ?? '';
       case 'employees': return s(row.full_name) ?? '';
-      case 'project_tasks': return [s(row.description), names.project(s(row.project_id))].filter(Boolean).join(' · ');
-      case 'visits': return [names.project(s(row.project_id)), s(row.visit_date)].filter(Boolean).join(' · ');
-      case 'labor_allocations': return [names.employee(s(row.employee_id)), s(row.work_date), names.project(s(row.project_id))].filter(Boolean).join(' · ');
+      case 'project_tasks': return [names.taskLabel({ templateId: s(row.template_id), templateItemId: s(row.template_item_id), description: s(row.description) ?? '' } as never), names.project(s(row.project_id))].filter(Boolean).join(' · ');
+      case 'visits': return [names.project(s(row.project_id)), day(s(row.visit_date))].filter(Boolean).join(' · ');
+      case 'labor_allocations': return [names.employee(s(row.employee_id)), day(s(row.work_date)), names.project(s(row.project_id))].filter(Boolean).join(' · ');
       case 'month_closes': return s(row.month)?.slice(0, 7) ?? '';
       case 'templates': return configText(row.title as never, language) || '';
       default: return '';
@@ -108,6 +118,7 @@ export function AuditScreen() {
     if (field === 'supervisor_id' || field === 'voided_by') return names.person(v);
     if (field === 'stage_id') return configText(fd.stage(v)?.name, language) || v;
     if (field.endsWith('_at') && /^\d{4}-\d{2}-\d{2}T/.test(v)) return formatDateTime(v, language);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return formatDate(v, language);
     return v;
   }
 
@@ -166,8 +177,14 @@ export function AuditScreen() {
                 {changes(r.payload).length ? (
                   <ul className="card__meta" style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>
                     {changes(r.payload).map(([k, from, to]) => (
-                      <li key={k}><strong>{t(`audit.field.${k}`, k)}</strong>: {value(k, from)} → {value(k, to)}</li>
+                      // <bdi> keeps English values and the arrow in order inside Arabic text.
+                      <li key={k}><strong>{t(`audit.field.${k}`, k)}</strong>: <bdi>{value(k, from)}</bdi> {language === 'en' ? '→' : '←'} <bdi>{value(k, to)}</bdi></li>
                     ))}
+                  </ul>
+                ) : null}
+                {created(r).length ? (
+                  <ul className="card__meta" style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>
+                    {created(r).map(([k, v]) => <li key={k}><strong>{t(`audit.field.${k}`, k)}</strong>: <bdi>{value(k, v)}</bdi></li>)}
                   </ul>
                 ) : null}
               </div>
@@ -179,7 +196,17 @@ export function AuditScreen() {
   );
 }
 
-const NOISE = new Set(['updated_at', 'updated_by', 'created_at', 'created_by', 'id']);
+// Technical links and bookkeeping that mean nothing to a reader (UAT D-11/12).
+const NOISE = new Set(['updated_at', 'updated_by', 'created_at', 'created_by', 'id', 'visit_id', 'last_visit_id',
+  'completed_in_visit_id', 'follow_up_visit_id', 'template_id', 'template_item_id', 'recurring_item_id', 'was_follow_up']);
+
+/** Fields worth showing for a newly created record (UAT D-2). */
+const CREATED_FIELDS: Record<string, string[]> = {
+  labor_allocations: ['duration', 'change_reason', 'notes'],
+  project_tasks: ['status', 'note'],
+  visits: ['status'],
+  month_closes: [],
+};
 
 /** Field-level old → new for audit rows written by 0006's audit_row() (§30). */
 function changes(payload: Record<string, unknown>): [string, string, string][] {

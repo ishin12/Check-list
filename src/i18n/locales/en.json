@@ -718,7 +718,8 @@
       "task": "Task",
       "note": "Note",
       "day": "Date",
-      "swipe": "Swipe sideways to see every column."
+      "swipe": "Swipe sideways to see every column.",
+      "notYetAdded": "{{name}} was added on {{date}}, after this period."
     },
     "labor": {
       "title": "Labor",

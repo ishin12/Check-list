@@ -146,8 +146,9 @@ function EditAllocation({ row, closed, onDone, onCancel }: { row: LaborAllocatio
       </div>
       <div className="row wrap" style={{ gap: 8 }}>
         <input className="input grow" value={voidReason} onChange={(e) => setVoidReason(e.target.value)} placeholder={t('fo.labor.voidReason', 'Why void this row?') ?? ''} />
-        <button type="button" className="btn btn--danger" disabled={busy || !voidReason.trim() || (closed && !reason.trim())}
-          onClick={() => void act(() => voidLabor(row.id, voidReason, closed ? reason : undefined))}>{t('fo.labor.void', 'Void')}</button>
+        {/* One reason is enough to void, also in a closed month (UAT L-1). */}
+        <button type="button" className="btn btn--danger" disabled={busy || !voidReason.trim()}
+          onClick={() => void act(() => voidLabor(row.id, voidReason, closed ? (reason.trim() || voidReason) : undefined))}>{t('fo.labor.void', 'Void')}</button>
       </div>
       <ErrorBanner message={error} />
     </div>
