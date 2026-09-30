@@ -161,7 +161,7 @@ export function VisitReportScreen() {
     none: t('fo.report.none', 'None'),
     crew: t('fo.report.crew', 'Crew'),
     notes: t('fo.report.notes', 'Visit notes'),
-    days: t('fo.days', 'day(s)'),
+    days: t('fo.report.dayUnit', 'day'),
     statusDone: t('fo.answer.done', 'Done'),
     statusFollowUp: t('fo.status.needs_follow_up', 'Follow-up'),
     statusNotDone: t('fo.answer.not_done', 'Not done'),

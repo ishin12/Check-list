@@ -100,7 +100,7 @@ export function ProjectEditScreen() {
         </div>
         <div className="field">
           <label className="field__label" htmlFor="p-code">{t('fo.projects.code', 'Code (optional)')}</label>
-          <input id="p-code" className="input" value={code} onChange={(e) => setCode(e.target.value)} placeholder="MNT-012" />
+          <input id="p-code" className="input" value={code} onChange={(e) => setCode(e.target.value)} placeholder={`${(type?.code ?? 'mnt').slice(0, 3).toUpperCase()}-012`} />
         </div>
         <div className="field">
           <label className="field__label" htmlFor="p-client">{t('fo.projects.client', 'Client')} *</label>

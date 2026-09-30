@@ -1,20 +1,20 @@
 
  RUN  v2.1.9 /home/user/Check-list
 
- ✓ src/domain/__tests__/visitPlan.test.ts (10 tests) 7ms
- ✓ src/services/data/__tests__/visitFlow.test.ts (4 tests) 225ms
- ✓ src/services/supabase/__tests__/mockFieldOps.test.ts (16 tests) 294ms
- ✓ src/domain/__tests__/fieldOps.test.ts (15 tests) 7ms
- ✓ src/domain/__tests__/labor.test.ts (15 tests) 7ms
+ ✓ src/domain/__tests__/visitPlan.test.ts (10 tests) 9ms
+ ✓ src/services/data/__tests__/visitFlow.test.ts (4 tests) 208ms
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts (16 tests) 303ms
+ ✓ src/domain/__tests__/fieldOps.test.ts (15 tests) 12ms
+ ✓ src/domain/__tests__/labor.test.ts (15 tests) 9ms
  ✓ src/domain/__tests__/reports.test.ts (6 tests) 6ms
- ✓ src/domain/__tests__/taskFlow.test.ts (14 tests) 7ms
- ✓ src/domain/__tests__/recurrence.test.ts (10 tests) 5ms
- ✓ src/domain/__tests__/job.test.ts (3 tests) 7ms
+ ✓ src/domain/__tests__/taskFlow.test.ts (14 tests) 8ms
+ ✓ src/domain/__tests__/recurrence.test.ts (10 tests) 4ms
+ ✓ src/domain/__tests__/job.test.ts (3 tests) 4ms
  ✓ src/domain/__tests__/template.test.ts (4 tests) 6ms
- ✓ src/lib/__tests__/dates.test.ts (2 tests) 17ms
+ ✓ src/lib/__tests__/dates.test.ts (2 tests) 18ms
 
  Test Files  11 passed (11)
       Tests  99 passed (99)
-   Start at  18:08:13
-   Duration  3.19s (transform 596ms, setup 0ms, collect 967ms, tests 588ms, environment 4.27s, prepare 710ms)
+   Start at  18:30:07
+   Duration  3.08s (transform 537ms, setup 0ms, collect 906ms, tests 587ms, environment 4.03s, prepare 656ms)
 

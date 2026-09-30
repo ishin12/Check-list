@@ -125,7 +125,7 @@ export function ConfigScreen() {
           <div className="card__meta">{t('fo.config.workDaysHint', 'Used for the "not allocated" list and report.')}</div>
           <div className="weekdays">
             {[0, 1, 2, 3, 4, 5, 6].map((d) => (
-              <button key={d} type="button" className={`chip${workDays.includes(d) ? ' chip--active' : ''}`}
+              <button key={d} type="button" aria-pressed={workDays.includes(d)} className={`chip${workDays.includes(d) ? ' chip--active' : ''}`}
                 onClick={() => setWorkDays(workDays.includes(d) ? workDays.filter((x) => x !== d) : [...workDays, d])}>
                 {weekdayName(d, language)}
               </button>

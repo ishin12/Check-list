@@ -80,6 +80,12 @@ export function VisitScreen() {
   const project = fd.project(visit?.projectId);
   const editable = !!visit && visit.status === 'in_progress' && (isManager || project?.supervisorId === user?.id || visit.supervisorId === user?.id);
 
+  const itemOrder = useMemo(() => {
+    const order = new Map<string, number>();
+    for (const tpl of fd.templates) tpl.tasks.forEach((it) => order.set(`${tpl.id}|${it.id}`, it.order));
+    return (x: ProjectTask) => order.get(`${x.templateId}|${x.templateItemId}`) ?? 999;
+  }, [fd.templates]);
+
   const visitTasks = useMemo(() => {
     if (!visit || !data) return [];
     const list = visit.status === 'completed'
@@ -91,8 +97,12 @@ export function VisitScreen() {
       // answer given now, so cards stay in place while they are answered.
       || (carriedIn(b, visit.id) ? 1 : 0) - (carriedIn(a, visit.id) ? 1 : 0)
       || SOURCE_ORDER[a.source] - SOURCE_ORDER[b.source]
-      || (a.createdAt < b.createdAt ? -1 : 1));
-  }, [visit, data]);
+      // Items saved together keep their checklist order, whatever the database
+      // returns first (UAT D6).
+      || (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0)
+      || itemOrder(a) - itemOrder(b)
+      || a.id.localeCompare(b.id));
+  }, [visit, data, itemOrder]);
 
   const photoTaskIds = useMemo(
     () => new Set((data?.photos ?? []).filter((p) => p.visitId === visit?.id).map((p) => p.taskId)),
@@ -157,7 +167,7 @@ export function VisitScreen() {
         {/* Crew (§6) */}
         <section className="stack">
           <div className="row" style={{ justifyContent: 'space-between' }}>
-            <span className="section-title">{t('fo.visit.crew', 'Crew')} · {data.crew.reduce((s, a) => s + a.duration, 0)} {t('fo.days', 'day(s)')}</span>
+            <span className="section-title">{t('fo.visit.crewDays', 'Crew · days: {{days}}', { days: data.crew.reduce((s, a) => s + a.duration, 0) })}</span>
             {editable && !data.monthClosed ? <button type="button" className="btn btn--ghost" onClick={() => setEditCrew((x) => !x)}>{editCrew ? t('common.done', 'Done') : t('fo.visit.editCrew', 'Edit crew')}</button> : null}
           </div>
           {data.crew.length === 0 ? <div className="banner banner--info">{t('fo.visit.noCrew', 'No crew recorded yet.')}</div> : null}

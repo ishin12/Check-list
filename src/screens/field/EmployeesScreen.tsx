@@ -96,7 +96,7 @@ export function EmployeesScreen() {
             <div className="field"><label className="field__label" htmlFor="e-notes">{t('fo.projects.notes', 'Notes (optional)')}</label>
               <input id="e-notes" className="input" value={editing.notes ?? ''} onChange={(e) => setEditing({ ...editing, notes: e.target.value })} /></div>
             {codeTaken ? <div className="banner banner--error">{t('fo.emp.codeTaken', 'This employee no. already belongs to another worker.')}</div> : null}
-            {duplicate ? (
+            {needsCode ? (
               <div className="banner banner--warn">{t('fo.emp.duplicate', 'Another worker already has this name. Enter an employee no. so the two can be told apart.')}</div>
             ) : null}
             <div className="row" style={{ gap: 8 }}>

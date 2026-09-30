@@ -571,6 +571,11 @@ select pg_temp.expect_fail('M1 employee numbers are unique (case-insensitive)', 
   insert into public.employees (full_name, code) values ('Imran Khan', 'w-003') $$, 'employees_code_unique');
 select pg_temp.expect_fail('M4 a manager cannot deactivate their own account', $$
   update public.profiles set active = false where id = '00000000-0000-0000-0000-00000000000a' $$, 'your own account');
+select pg_temp.expect_fail('D1 a manager cannot change their own role', $$
+  update public.profiles set role = 'supervisor' where id = '00000000-0000-0000-0000-00000000000a' $$, 'your own role');
+update public.app_settings set work_days = '{0,1,2,3,4}' where id;
+select pg_temp.ok('D4 working-day changes are audited',
+  (select count(*) >= 1 from public.audit_log where entity = 'app_settings'));
 update public.profiles set active = false where id = '00000000-0000-0000-0000-00000000000c';
 select pg_temp.ok('L7 team changes are audited',
   (select count(*) >= 1 from public.audit_log where entity = 'profiles' and entity_id = '00000000-0000-0000-0000-00000000000c'));

@@ -254,7 +254,9 @@
       "project_recurring_items": "Periodic item",
       "templates": "Checklist",
       "project_types": "Project type",
-      "project_stages": "Stage"
+      "project_stages": "Stage",
+      "profiles": "Team member",
+      "app_settings": "Setup"
     },
     "field": {
       "duration": "Days",
@@ -274,7 +276,7 @@
       "voided_by": "Removed by",
       "project_id": "Project",
       "employee_id": "Worker",
-      "code": "Code",
+      "code": "Employee no.",
       "phone": "Phone",
       "required": "Required",
       "photo_required": "Photo required",
@@ -295,7 +297,8 @@
       "email": "Email",
       "finance_access": "Finance access",
       "sort_order": "Order",
-      "uses_stages": "Has stages"
+      "uses_stages": "Has stages",
+      "work_days": "Working days"
     }
   },
   "recurrence": {
@@ -397,7 +400,8 @@
     "savePassword": "Save",
     "passwordSet": "Password updated.",
     "passwordFailed": "Couldn’t set password.",
-    "teamTitle": "Team"
+    "teamTitle": "Team",
+    "ownRole": "Another manager must change your role."
   },
   "common": {
     "save": "Save",
@@ -436,7 +440,8 @@
     "br008": "This project is completed or closed. It keeps its history but takes no new visits.",
     "stageGate": "The current stage checklist is not finished. Complete its required items on a visit first.",
     "projectOpenVisit": "This project has a visit in progress. Complete it first.",
-    "futureVisit": "A visit cannot be started before its date."
+    "futureVisit": "A visit cannot be started before its date.",
+    "self": "You cannot deactivate your own account or change your own role. Ask another manager."
   },
   "fo": {
     "add": "Add",
@@ -509,14 +514,18 @@
       "crew": "Crew with you today",
       "pickCrew": "Select the crew to start",
       "go": "Start visit with {{count}} worker(s)",
-      "notActive": "Visits can only be started on active projects. This project is {{status}}."
+      "notActive": "Visits can only be started on active projects. This project is {{status}}.",
+      "openItems_one": "{{count}} open item, {{follow}} follow-up",
+      "openItems_other": "{{count}} open items, {{follow}} follow-up",
+      "go_one": "Start visit with {{count}} worker",
+      "go_other": "Start visit with {{count}} workers"
     },
     "crew": {
       "copyPrevious": "Copy last crew",
       "selectAll": "Select all shown",
       "clear": "Clear",
       "search": "Search workers",
-      "summary": "{{count}} selected · {{days}} day(s)",
+      "summary": "{{count}} selected · days: {{days}}",
       "onVisit": "On this visit",
       "fullElsewhere": "Full day booked",
       "halfFree": "Half day free",
@@ -530,7 +539,9 @@
       "addSelected": "Add {{count}} worker(s)",
       "skipped": "Not copied",
       "skippedInactive": "inactive",
-      "skippedBooked": "already booked today"
+      "skippedBooked": "already booked today",
+      "addSelected_one": "Add {{count}} worker",
+      "addSelected_other": "Add {{count}} workers"
     },
     "visit": {
       "title": "Visit",
@@ -551,7 +562,12 @@
       "confirmTitle": "Complete this visit?",
       "confirmBody": "The report is generated from what you recorded. Follow-up and not-done items stay open for the next visit.",
       "monthClosedCrew": "This month is closed: the crew can no longer be changed here. Ask finance for a correction.",
-      "monthClosedCrewFinance": "This month is closed. Correct its labor in the labor ledger, with a reason."
+      "monthClosedCrewFinance": "This month is closed. Correct its labor in the labor ledger, with a reason.",
+      "needAnswers_one": "Answer {{count}} required item: done, not done or follow-up.",
+      "needAnswers_other": "Answer {{count}} required items: done, not done or follow-up.",
+      "needPhotos_one": "Add a photo to {{count}} completed item that requires one.",
+      "needPhotos_other": "Add a photo to {{count}} completed items that require one.",
+      "crewDays": "Crew · days: {{days}}"
     },
     "task": {
       "required": "Required",
@@ -598,7 +614,8 @@
       "riyadhTime": "Riyadh time",
       "notes": "Visit notes",
       "fit": "Fit to screen",
-      "fullSize": "View full size"
+      "fullSize": "View full size",
+      "dayUnit": "day"
     },
     "projects": {
       "title": "Projects",
@@ -622,7 +639,11 @@
       "handover": "The new supervisor sees the full history and open work.",
       "notFound": "Project not found or not assigned to you.",
       "reassignOpenVisit": "{{count}} visit(s) of this project are in progress. After saving, the new supervisor (or you, as manager) finishes them, and the current supervisor no longer sees this project.",
-      "stageRequired": "Choose the stage this project is at."
+      "stageRequired": "Choose the stage this project is at.",
+      "count_one": "{{count}} project",
+      "count_other": "{{count}} projects",
+      "reassignOpenVisit_one": "{{count}} visit of this project is in progress. After saving, the new supervisor (or you, as manager) finishes them, and the current supervisor no longer sees this project.",
+      "reassignOpenVisit_other": "{{count}} visits of this project are in progress. After saving, the new supervisor (or you, as manager) finishes them, and the current supervisor no longer sees this project."
     },
     "pd": {
       "overview": "Overview",
@@ -666,7 +687,11 @@
       "closeVisitOpen": "A visit is in progress; it must be completed before the project can be completed or closed.",
       "openCount": "{{count}} open",
       "notNeeded": "Not needed",
-      "notNeededReason": "Why is it not needed? (required)"
+      "notNeededReason": "Why is it not needed? (required)",
+      "closeBlocked_one": "{{count}} open or follow-up task must be finished before the project can be completed or closed.",
+      "closeBlocked_other": "{{count}} open or follow-up tasks must be finished before the project can be completed or closed.",
+      "workerCount_one": "1 worker",
+      "workerCount_other": "{{count}} workers"
     },
     "emp": {
       "title": "Workers",
@@ -680,7 +705,9 @@
       "count": "{{count}} worker(s)",
       "duplicate": "Another worker already has this name. Enter an employee no. so the two can be told apart.",
       "onCrewToday": "{{name}} is on today's crew ({{projects}}). Deactivating keeps today's record; they will not be offered for new visits.",
-      "codeTaken": "This employee no. already belongs to another worker."
+      "codeTaken": "This employee no. already belongs to another worker.",
+      "count_one": "{{count}} worker",
+      "count_other": "{{count}} workers"
     },
     "config": {
       "title": "Setup",
@@ -748,7 +775,9 @@
       "add": "Add labor",
       "booked": "Already booked that day: {{days}}",
       "financeOpenMonth": "Finance can add labor only to closed months. In an open month the supervisor records it on the visit.",
-      "otherProject": "A project no longer assigned to you"
+      "otherProject": "A project no longer assigned to you",
+      "summary_one": "1 row · days: {{days}}",
+      "summary_other": "{{count}} rows · days: {{days}}"
     },
     "close": {
       "open": "Open",
@@ -768,7 +797,11 @@
       "unclosedWarnTitle": "{{count}} visit(s) in this month are not completed",
       "unclosedWarnBody": "If you close now, their supervisors can still finish the work, but can no longer add, remove or change the crew. Only finance can then correct those days, with a reason.",
       "notEnded": "This month has not ended yet. Days after today have no labor recorded.",
-      "confirmUnclosed": "{{count}} visit(s) in this month are still not completed."
+      "confirmUnclosed": "{{count}} visit(s) in this month are still not completed.",
+      "unclosedWarnTitle_one": "{{count}} visit in this month is not completed",
+      "unclosedWarnTitle_other": "{{count}} visits in this month are not completed",
+      "confirmUnclosed_one": "{{count}} visit in this month is still not completed.",
+      "confirmUnclosed_other": "{{count}} visits in this month are still not completed."
     },
     "stage": {
       "title": "Stage {{n}} of {{total}}",

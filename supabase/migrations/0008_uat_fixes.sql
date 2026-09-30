@@ -303,6 +303,28 @@ begin
   end if;
 end $$;
 
+-- audit_row() now tolerates tables whose id is not a uuid (app_settings.id is
+-- a boolean singleton): entity_id is recorded only when it is a uuid.
+create or replace function public.audit_row() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  v_id text := to_jsonb(coalesce(new, old)) ->> 'id';
+begin
+  insert into public.audit_log (actor_id, action, entity, entity_id, payload)
+  values (
+    auth.uid(),
+    tg_table_name || '.' || lower(tg_op),
+    tg_table_name,
+    case when v_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then v_id::uuid end,
+    jsonb_build_object(
+      'old', case when tg_op = 'INSERT' then null else to_jsonb(old) end,
+      'new', case when tg_op = 'DELETE' then null else to_jsonb(new) end
+    )
+  );
+  return coalesce(new, old);
+end;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- UAT M4: nobody can switch off their own account (the last manager could
 -- otherwise lock everyone out). UAT L7: team and setup changes are audited.
@@ -312,6 +334,9 @@ language plpgsql as $$
 begin
   if new.id = auth.uid() and old.active and not new.active then
     raise exception 'You cannot deactivate your own account' using errcode = 'P0001';
+  end if;
+  if new.id = auth.uid() and new.role is distinct from old.role then
+    raise exception 'You cannot change your own role' using errcode = 'P0001';
   end if;
   return new;
 end;
@@ -325,4 +350,7 @@ create trigger trg_audit_profiles after insert or update on public.profiles
 create trigger trg_audit_project_types after insert or update on public.project_types
   for each row execute function public.audit_row();
 create trigger trg_audit_project_stages after insert or update on public.project_stages
+  for each row execute function public.audit_row();
+-- Working days change the "not allocated" figures, so they are audited too (UAT D4).
+create trigger trg_audit_app_settings after update on public.app_settings
   for each row execute function public.audit_row();

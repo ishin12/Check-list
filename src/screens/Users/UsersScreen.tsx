@@ -177,7 +177,9 @@ export function UsersScreen() {
               </div>
               {u.role !== 'client' ? (
                 <div className="row wrap" style={{ gap: 8, marginTop: 8 }}>
+                  {/* Your own role cannot be changed here, so the last manager can't demote themself (UAT D1). */}
                   <select className="input" style={{ maxWidth: 220 }} value={u.role} aria-label={t('users.role', 'Role') ?? ''}
+                    disabled={u.id === me?.id} title={u.id === me?.id ? t('users.ownRole', 'Another manager must change your role.') ?? undefined : undefined}
                     onChange={(e) => void updateProfile(u, { role: e.target.value })}>
                     <option value="supervisor">{t('fo.role.supervisor', 'Supervisor')}</option>
                     <option value="manager">{t('fo.role.manager', 'Manager')}</option>

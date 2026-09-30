@@ -145,7 +145,7 @@ export function ProjectDetailScreen() {
             <div className="card__meta">{t('fo.pd.closeVisitOpen', 'A visit is in progress; it must be completed before the project can be completed or closed.')}</div>
           ) : null}
         </div>
-        {project.stageId && progress ? (
+        {project.stageId && progress && !final ? (
           <div className="card stack" style={{ gap: 6 }} id="stage-card">
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
               <div className="card__title">
@@ -390,7 +390,7 @@ export function ProjectDetailScreen() {
               <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Link to={v.status === 'planned' ? `/visits/start?visit=${v.id}` : `/visits/${v.id}`} className="grow list-link">
                   <div className="card__title" style={{ fontSize: '1rem' }}>{formatDate(v.visitDate, language, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</div>
-                  <div className="card__meta">{names.person(v.supervisorId)}{crew.length ? ` · ${crew.length} ${t('fo.pd.workers', 'worker(s)')}` : ''}</div>
+                  <div className="card__meta">{names.person(v.supervisorId)}{crew.length ? ` · ${t('fo.pd.workerCount', '{{count}} workers', { count: crew.length })}` : ''}</div>
                 </Link>
                 <FieldStatusPill status={v.status} />
               </div>

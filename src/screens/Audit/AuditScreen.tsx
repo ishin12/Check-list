@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
-import { addDays, formatDate, formatDateTime, localToday } from '@/lib/dates';
+import { addDays, formatDate, formatDateTime, formatMonth, localToday, weekdayName } from '@/lib/dates';
 import { features } from '@/config/features';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { useFieldData } from '@/app/providers/FieldDataContext';
@@ -22,7 +22,7 @@ interface Row {
 }
 
 const LEGACY_ENTITIES = ['task', 'client_note', 'task_proofs', 'client'];
-const ENTITY_OPTIONS = ['all', 'labor_allocations', 'month_closes', 'projects', 'visits', 'project_tasks', 'employees', 'templates', 'profiles', 'project_types', 'project_stages',
+const ENTITY_OPTIONS = ['all', 'labor_allocations', 'month_closes', 'projects', 'visits', 'project_tasks', 'employees', 'templates', 'profiles', 'project_types', 'project_stages', 'app_settings',
   ...(features.legacyTasks ? LEGACY_ENTITIES : [])];
 
 export function AuditScreen() {
@@ -94,11 +94,12 @@ export function AuditScreen() {
     const s = (v: unknown) => (typeof v === 'string' ? v : undefined);
     switch (r.entity) {
       case 'projects': return s(row.name) ?? '';
-      case 'employees': return s(row.full_name) ?? '';
+      case 'employees': return [s(row.full_name), s(row.code)].filter(Boolean).join(' · ');
       case 'project_tasks': return [names.taskLabel({ templateId: s(row.template_id), templateItemId: s(row.template_item_id), description: s(row.description) ?? '' } as never), names.project(s(row.project_id))].filter(Boolean).join(' · ');
       case 'visits': return [names.project(s(row.project_id)), day(s(row.visit_date))].filter(Boolean).join(' · ');
       case 'labor_allocations': return [names.employee(s(row.employee_id)), day(s(row.work_date)), names.project(s(row.project_id))].filter(Boolean).join(' · ');
-      case 'month_closes': return s(row.month)?.slice(0, 7) ?? '';
+      case 'month_closes': return s(row.month) ? formatMonth(s(row.month)!, language) : '';
+      case 'app_settings': return t('fo.config.workDays', 'Working days');
       case 'templates': return configText(row.title as never, language) || '';
       case 'profiles': return s(row.full_name) ?? s(row.email) ?? '';
       case 'project_types':
@@ -112,6 +113,7 @@ export function AuditScreen() {
     if (v === '—') return v;
     if (field === 'status') return t(`fo.status.${v}`, v);
     if (field === 'role') return t(`demo.role.${v}`, v);
+    if (field === 'work_days') { try { return (JSON.parse(v) as number[]).map((d) => weekdayName(d, language)).join('، '); } catch { return v; } }
     if (field === 'name') { try { return configText(JSON.parse(v), language) || v; } catch { return v; } }
     if (field === 'title') { try { return configText(JSON.parse(v), language) || v; } catch { return v; } }
     if (field === 'tasks') { try { return t('templates.tasksCount', { count: (JSON.parse(v) as unknown[]).length }); } catch { return v; } }
@@ -181,7 +183,7 @@ export function AuditScreen() {
                 </div>
                 {changes(r.payload).length ? (
                   <ul className="card__meta" style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>
-                    {changes(r.payload).map(([k, from, to]) => (
+                    {changes(r.payload).filter(([, from, to]) => value('x', from) !== value('x', to)).map(([k, from, to]) => (
                       // <bdi> keeps English values and the arrow in order inside Arabic text.
                       <li key={k}><strong>{t(`audit.field.${k}`, k)}</strong>: <bdi>{value(k, from)}</bdi> {language === 'en' ? '→' : '←'} <bdi>{value(k, to)}</bdi></li>
                     ))}

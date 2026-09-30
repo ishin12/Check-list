@@ -41,7 +41,7 @@
     "empty": "لا توجد قوالب بعد.",
     "emptyHint": "أنشئ أول قالب قائمة مهام.",
     "tasksCount": "{{count}} مهمة",
-    "tasksCount_other": "{{count}} مهام",
+    "tasksCount_other": "{{count}} مهمة",
     "deleteConfirm": "حذف هذا القالب؟",
     "deleteConfirmBody": "لا يمكن التراجع عن هذا الإجراء.",
     "copySuffix": "(نسخة)",
@@ -49,7 +49,12 @@
     "off": "موقوفة",
     "switchOff": "إيقاف",
     "switchOffTitle": "إيقاف هذه القائمة؟",
-    "switchOffBody": "لن تظهر في الزيارات الجديدة. تبقى محفوظة بسجلها ويمكن تفعيلها لاحقاً."
+    "switchOffBody": "لن تظهر في الزيارات الجديدة. تبقى محفوظة بسجلها ويمكن تفعيلها لاحقاً.",
+    "tasksCount_zero": "لا مهام",
+    "tasksCount_one": "مهمة واحدة",
+    "tasksCount_two": "مهمتان",
+    "tasksCount_few": "{{count}} مهام",
+    "tasksCount_many": "{{count}} مهمة"
   },
   "editor": {
     "newTitle": "قالب جديد",
@@ -360,7 +365,9 @@
       "project_recurring_items": "بند دوري",
       "templates": "قائمة فحص",
       "project_types": "نوع مشروع",
-      "project_stages": "مرحلة"
+      "project_stages": "مرحلة",
+      "profiles": "عضو الفريق",
+      "app_settings": "الإعدادات"
     },
     "field": {
       "duration": "الأيام",
@@ -380,7 +387,7 @@
       "voided_by": "ألغاه",
       "project_id": "المشروع",
       "employee_id": "العامل",
-      "code": "الرمز",
+      "code": "الرقم الوظيفي",
       "phone": "الجوال",
       "required": "أساسي",
       "photo_required": "الصورة مطلوبة",
@@ -401,7 +408,8 @@
       "email": "البريد",
       "finance_access": "صلاحية المالية",
       "sort_order": "الترتيب",
-      "uses_stages": "له مراحل"
+      "uses_stages": "له مراحل",
+      "work_days": "أيام العمل"
     }
   },
   "users": {
@@ -421,7 +429,8 @@
     "savePassword": "حفظ",
     "passwordSet": "تم تحديث كلمة المرور.",
     "passwordFailed": "تعذّر تعيين كلمة المرور.",
-    "teamTitle": "الفريق"
+    "teamTitle": "الفريق",
+    "ownRole": "يغيّر دورك مدير آخر فقط."
   },
   "err": {
     "saveFailed": "لم يتم الحفظ:",
@@ -441,7 +450,8 @@
     "br008": "هذا المشروع مكتمل أو مغلق. يبقى سجله محفوظاً لكن لا تُضاف إليه زيارات جديدة.",
     "stageGate": "قائمة المرحلة الحالية لم تكتمل. نفّذ بنودها الأساسية في زيارة أولاً.",
     "projectOpenVisit": "في هذا المشروع زيارة جارية. أكملها أولاً.",
-    "futureVisit": "لا يمكن بدء زيارة قبل تاريخها."
+    "futureVisit": "لا يمكن بدء زيارة قبل تاريخها.",
+    "self": "لا يمكنك إيقاف حسابك أو تغيير دورك. اطلب ذلك من مدير آخر."
   },
   "fo": {
     "add": "إضافة",
@@ -527,7 +537,7 @@
       "selectAll": "تحديد الكل الظاهر",
       "clear": "مسح",
       "search": "ابحث عن عامل",
-      "summary": "{{count}} محدد · {{days}} يوم",
+      "summary": "المحدد: {{count}} · الأيام: {{days}}",
       "onVisit": "في هذه الزيارة",
       "fullElsewhere": "محمّل بيوم كامل",
       "halfFree": "نصف يوم متاح",
@@ -568,7 +578,18 @@
       "confirmTitle": "إنهاء هذه الزيارة؟",
       "confirmBody": "يُنشأ التقرير من البيانات المسجلة. البنود التي تحتاج متابعة أو لم تنفذ تبقى مفتوحة للزيارة القادمة.",
       "monthClosedCrew": "هذا الشهر مُقفل: لا يمكن تغيير العمال هنا. اطلب التصحيح من المالية.",
-      "monthClosedCrewFinance": "هذا الشهر مُقفل. صحّح عمالته من سجل العمالة مع ذكر السبب."
+      "monthClosedCrewFinance": "هذا الشهر مُقفل. صحّح عمالته من سجل العمالة مع ذكر السبب.",
+      "crewDays": "العمال · الأيام: {{days}}",
+      "needAnswers_one": "حدّث حالة البند المطلوب: تم، لم ينفذ، أو يحتاج متابعة.",
+      "needAnswers_two": "حدّث حالة بندين مطلوبين: تم، لم ينفذ، أو يحتاج متابعة.",
+      "needAnswers_few": "حدّث حالة {{count}} بنود مطلوبة: تم، لم ينفذ، أو يحتاج متابعة.",
+      "needAnswers_many": "حدّث حالة {{count}} بنداً مطلوباً: تم، لم ينفذ، أو يحتاج متابعة.",
+      "needAnswers_other": "حدّث حالة {{count}} بند مطلوب: تم، لم ينفذ، أو يحتاج متابعة.",
+      "needPhotos_one": "أضف صورة إلى البند المنفذ الذي يتطلب صورة.",
+      "needPhotos_two": "أضف صورة إلى بندين منفذين يتطلبان صورة.",
+      "needPhotos_few": "أضف صورة إلى {{count}} بنود منفذة تتطلب صورة.",
+      "needPhotos_many": "أضف صورة إلى {{count}} بنداً منفذاً يتطلب صورة.",
+      "needPhotos_other": "أضف صورة إلى {{count}} بند منفذ يتطلب صورة."
     },
     "task": {
       "required": "إلزامي",
@@ -615,7 +636,8 @@
       "riyadhTime": "بتوقيت الرياض",
       "notes": "ملاحظات الزيارة",
       "fit": "ملاءمة الشاشة",
-      "fullSize": "عرض بالحجم الكامل"
+      "fullSize": "عرض بالحجم الكامل",
+      "dayUnit": "يوم"
     },
     "projects": {
       "title": "المشاريع",
@@ -689,7 +711,13 @@
       "closeVisitOpen": "توجد زيارة جارية؛ يجب إكمالها قبل إكمال المشروع أو إغلاقه.",
       "openCount": "{{count}} مفتوحة",
       "notNeeded": "غير مطلوب",
-      "notNeededReason": "لماذا لم يعد مطلوباً؟ (إلزامي)"
+      "notNeededReason": "لماذا لم يعد مطلوباً؟ (إلزامي)",
+      "workerCount_zero": "بدون عمال",
+      "workerCount_one": "عامل واحد",
+      "workerCount_two": "عاملان",
+      "workerCount_few": "{{count}} عمال",
+      "workerCount_many": "{{count}} عاملاً",
+      "workerCount_other": "{{count}} عامل"
     },
     "emp": {
       "title": "العمال",
@@ -766,7 +794,7 @@
       "days": "الأيام",
       "entries": "السجلات",
       "showVoided": "إظهار السجلات الملغاة",
-      "summary": "{{count}} سجل · {{days}} يوم",
+      "summary": "السجلات: {{count}} · الأيام: {{days}}",
       "reason": "السبب",
       "voided": "ملغى",
       "closed": "الشهر مقفل",
@@ -797,7 +825,12 @@
       "unclosedWarnTitle": "{{count}} زيارة في هذا الشهر لم تكتمل",
       "unclosedWarnBody": "إذا أقفلت الآن يستطيع المشرفون إكمال العمل، لكن لا يمكنهم إضافة عمال أو إزالتهم أو تغيير أيامهم. بعد ذلك تصحّح المالية فقط هذه الأيام مع ذكر السبب.",
       "notEnded": "هذا الشهر لم ينتهِ بعد. الأيام بعد اليوم لا تحتوي على عمالة مسجلة.",
-      "confirmUnclosed": "{{count}} زيارة في هذا الشهر ما زالت غير مكتملة."
+      "confirmUnclosed": "{{count}} زيارة في هذا الشهر ما زالت غير مكتملة.",
+      "unclosedWarnTitle_one": "زيارة واحدة في هذا الشهر لم تكتمل",
+      "unclosedWarnTitle_two": "زيارتان في هذا الشهر لم تكتملا",
+      "unclosedWarnTitle_few": "{{count}} زيارات في هذا الشهر لم تكتمل",
+      "unclosedWarnTitle_many": "{{count}} زيارة في هذا الشهر لم تكتمل",
+      "unclosedWarnTitle_other": "{{count}} زيارة في هذا الشهر لم تكتمل"
     },
     "stage": {
       "title": "المرحلة {{n}} من {{total}}",

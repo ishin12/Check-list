@@ -117,7 +117,7 @@ function ensureReady(): Promise<void> {
 }
 
 /** Tables audited like migration 0008 (checklists, team, setup). */
-const EXTRA_AUDITED = new Set<string>(['templates', 'profiles', 'project_types', 'project_stages']);
+const EXTRA_AUDITED = new Set<string>(['templates', 'profiles', 'project_types', 'project_stages', 'app_settings']);
 
 /**
  * Row-level security for supervisors, as in 0006/0007: they see only the
@@ -445,6 +445,9 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
               // 0008 profiles_self_guard (UAT M4)
               if (this.table === 'profiles' && row.id === activeUserId && row.active !== false && next.active === false) {
                 throw new Error('You cannot deactivate your own account');
+              }
+              if (this.table === 'profiles' && row.id === activeUserId && next.role !== row.role) {
+                throw new Error('You cannot change your own role');
               }
               if (fieldOps) {
                 next.updated_by = activeUserId;

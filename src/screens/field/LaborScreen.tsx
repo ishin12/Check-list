@@ -68,7 +68,7 @@ export function LaborScreen() {
           <div className="field"><label className="field__label" htmlFor="l-emp">{t('fo.labor.worker', 'Worker')}</label>
             <select id="l-emp" className="input" value={employeeId} onChange={(e) => set('worker', e.target.value)}>
               <option value="">{t('fo.all', 'All')}</option>
-              {fd.employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+              {fd.employees.map((e) => <option key={e.id} value={e.id}>{names.employee(e.id)}</option>)}
             </select></div>
         </div>
         <label className="checkbox-row"><input type="checkbox" checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />{t('fo.labor.showVoided', 'Show voided rows')}</label>
@@ -163,6 +163,7 @@ function EditAllocation({ row, closed, onDone, onCancel }: { row: LaborAllocatio
 /** Manager/finance adds an allocation outside a visit (e.g. a correction). */
 function AddAllocation({ closes, onDone }: { closes: { month: string }[]; onDone: () => Promise<void> }) {
   const { t } = useTranslation();
+  const names = useNames();
   const fd = useFieldData();
   const { user, isManager } = useRoles();
   const [date, setDate] = useState(localToday());
@@ -185,7 +186,7 @@ function AddAllocation({ closes, onDone }: { closes: { month: string }[]; onDone
         <div className="field"><label className="field__label">{t('fo.labor.worker', 'Worker')}</label>
           <select className="input" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
             <option value="">—</option>
-            {fd.employees.filter((e) => e.status === 'active').map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+            {fd.employees.filter((e) => e.status === 'active').map((e) => <option key={e.id} value={e.id}>{names.employee(e.id)}</option>)}
           </select></div>
         <div className="field"><label className="field__label">{t('fo.report.project', 'Project / site')}</label>
           <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>

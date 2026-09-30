@@ -91,7 +91,9 @@ psql:supabase/tests/field_ops_rules.sql:545: NOTICE:  ok  D-13 a future visit ca
 psql:supabase/tests/field_ops_rules.sql:565: NOTICE:  ok  D-29 periodic item done on a visit rolls from the visit date
 psql:supabase/tests/field_ops_rules.sql:571: NOTICE:  ok  M1 employee numbers are unique (case-insensitive)
 psql:supabase/tests/field_ops_rules.sql:573: NOTICE:  ok  M4 a manager cannot deactivate their own account
-psql:supabase/tests/field_ops_rules.sql:576: NOTICE:  ok  L7 team changes are audited
+psql:supabase/tests/field_ops_rules.sql:575: NOTICE:  ok  D1 a manager cannot change their own role
+psql:supabase/tests/field_ops_rules.sql:578: NOTICE:  ok  D4 working-day changes are audited
+psql:supabase/tests/field_ops_rules.sql:581: NOTICE:  ok  L7 team changes are audited
 All field-ops rule checks passed.
 ok  TC-12 concurrent loads: one wins, the other is rejected (total 1.0)
 Database tests passed.

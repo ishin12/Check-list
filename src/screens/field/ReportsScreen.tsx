@@ -167,7 +167,7 @@ export function ReportsScreen() {
           <div className="field"><label className="field__label" htmlFor="r-emp">{t('fo.labor.worker', 'Worker')}</label>
             <select id="r-emp" className="input" value={employeeId} onChange={(e) => set('worker', e.target.value)}>
               <option value="">{t('fo.all', 'All')}</option>
-              {fd.employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+              {fd.employees.map((e) => <option key={e.id} value={e.id}>{names.employee(e.id)}</option>)}
             </select></div>
         </div>
         <div className="chips">
@@ -223,7 +223,7 @@ export function ReportsScreen() {
                 const w = fd.employee(employeeId || undefined);
                 const added = w?.createdAt ? riyadhDate(new Date(w.createdAt)) : '';
                 return added && added > to
-                  ? t('fo.rep.notYetAdded', '{{name}} was added on {{date}}, after this period.', { name: w!.fullName, date: formatDate(added, language) })
+                  ? t('fo.rep.notYetAdded', '{{name}} was added on {{date}}, after this period.', { name: names.employee(w!.id), date: formatDate(added, language) })
                   : t('fo.home.allAllocated', 'Everyone is allocated.');
               })()} />
             {filtered.unalloc.some((d) => d.items.length) ? <div className="section-title">{t('fo.rep.byDay', 'By day')}</div> : null}

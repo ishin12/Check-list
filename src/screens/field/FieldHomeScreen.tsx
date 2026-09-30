@@ -151,7 +151,7 @@ export function FieldHomeScreen() {
             : unallocated.length === 0 ? <p className="hint">{t('fo.home.allAllocated', 'Everyone is allocated.')}</p> : (
               <div className="chips">
                 {unallocated.map(({ e, free }) => (
-                  <span key={e.id} className="chip">{e.fullName}{free < 1 ? ` · ½` : ''}</span>
+                  <span key={e.id} className="chip">{names.employee(e.id)}{free < 1 ? ` · ½` : ''}</span>
                 ))}
               </div>
             )}
