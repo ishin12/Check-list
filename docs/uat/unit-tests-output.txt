@@ -1,0 +1,20 @@
+
+ RUN  v2.1.9 /home/user/Check-list
+
+ ✓ src/domain/__tests__/visitPlan.test.ts (10 tests) 16ms
+ ✓ src/services/data/__tests__/visitFlow.test.ts (4 tests) 248ms
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts (16 tests) 326ms
+ ✓ src/domain/__tests__/fieldOps.test.ts (15 tests) 7ms
+ ✓ src/domain/__tests__/labor.test.ts (15 tests) 10ms
+ ✓ src/domain/__tests__/taskFlow.test.ts (14 tests) 5ms
+ ✓ src/domain/__tests__/reports.test.ts (5 tests) 5ms
+ ✓ src/domain/__tests__/recurrence.test.ts (10 tests) 5ms
+ ✓ src/domain/__tests__/job.test.ts (3 tests) 5ms
+ ✓ src/domain/__tests__/template.test.ts (4 tests) 8ms
+ ✓ src/lib/__tests__/dates.test.ts (2 tests) 18ms
+
+ Test Files  11 passed (11)
+      Tests  98 passed (98)
+   Start at  17:42:02
+   Duration  3.11s (transform 604ms, setup 0ms, collect 941ms, tests 651ms, environment 4.07s, prepare 707ms)
+
