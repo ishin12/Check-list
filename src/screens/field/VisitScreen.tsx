@@ -13,6 +13,7 @@ import { useLanguage } from '@/app/providers/LanguageContext';
 import {
   dayLoads,
   getProject,
+  getReportForVisit,
   getVisit,
   insertCrew,
   listLabor,
@@ -54,16 +55,17 @@ export function VisitScreen() {
   const { data, error, reload } = useAsync(async () => {
     const visit = id ? await getVisit(id) : null;
     if (!visit) return null;
-    const [tasks, photos, crew, project, closes] = await Promise.all([
+    const [tasks, photos, crew, project, closes, report] = await Promise.all([
       listTasks({ projectId: visit.projectId }),
       listPhotos({ projectId: visit.projectId }),
       listLabor({ visitId: visit.id }),
       getProject(visit.projectId),
       listMonthCloses(),
+      visit.status === 'completed' ? getReportForVisit(visit.id) : Promise.resolve(null),
     ]);
     const optional = visit.status === 'in_progress' && project
       ? await optionalVisitItems(project, visit.id, visit.visitDate) : [];
-    return { visit, tasks, photos, crew, optional, monthClosed: isMonthClosed(visit.visitDate, closes) };
+    return { visit, tasks, photos, crew, optional, report, monthClosed: isMonthClosed(visit.visitDate, closes) };
   }, [id]);
 
   const [editCrew, setEditCrew] = useState(false);
@@ -95,8 +97,18 @@ export function VisitScreen() {
 
   const visitTasks = useMemo(() => {
     if (!visit || !data) return [];
+    // A completed visit shows what its issued report recorded, even after a later
+    // visit answered the same items again (carried follow-ups).
+    const lines = data.report?.content?.required;
+    const recorded = lines?.length
+      ? lines.flatMap((l) => {
+        const task = data.tasks.find((x) => x.id === l.taskId);
+        return task ? [{ ...task, status: l.status, note: l.note, lastVisitId: visit.id,
+          completedInVisitId: l.status === 'completed' ? visit.id : undefined }] : [];
+      })
+      : null;
     const list = visit.status === 'completed'
-      ? data.tasks.filter((x) => answeredOnVisit(x, visit.id))
+      ? recorded ?? data.tasks.filter((x) => answeredOnVisit(x, visit.id))
       : [...tasksForVisit(visit.projectId, visit.id, data.tasks), ...data.optional];
     return [...list].sort((a, b) =>
       (a.pending ? 1 : 0) - (b.pending ? 1 : 0)   // unused optional items last
