@@ -37,7 +37,7 @@ jobs:
       # (accepted after the 30 Sep 2026 retest); bump it to publish a newer demo.
       - uses: actions/checkout@v4
         with:
-          ref: 216dca3eafa0fea3d962f3c6c86a4658845655d5
+          ref: 2949faab15ea601ba3edbbba8b2bfaab4e549f0b
           path: demo-src
       - run: npm ci
         working-directory: demo-src
