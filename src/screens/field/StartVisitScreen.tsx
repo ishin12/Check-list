@@ -71,7 +71,13 @@ export function StartVisitScreen() {
     for (const [key, total] of loads) booked.set(key.split('|')[0], total);
     // The crew of the most recent day on this project, today included, so it
     // matches the "last visit" shown above (UAT N-5).
-    return { booked, previous: previousCrew(projectId, addDays(date, 1), labor), tasks, visits };
+    // "Copy last crew" = the crew of the latest started visit (not every visit of that day).
+    const lastVisit = visits.find((v) => v.status !== 'planned' && v.visitDate <= date);
+    const lastCrew = lastVisit ? labor.filter((a) => a.visitId === lastVisit.id && !a.voidedAt) : [];
+    const previous = lastCrew.length
+      ? lastCrew.map((a) => ({ employeeId: a.employeeId, duration: a.duration }))
+      : previousCrew(projectId, addDays(date, 1), labor);
+    return { booked, previous: previous.filter((c, i, all) => all.findIndex((x) => x.employeeId === c.employeeId) === i), tasks, visits };
   }, [projectId, date]);
 
   // Suggest the work type of the last visit on this project; the supervisor can change it.

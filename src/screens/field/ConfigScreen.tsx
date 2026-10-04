@@ -26,10 +26,11 @@ export function ConfigScreen() {
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [workDays, setWorkDays] = useState<number[]>([]);
+  const [savedDays, setSavedDays] = useState<number[]>([]);
   const [editType, setEditType] = useState<Partial<ProjectType> | null>(null);
   const [editStage, setEditStage] = useState<Partial<ProjectStage> | null>(null);
 
-  useEffect(() => { void getWorkDays().then(setWorkDays).catch((e) => setError(friendlyError(e, t))); }, [t]);
+  useEffect(() => { void getWorkDays().then((d) => { setWorkDays(d); setSavedDays(d); }).catch((e) => setError(friendlyError(e, t))); }, [t]);
 
   async function run(fn: () => Promise<unknown>, done?: string): Promise<boolean> {
     setError(null); setMsg(null);
@@ -63,7 +64,7 @@ export function ConfigScreen() {
               extra={<label className="checkbox-row"><input type="checkbox" checked={!!editType.usesStages} onChange={(e) => setEditType({ ...editType, usesStages: e.target.checked })} />{t('fo.config.usesStages', 'Uses stages (new projects)')}</label>}
               onCancel={() => setEditType(null)}
               onSave={() => void run(async () => {
-                const name = editType.name ?? {};
+                const name = trimName(editType.name ?? {});
                 await saveProjectType({ id: editType.id, code: editType.code ?? codeOf(name), name, usesStages: !!editType.usesStages, sortOrder: editType.sortOrder ?? 99, active: editType.active !== false });
                 setEditType(null);
               }, t('fo.saved', 'Saved.') ?? '')}
@@ -100,7 +101,7 @@ export function ConfigScreen() {
                     <input className="input" type="number" min={1} value={editStage.sortOrder ?? 1} onChange={(e) => setEditStage({ ...editStage, sortOrder: Number(e.target.value) })} /></div>}
                   onCancel={() => setEditStage(null)}
                   onSave={() => void run(async () => {
-                    const name = editStage.name ?? {};
+                    const name = trimName(editStage.name ?? {});
                     await saveStage({ id: editStage.id, projectTypeId: ty.id, code: editStage.code ?? codeOf(name), name, sortOrder: editStage.sortOrder ?? 99, active: editStage.active !== false });
                     setEditStage(null);
                   }, t('fo.saved', 'Saved.') ?? '')}
@@ -146,7 +147,11 @@ export function ConfigScreen() {
               </button>
             ))}
           </div>
-          <button type="button" className="btn btn--primary" onClick={() => void run(() => saveWorkDays(workDays), t('fo.saved', 'Saved.') ?? '')}>{t('common.save', 'Save')}</button>
+          <button type="button" className="btn btn--primary" onClick={() => void run(async () => {
+            // Nothing changed: no save, no empty audit entry.
+            if ([...workDays].sort().join() === [...savedDays].sort().join()) return;
+            await saveWorkDays(workDays); setSavedDays(workDays);
+          }, t('fo.saved', 'Saved.') ?? '')}>{t('common.save', 'Save')}</button>
         </section>
       </main>
     </AppShell>
@@ -199,7 +204,9 @@ function ManagedList<T extends { id: string; code: string; name: ConfigText; sor
             <input className="input" type="number" min={1} value={edit.sortOrder ?? 1} onChange={(e) => setEdit({ ...edit, sortOrder: Number(e.target.value) })} /></div>}
           onCancel={() => { setEdit(null); setDupError(null); }}
           onSave={() => {
-            const name = (edit.name ?? {}) as ConfigText;
+            const raw = (edit.name ?? {}) as ConfigText;
+            // Names are stored trimmed (no invisible trailing spaces, no fake changes).
+            const name: ConfigText = { en: raw.en?.trim() || undefined, ar: raw.ar?.trim() || undefined, ...(raw.ur?.trim() ? { ur: raw.ur.trim() } : {}) };
             // One entry per name: entries are never deleted, so a duplicate would stay forever (UAT v2.2).
             const dup = items.find((x) => x.id !== edit.id && (same(x.name.en, name.en) || same(x.name.ar, name.ar)));
             if (dup) { setDupError(t('fo.config.duplicate', '“{{name}}” already exists. Edit or reactivate it instead.', { name: configText(dup.name, language) })); return; }
@@ -230,3 +237,6 @@ function ManagedList<T extends { id: string; code: string; name: ConfigText; sor
   );
 }
 
+function trimName(raw: ConfigText): ConfigText {
+  return { en: raw.en?.trim() || undefined, ar: raw.ar?.trim() || undefined, ...(raw.ur?.trim() ? { ur: raw.ur.trim() } : {}) };
+}

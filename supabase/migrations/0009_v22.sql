@@ -239,4 +239,7 @@ create trigger trg_audit_project_stages after insert on public.project_stages
   for each row execute function public.audit_row();
 create trigger trg_audit_project_stages_upd after update on public.project_stages
   for each row when (old.* is distinct from new.*) execute function public.audit_row();
+drop trigger if exists trg_audit_app_settings on public.app_settings;
+create trigger trg_audit_app_settings after update on public.app_settings
+  for each row when (old.* is distinct from new.*) execute function public.audit_row();
 

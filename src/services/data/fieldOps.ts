@@ -266,7 +266,9 @@ export async function listVisits(opts: { projectId?: string; projectIds?: string
   if (opts.to) q = q.lte('visit_date', opts.to);
   if (opts.status) q = q.eq('status', opts.status);
   const rows = check(await q.order('visit_date', { ascending: false }));
-  return (rows as Row[]).map(toVisit);
+  // Newest first, also between several visits on the same day (by start time).
+  return (rows as Row[]).map(toVisit).sort((a, b) =>
+    b.visitDate.localeCompare(a.visitDate) || (b.startedAt ?? '').localeCompare(a.startedAt ?? ''));
 }
 
 export async function getVisit(id: string): Promise<Visit | null> {

@@ -34,6 +34,10 @@ export function friendlyError(e: unknown, t: TFunction): string {
     [/row-level security|permission denied/i, 'err.permission', 'You do not have permission to do this.'],
     [/Failed to fetch|NetworkError|network/i, 'err.network', 'Could not reach the server. Nothing was saved — check the connection and try again.'],
   ];
+  // Half a day already booked: say only a half day is free (UAT v2.2).
+  if (/BR-001: employee already has 0\.5 /.test(raw)) {
+    return t('err.br001half', 'This worker already has half a day booked that day. Only a half day is free.');
+  }
   for (const [rx, key, fallback] of known) {
     if (rx.test(raw)) return `${t(key, fallback)}`;
   }

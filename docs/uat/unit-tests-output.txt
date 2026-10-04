@@ -14,22 +14,22 @@
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > seeds the configuration and demo data
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > TC-01 / BR-001 rejects loading a worker past 1.0 day
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > TC-03 inserts a crew as separate rows, all-or-nothing
- ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > starts a visit with crew, adds the due checklist, completes and issues the report
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > BR-002 accepts only full or half days
- ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > a refused crew leaves no half-started visit (BR-001)
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > TC-07 / TC-08 month close locks supervisors, finance edits with a reason
+ ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > starts a visit with crew, adds the due checklist, completes and issues the report
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > a refused update leaves the row unchanged
- ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > a planned visit is started (and its crew booked) on the day it happens
- ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > TC-14 a day with no project is booked on an operational target — no visit, no project
- ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > a visit cannot start without a work type
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > BR-014 blocks hard deletes
+ ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > a refused crew leaves no half-started visit (BR-001)
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > TC-04 follow-up survives visit completion; states only move forward
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > D-10: a supervisor sees only the projects they supervise (RLS)
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > a project with open tasks cannot be closed
- ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > an optional item is saved when used and kept after completion
+ ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > a planned visit is started (and its crew booked) on the day it happens
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > TC-06 / BR-011 completing a recurring task rolls its dates
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > review fixes mirrored in the demo backend > a Done correction on a follow-up stays a follow-up
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > review fixes mirrored in the demo backend > C03: no task can be deleted, used or not (BR-014, migration 0008)
+ ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > TC-14 a day with no project is booked on an operational target — no visit, no project
+ ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > a visit cannot start without a work type
+ ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > an optional item is saved when used and kept after completion
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > review fixes mirrored in the demo backend > I04: a completed / closed project takes no new visit (BR-008)
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > review fixes mirrored in the demo backend > I01: a project cannot move past a stage whose required items are not done
  ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > review fixes mirrored in the demo backend > supervisors cannot hand visits to others or rewrite issued reports
@@ -115,6 +115,6 @@
 
  Test Files  11 passed (11)
       Tests  111 passed (111)
-   Start at  22:41:18
-   Duration  3.18s (transform 639ms, setup 0ms, collect 1.09s, tests 713ms, environment 4.13s, prepare 781ms)
+   Start at  23:06:18
+   Duration  2.83s (transform 493ms, setup 0ms, collect 838ms, tests 603ms, environment 3.63s, prepare 640ms)
 
