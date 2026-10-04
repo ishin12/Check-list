@@ -115,7 +115,9 @@ Auth (email/password + invite), Supabase/RLS pattern, demo backend, i18n + RTL, 
 | 2026-09-27 | Finance is a separate role and can also be granted to a manager | `finance` role + `profiles.finance_access`. Month close and post-close labor edits require finance; a manager without the grant cannot do them. |
 | 2026-09-27 | Supervisors are not counted as labor | Supervisors are app users; crew are `employees` (no login). Allocations reference employees only. |
 
-Still open (§36): who holds Month Close in production (default now: anyone with finance), in-app e-signature vs. PDF signature space, override for closing a project with open tasks (default now: blocked), final checklists per type/stage, maintenance frequencies, worker-cost policy. Also open: whether the client portal stays (untouched so far).
+| 2026-10-04 | Master Spec v2.2 §36A approved decisions | Month close refused while a visit of the month is in progress (0009). PDF signature space is enough for the MVP. No project-close override. Work Type (managed list) chosen once per visit and applied to its crew. Days with no project go on an Operational Target (managed list), never a fake project; BR-001 counts both. No salary/cost/payroll data in the system (TC-16). Supervisor transfer: the previous supervisor loses access, history kept. |
+
+Still open: who holds Month Close in production (default now: anyone with finance), final checklist content per type/stage and maintenance frequencies (managed in the app, content to be confirmed by the owner). Also open: whether the client portal stays (untouched so far).
 
 ## 7. Recommended plan
 

@@ -59,11 +59,13 @@ These were decided by the owner or set as safe defaults. Change them if they don
 - WhatsApp signing: **hidden** (owner). The client portal is unchanged.
 - Finance: **separate role**, can be granted to managers (owner).
 - Supervisors: **not labor** (owner).
-- Month close: whoever holds finance (§36 Q1, default).
-- Client signature: a **signature line on the PDF**, no in-app e-signature (§36 Q2, default).
-- Closing a project with open tasks: **blocked**, no override (§36 Q3, default).
+- Month close: whoever holds finance (§36 Q1, default). **Refused while a visit of that month is in progress** (v2.2 §36A, approved).
+- Client signature: a **signature line on the PDF**, no in-app e-signature (v2.2 §36A, approved).
+- Closing a project with open tasks: **blocked**, no override (v2.2 §36A, approved).
+- Work type: chosen once per visit and applied to its crew; managed list in Setup (v2.2 §36A).
+- Work with no project: recorded on an **operational target** (warehouse, office, training, leave, absence…), never on a made-up project (v2.2 §36A).
 - Checklists and frequencies: seeded with the §8 maintenance list; **frequencies left unset** in production (§36 Q4/Q5).
-- Worker cost: days only; cost policy not implemented (§36 Q6).
+- No salary, allowance, day cost or payroll data is stored in the system; finance uses the exported days outside it (v2.2 §36A, TC-16).
 - Working days: Saturday–Thursday by default (Setup).
 - A "Done" tap can be corrected only while its visit is still in progress.
 - Urdu translations should be reviewed by a native speaker.
