@@ -59,7 +59,10 @@ export function TaskItemCard({ task, label, photos, visitId, visitStatus, editab
     if (!visitId || saving) return;
     setSaving(true); setError(null);
     try {
-      await answerTask(await savedTask(), visitId, a, showNote ? note : undefined);
+      // Only a note the supervisor actually wrote now is sent; an earlier visit's
+      // note shown in the box is not re-saved under this answer (UAT v2.2).
+      const changedNote = showNote && note.trim() !== (task.note ?? '').trim() ? note : undefined;
+      await answerTask(await savedTask(), visitId, a, changedNote);
       if (a !== 'done') setShowNote(true);
       onChanged();
     } catch (e) {

@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { localToday } from '@/lib/dates';
 import { completeVisit, optionalVisitItems, recordTargetDay, saveOptionalItem, startVisit, syncVisitTasks } from '@/services/data/visitFlow';
 import {
   answerTask,
@@ -16,7 +17,8 @@ import {
 } from '@/services/data/fieldOps';
 import { canCompleteVisit, visitCompletionCheck } from '@/domain/fieldops/fieldOps';
 
-const today = new Date().toISOString().slice(0, 10);
+// The demo seeds Riyadh dates, so tests use the Riyadh day too (passes at any hour).
+const today = localToday();
 
 const names = {
   projectName: 'Khaled Residence — garden',

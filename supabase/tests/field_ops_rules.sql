@@ -683,6 +683,11 @@ select pg_temp.expect_fail('v2.2 a switched-off target takes no new rows', $$
   values ('2026-11-05', '30000000-0000-0000-0000-000000000007',
           (select id from public.operational_targets where code = 'training'), pg_temp.wt('general'), 1.0,
           '00000000-0000-0000-0000-00000000000a') $$, 'TARGET');
+select count(*) as n_audit from public.audit_log \gset
+update public.work_types set name = name where code = 'landscaping';
+update public.project_types set name = name where code = 'maintenance';
+select pg_temp.ok('v2.2 a save that changes nothing leaves no audit entry',
+  (select count(*) = :n_audit from public.audit_log));
 select pg_temp.ok('v2.2 list changes are audited',
   (select count(*) >= 2 from public.audit_log where entity in ('work_types', 'operational_targets')));
 

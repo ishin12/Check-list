@@ -227,3 +227,16 @@ $$;
 
 create trigger trg_month_close_open_visits before insert on public.month_closes
   for each row execute function public.month_close_open_visits_guard();
+
+-- A save that changes nothing leaves no empty audit entry (project types and stages too).
+drop trigger if exists trg_audit_project_types on public.project_types;
+create trigger trg_audit_project_types after insert on public.project_types
+  for each row execute function public.audit_row();
+create trigger trg_audit_project_types_upd after update on public.project_types
+  for each row when (old.* is distinct from new.*) execute function public.audit_row();
+drop trigger if exists trg_audit_project_stages on public.project_stages;
+create trigger trg_audit_project_stages after insert on public.project_stages
+  for each row execute function public.audit_row();
+create trigger trg_audit_project_stages_upd after update on public.project_stages
+  for each row when (old.* is distinct from new.*) execute function public.audit_row();
+

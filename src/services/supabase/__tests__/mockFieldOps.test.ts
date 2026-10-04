@@ -7,7 +7,8 @@ import { localToday } from '@/lib/dates';
 // what the owner tries in demo mode behaves the same in production.
 
 const sb = getMockClient();
-const today = new Date().toISOString().slice(0, 10);
+// The demo seeds Riyadh dates, so tests use the Riyadh day too (passes at any hour).
+const today = localToday();
 
 async function asUser(id: string) {
   await window.__demo!.setActiveUser(id);

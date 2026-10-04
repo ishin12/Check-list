@@ -28,7 +28,7 @@ import {
 
 const DB_NAME = 'checklist-demo';
 // Re-seed when this changes (bump on each schema-affecting change).
-const SEED_VERSION = 'v14';
+const SEED_VERSION = 'v15';
 const DB_VERSION = 3; // 2: field-ops tables (0006); 3: work types + operational targets (0009)
 
 const TABLES = [
@@ -464,7 +464,10 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
             throw e;
           }
           updated.forEach((row, i) => {
-            if (EXTRA_AUDITED.has(this.table)) audit(`${this.table}.update`, this.table, String(row.id), { old: prevs[i], new: row });
+            // 0009: project types / stages are audited only when something changed.
+            const noop = (this.table === 'project_types' || this.table === 'project_stages')
+              && JSON.stringify({ ...prevs[i], updated_at: null, updated_by: null }) === JSON.stringify({ ...row, updated_at: null, updated_by: null });
+            if (EXTRA_AUDITED.has(this.table) && !noop) audit(`${this.table}.update`, this.table, String(row.id), { old: prevs[i], new: row });
             if (this.table === 'tasks') onTaskUpdate(prevs[i], row);
             if (fieldOps) fieldOpsAfter(this.table, 'UPDATE', prevs[i], row, guardCtx());
           });

@@ -561,7 +561,18 @@ export function seedFieldOps(state: State, day: (offset: number, hour?: number, 
   ];
 
   state.visit_reports = [
-    { id: 'vr-1', visit_id: 'vi-1', report_number: 1, signature_status: 'unsigned', signer_name: null, signature: null, signed_at: null, content: null, generated_at: day(-1, 13), created_by: 'u-wa' },
+    // Frozen at completion, like every issued report: later visits never change it.
+    { id: 'vr-1', visit_id: 'vi-1', report_number: 1, signature_status: 'unsigned', signer_name: null, signature: null, signed_at: null, generated_at: day(-1, 13), created_by: 'u-wa',
+      content: (() => {
+        const fert = { taskId: 'pt-1', description: 'Fertilizing', status: 'needs_follow_up', note: 'Fertilizer not delivered yet', photos: [] };
+        const prune = { taskId: 'pt-2', description: 'Pruning', status: 'completed', photos: [] };
+        return {
+          reportNumber: 1, projectName: 'Khaled Residence — garden', projectCode: 'MNT-001', clientName: 'Khaled Residence',
+          visitDate: date(-1), supervisorName: 'Ahmed', completedAt: day(-1, 13),
+          required: [fert, prune], done: [prune], followUp: [fert],
+          crew: [{ name: 'Mohammed Rafiq', duration: 1 }, { name: 'Abdul Karim', duration: 1 }, { name: 'Imran Khan', duration: 0.5 }],
+        };
+      })() },
   ];
 }
 
