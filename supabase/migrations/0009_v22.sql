@@ -50,6 +50,16 @@ insert into public.operational_targets (code, name, sort_order) values
   ('absence',         '{"en":"Absence","ar":"غياب","ur":"غیر حاضری"}', 6),
   ('other',           '{"en":"Other","ar":"أخرى","ur":"دیگر"}', 7);
 
+-- Names in English and Arabic; one entry per name (entries are never deleted).
+alter table public.work_types add constraint work_types_names
+  check (coalesce(btrim(name->>'en'), '') <> '' and coalesce(btrim(name->>'ar'), '') <> '');
+alter table public.operational_targets add constraint operational_targets_names
+  check (coalesce(btrim(name->>'en'), '') <> '' and coalesce(btrim(name->>'ar'), '') <> '');
+create unique index work_types_name_en_unique on public.work_types (lower(btrim(name->>'en')));
+create unique index work_types_name_ar_unique on public.work_types (btrim(name->>'ar'));
+create unique index operational_targets_name_en_unique on public.operational_targets (lower(btrim(name->>'en')));
+create unique index operational_targets_name_ar_unique on public.operational_targets (btrim(name->>'ar'));
+
 alter table public.work_types enable row level security;
 alter table public.operational_targets enable row level security;
 create policy "work types read"  on public.work_types for select using (auth.uid() is not null);

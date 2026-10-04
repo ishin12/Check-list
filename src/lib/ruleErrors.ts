@@ -21,6 +21,8 @@ export function friendlyError(e: unknown, t: TFunction): string {
     [/WORK-TYPE/, 'err.workType', 'Choose the work type first.'],
     [/TARGET: /, 'err.targetOff', 'This operational target is switched off. Choose another one.'],
     [/labor_project_or_target|labor_visit_needs_project/, 'err.placeRequired', 'Choose either a project or an operational target.'],
+    [/_name_(en_|ar_)?unique/, 'err.duplicateName', 'An entry with this name already exists. Edit or reactivate it instead.'],
+    [/_names"/, 'err.namesRequired', 'Enter the name in English and Arabic.'],
     [/BR-014/, 'err.br014', 'Completed records cannot be deleted. Archive, close or void instead.'],
     [/visit in progress and cannot be closed/, 'err.projectOpenVisit', 'This project has a visit in progress. Complete it first.'],
     [/cannot start before its date/, 'err.futureVisit', 'A visit cannot be started before its date.'],

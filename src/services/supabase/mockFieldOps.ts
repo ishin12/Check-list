@@ -161,6 +161,15 @@ export function fieldOpsBefore(table: string, op: Op, prev: Row | null, next: Ro
     fail('BR-014: month_closes rows cannot be changed');
   }
 
+  // 0009: list names in English and Arabic, one entry per name.
+  if ((table === 'work_types' || table === 'operational_targets') && op !== 'DELETE') {
+    const name = (next!.name ?? {}) as Record<string, string | undefined>;
+    if (!name.en?.trim() || !name.ar?.trim()) fail(`new row violates check constraint "${table}_names"`);
+    const dup = ctx.state[table].find((x) => x.id !== next!.id && (
+      String(x.name?.en ?? '').trim().toLowerCase() === name.en!.trim().toLowerCase()
+      || String(x.name?.ar ?? '').trim() === name.ar!.trim()));
+    if (dup) fail(`duplicate key value violates unique constraint "${table}_name_unique"`);
+  }
   switch (table) {
     case 'visits': {
       if (op === 'DELETE') {

@@ -30,7 +30,7 @@ export async function exportExcel(fileName: string, sheets: ExportSheet[], langu
   const { default: writeXlsxFile } = await import('write-excel-file/browser');
   const rtl = language !== 'en';
   const data = sheets.map((s) => ({
-    sheet: s.name.replace(/[\\/?*[\]:]/g, ' ').slice(0, 31),
+    sheet: s.name.replace(/\s*[\\/?*[\]:]\s*/g, ' - ').slice(0, 31),
     rightToLeft: rtl,
     stickyRowsCount: 1,
     columns: s.header.map((h, i) => ({

@@ -167,7 +167,7 @@ function NameEditor({ value, onChange, extra, onSave, onCancel }: {
         <input className="input" dir="rtl" lang="ur" value={value.ur ?? ''} onChange={(e) => onChange({ ...value, ur: e.target.value })} /></div>
       {extra}
       <div className="row" style={{ gap: 8 }}>
-        <button type="button" className="btn btn--primary" disabled={!value.en?.trim() && !value.ar?.trim()} onClick={onSave}>{t('common.save', 'Save')}</button>
+        <button type="button" className="btn btn--primary" disabled={!value.en?.trim() || !value.ar?.trim()} onClick={onSave}>{t('common.save', 'Save')}</button>
         <button type="button" className="btn btn--ghost" onClick={onCancel}>{t('common.cancel', 'Cancel')}</button>
       </div>
     </div>
@@ -182,6 +182,8 @@ function ManagedList<T extends { id: string; code: string; name: ConfigText; sor
   const { t } = useTranslation();
   const { language } = useLanguage();
   const [edit, setEdit] = useState<Partial<T> | null>(null);
+  const [dupError, setDupError] = useState<string | null>(null);
+  const same = (a?: string, b?: string) => !!a?.trim() && a.trim().toLowerCase() === b?.trim().toLowerCase();
   return (
     <section className="card stack">
       <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -195,14 +197,19 @@ function ManagedList<T extends { id: string; code: string; name: ConfigText; sor
           onChange={(name) => setEdit({ ...edit, name })}
           extra={<div className="field"><label className="field__label">{t('fo.config.order', 'Order')}</label>
             <input className="input" type="number" min={1} value={edit.sortOrder ?? 1} onChange={(e) => setEdit({ ...edit, sortOrder: Number(e.target.value) })} /></div>}
-          onCancel={() => setEdit(null)}
+          onCancel={() => { setEdit(null); setDupError(null); }}
           onSave={() => {
-            const name = edit.name ?? {};
+            const name = (edit.name ?? {}) as ConfigText;
+            // One entry per name: entries are never deleted, so a duplicate would stay forever (UAT v2.2).
+            const dup = items.find((x) => x.id !== edit.id && (same(x.name.en, name.en) || same(x.name.ar, name.ar)));
+            if (dup) { setDupError(t('fo.config.duplicate', '“{{name}}” already exists. Edit or reactivate it instead.', { name: configText(dup.name, language) })); return; }
+            setDupError(null);
             const code = edit.code ?? `${codeOf(name)}_${Date.now().toString(36)}`;
             void onSave({ id: edit.id, code, name, sortOrder: edit.sortOrder ?? 99, active: edit.active !== false }).then((ok) => { if (ok) setEdit(null); });
           }}
         />
       ) : null}
+      <ErrorBanner message={dupError} />
       {[...items].sort((a, b) => a.sortOrder - b.sortOrder).map((x) => (
         <div key={x.id} className="row" style={{ justifyContent: 'space-between', borderTop: '1px solid var(--color-border)', paddingTop: 8 }}>
           <div className="grow">
@@ -210,7 +217,7 @@ function ManagedList<T extends { id: string; code: string; name: ConfigText; sor
             <div className="card__meta">{[x.name.en, x.name.ar, x.name.ur].filter(Boolean).join(' · ')}</div>
           </div>
           {!x.active ? <FieldStatusPill status="inactive" /> : null}
-          <button type="button" className="btn btn--ghost" onClick={() => setEdit(x)}>{t('common.edit', 'Edit')}</button>
+          <button type="button" className="btn btn--ghost" onClick={() => { setEdit(x); setDupError(null); }}>{t('common.edit', 'Edit')}</button>
           <button type="button" className="btn btn--ghost" onClick={() => void onSave({ ...x, active: !x.active })}>
             {x.active ? t('users.deactivate', 'Deactivate') : t('users.activate', 'Activate')}
           </button>

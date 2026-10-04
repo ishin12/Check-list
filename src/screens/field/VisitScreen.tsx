@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
@@ -68,6 +68,10 @@ export function VisitScreen() {
 
   const [editCrew, setEditCrew] = useState(false);
   const [editWorkType, setEditWorkType] = useState(false);
+  // Workers ticked in the crew editor but not added yet (UAT v2.2 D4).
+  const [pendingCrew, setPendingCrew] = useState(0);
+  const [crewWarn, setCrewWarn] = useState(false);
+  const onPendingCrew = useCallback((n: number) => { setPendingCrew(n); if (n === 0) setCrewWarn(false); }, []);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -75,8 +79,9 @@ export function VisitScreen() {
 
   useEffect(() => { if (data?.visit) setNotes(data.visit.notes ?? ''); }, [data?.visit]);
   useEffect(() => {
-    if (data?.visit.status === 'planned') navigate(`/visits/start?visit=${data.visit.id}`, { replace: true });
-  }, [data?.visit, navigate]);
+    // Finance only views a planned visit; people who can start it go to Start visit (UAT v2.2 F3).
+    if (data?.visit.status === 'planned' && (isManager || user?.role === 'supervisor' || user?.role === 'worker')) navigate(`/visits/start?visit=${data.visit.id}`, { replace: true });
+  }, [data?.visit, navigate, isManager, user?.role]);
 
   const visit = data?.visit;
   const project = fd.project(visit?.projectId);
@@ -184,7 +189,10 @@ export function VisitScreen() {
         <section className="stack">
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <span className="section-title">{t('fo.visit.crewDays', 'Crew · days: {{days}}', { days: data.crew.reduce((s, a) => s + a.duration, 0) })}</span>
-            {editable && !data.monthClosed ? <button type="button" className="btn btn--ghost" onClick={() => setEditCrew((x) => !x)}>{editCrew ? t('common.done', 'Done') : t('fo.visit.editCrew', 'Edit crew')}</button> : null}
+            {editable && !data.monthClosed ? <button type="button" className="btn btn--ghost" onClick={() => {
+              if (editCrew && pendingCrew > 0) { setCrewWarn(true); return; }
+              setCrewWarn(false); setEditCrew((x) => !x);
+            }}>{editCrew ? t('common.done', 'Done') : t('fo.visit.editCrew', 'Edit crew')}</button> : null}
           </div>
           {data.crew.length === 0 ? <div className="banner banner--info">{t('fo.visit.noCrew', 'No crew recorded yet.')}</div> : null}
           {editable && data.monthClosed ? (
@@ -195,8 +203,14 @@ export function VisitScreen() {
             </div>
           ) : null}
           {editCrew ? (
-            <CrewEditor visitId={visit.id} projectId={visit.projectId} workDate={visit.visitDate}
-              supervisorId={isManager ? visit.supervisorId : user!.id} crew={data.crew} onChanged={reload} />
+            <>
+              {crewWarn && pendingCrew > 0 ? (
+                <div className="banner banner--warn">{t('fo.crew.notAdded', 'You ticked {{count}} worker(s) but did not add them. Tap “Add” below, or untick them.', { count: pendingCrew })}</div>
+              ) : null}
+              <CrewEditor visitId={visit.id} projectId={visit.projectId} workDate={visit.visitDate}
+                supervisorId={isManager ? visit.supervisorId : user!.id} crew={data.crew} onChanged={reload}
+                onPending={onPendingCrew} />
+            </>
           ) : (
             <div className="chips">
               {[...data.crew].sort((a, b) => names.employee(a.employeeId).localeCompare(names.employee(b.employeeId))).map((a) => <span key={a.id} className="chip">{names.employee(a.employeeId)} · {a.duration === 1 ? t('fo.crew.full', 'Full') : t('fo.crew.half', 'Half')}</span>)}
@@ -290,13 +304,16 @@ export function VisitScreen() {
 }
 
 /** Add workers, change full/half, or remove (void) a worker from the visit. */
-function CrewEditor({ visitId, projectId, workDate, supervisorId, crew, onChanged }: {
+function CrewEditor({ visitId, projectId, workDate, supervisorId, crew, onChanged, onPending }: {
   visitId: string; projectId: string; workDate: string; supervisorId: string; crew: LaborAllocation[]; onChanged: () => Promise<void>;
+  onPending: (count: number) => void;
 }) {
   const { t } = useTranslation();
   const fd = useFieldData();
   const names = useNames();
   const [adding, setAdding] = useState<CrewSelection>(new Map());
+  useEffect(() => { onPending(adding.size); }, [adding.size, onPending]);
+  useEffect(() => () => onPending(0), [onPending]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const loads = useAsync(async () => {

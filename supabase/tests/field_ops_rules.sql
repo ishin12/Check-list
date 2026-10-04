@@ -669,6 +669,12 @@ select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
 insert into public.work_types (code, name, sort_order) values ('landscaping', '{"en":"Landscaping","ar":"تنسيق"}', 9);
 select pg_temp.ok('v2.2 a manager adds a work type without code changes',
   exists (select 1 from public.work_types where code = 'landscaping'));
+select pg_temp.expect_fail('v2.2 a duplicate work type name is refused', $$
+  insert into public.work_types (code, name) values ('landscaping2', '{"en":"landscaping ","ar":"تنسيق ٢"}') $$, 'work_types_name_en_unique');
+select pg_temp.expect_fail('v2.2 a work type needs English and Arabic names', $$
+  insert into public.work_types (code, name) values ('noar', '{"en":"No Arabic"}') $$, 'work_types_names');
+select pg_temp.expect_fail('v2.2 a duplicate operational target name is refused', $$
+  insert into public.operational_targets (code, name) values ('wh2', '{"en":"Store","ar":"المستودع"}') $$, 'operational_targets_name_ar_unique');
 select pg_temp.expect_fail('v2.2 work types are switched off, never deleted', $$
   delete from public.work_types where code = 'landscaping' $$, 'BR-014');
 update public.operational_targets set active = false where code = 'training';

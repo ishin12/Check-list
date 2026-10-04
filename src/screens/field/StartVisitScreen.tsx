@@ -8,9 +8,9 @@ import { SearchBox, matches } from '@/components/field/SearchBox';
 import { WorkTypePicker } from '@/components/field/WorkTypePicker';
 import { useFieldData } from '@/app/providers/FieldDataContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
-import { dayLoads, getVisit, listLabor, listTasks, listVisits } from '@/services/data/fieldOps';
+import { dayLoads, getVisit, listLabor, listMonthCloses, listTasks, listVisits } from '@/services/data/fieldOps';
 import { recordTargetDay, startVisit } from '@/services/data/visitFlow';
-import { previousCrew } from '@/domain/labor/allocation';
+import { isMonthClosed, previousCrew } from '@/domain/labor/allocation';
 import { configText } from '@/lib/configText';
 import { addDays, formatDate, localToday } from '@/lib/dates';
 import { friendlyError } from '@/lib/ruleErrors';
@@ -36,7 +36,10 @@ export function StartVisitScreen() {
 
   const [projectId, setProjectId] = useState<string | null>(params.get('project'));
   const [targetId, setTargetId] = useState<string | null>(params.get('target'));
-  const [workTypeId, setWorkTypeId] = useState('');
+  const [workTypeId, setWorkTypeIdRaw] = useState('');
+  // True while the work type is the suggestion from the last visit, not a choice (UAT v2.2 D1).
+  const [suggested, setSuggested] = useState(false);
+  const setWorkTypeId = (id: string) => { setWorkTypeIdRaw(id); setSuggested(false); };
   const [done, setDone] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [date, setDate] = useState(localToday());
@@ -75,10 +78,17 @@ export function StartVisitScreen() {
   useEffect(() => {
     if (workTypeId || !ctx.data) return;
     const last = ctx.data.visits.find((v) => v.workTypeId && fd.workType(v.workTypeId)?.active);
-    if (last?.workTypeId) setWorkTypeId(last.workTypeId);
+    if (last?.workTypeId) { setWorkTypeIdRaw(last.workTypeId); setSuggested(true); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx.data, workTypeId, fd]);
 
   const target = fd.target(targetId ?? undefined);
+  // Say at once when the date is in a closed month, not after the crew is picked (UAT v2.2 F2).
+  const closes = useAsync(listMonthCloses, []);
+  const closedMonth = isMonthClosed(date, closes.data ?? []);
+  const closedBanner = closedMonth
+    ? <div className="banner banner--error">{t('fo.start.monthClosed', 'This month is closed. Days in it can no longer be recorded here — only finance can correct them, with a reason.')}</div>
+    : null;
   // From home's "work without a project": bring the targets into view.
   const showTargets = params.get('show') === 'targets';
   useEffect(() => {
@@ -161,7 +171,9 @@ export function StartVisitScreen() {
           <div className="field">
             <label className="field__label" htmlFor="target-date">{t('fo.rep.day', 'Date')}</label>
             <input id="target-date" className="input" type="date" value={date} max={localToday()} onChange={(e) => { setDate(e.target.value); setCrew(new Map()); setDone(null); }} />
+            {date > localToday() ? <div className="hint" style={{ color: 'var(--color-danger)' }}>{t('err.futureDay', 'Days cannot be recorded in advance. Choose today or an earlier date.')}</div> : null}
           </div>
+          {closedBanner}
           <WorkTypePicker workTypes={fd.workTypes} value={workTypeId} onChange={setWorkTypeId} />
           <div className="section-title">{t('fo.start.targetCrew', 'Workers')}</div>
           <ErrorBanner message={targetLoads.error} />
@@ -176,7 +188,7 @@ export function StartVisitScreen() {
           <ErrorBanner message={error} />
         </main>
         <div className="action-bar">
-          <button type="button" className="btn btn--primary btn--lg btn--block" disabled={saving || crew.size === 0 || !workTypeId || date > localToday()} onClick={() => void saveTargetDay()}>
+          <button type="button" className="btn btn--primary btn--lg btn--block" disabled={saving || crew.size === 0 || !workTypeId || date > localToday() || closedMonth} onClick={() => void saveTargetDay()}>
             {saving ? t('common.saving', 'Saving…')
               : crew.size === 0 ? t('fo.start.pickWorkers', 'Select the workers')
               : !workTypeId ? t('fo.start.pickWorkType', 'Choose the work type')
@@ -188,12 +200,30 @@ export function StartVisitScreen() {
   }
 
   if (!project) {
+    const targetsBlock = (
+      <>
+        {/* A day with no project goes on an operational target, never on a made-up project (v2.2). */}
+        <div className="section-title" id="no-project">{t('fo.start.noProjectTitle', 'Work without a project')}</div>
+        <div className="card__meta">{t('fo.start.noProjectHint', 'Warehouse, office, training, leave or absence: record the workers here — no project is created.')}</div>
+        <div className="chips">
+          {fd.targets.filter((o) => o.active).map((o) => (
+            <button key={o.id} type="button" className="chip" onClick={() => { setTargetId(o.id); setCrew(new Map()); setWorkTypeId(''); setDone(null); }}>
+              {configText(o.name, language)}
+            </button>
+          ))}
+        </div>
+      </>
+    );
     return (
       <AppShell>
-        <AppHeader title={t('fo.start.pickProject', 'Choose project')} showBack />
+        <AppHeader title={showTargets ? t('fo.start.targetTitle', 'Work without a project') : t('fo.start.pickProject', 'Choose project')} showBack />
         <main className="app-main">
+          {showTargets ? targetsBlock : null}
+          {showTargets ? <div className="section-title">{t('fo.start.orProject', 'Or start a visit on a project')}</div> : null}
           <SearchBox value={query} onChange={setQuery} placeholder={t('fo.start.searchProjects', 'Search projects or clients') ?? ''} />
-          {choices.length === 0 ? <p className="hint">{t('fo.start.noProjects', 'No active projects assigned to you.')}</p> : null}
+          {choices.length === 0 ? (
+            <p className="hint">{query.trim() ? t('fo.projects.none', 'No projects match.') : t('fo.start.noProjects', 'No active projects assigned to you.')}</p>
+          ) : null}
           <div className="stack">
             {choices.map((p) => (
               <button key={p.id} type="button" className="card card--tap" onClick={() => { setProjectId(p.id); setWorkTypeId(''); }}>
@@ -207,16 +237,7 @@ export function StartVisitScreen() {
               </button>
             ))}
           </div>
-          {/* A day with no project goes on an operational target, never on a made-up project (v2.2). */}
-          <div className="section-title" id="no-project">{t('fo.start.noProjectTitle', 'Work without a project')}</div>
-          <div className="card__meta">{t('fo.start.noProjectHint', 'Warehouse, office, training, leave or absence: record the workers here — no project is created.')}</div>
-          <div className="chips">
-            {fd.targets.filter((o) => o.active).map((o) => (
-              <button key={o.id} type="button" className="chip" onClick={() => { setTargetId(o.id); setCrew(new Map()); setWorkTypeId(''); setDone(null); }}>
-                {configText(o.name, language)}
-              </button>
-            ))}
-          </div>
+          {showTargets ? null : targetsBlock}
         </main>
       </AppShell>
     );
@@ -262,8 +283,12 @@ export function StartVisitScreen() {
           <input id="visit-date" className="input" type="date" value={date} max={localToday()} onChange={(e) => { setDate(e.target.value); setCrew(new Map()); }} />
           {date > localToday() ? <div className="hint" style={{ color: 'var(--color-danger)' }}>{t('err.futureVisit', 'A visit cannot be started before its date.')}</div> : null}
         </div>
+        {closedBanner}
 
         <WorkTypePicker workTypes={fd.workTypes} value={workTypeId} onChange={setWorkTypeId} />
+        {suggested && workTypeId ? (
+          <div className="hint" style={{ marginTop: -8 }}>{t('fo.wt.suggested', 'Suggested from the last visit on this project — tap another type if today’s work is different.')}</div>
+        ) : null}
 
         <div className="section-title">{t('fo.start.crew', 'Crew with you today')}</div>
         <ErrorBanner message={ctx.error} />
@@ -280,7 +305,7 @@ export function StartVisitScreen() {
         <ErrorBanner message={error} />
       </main>
       <div className="action-bar">
-        <button type="button" className="btn btn--primary btn--lg btn--block" disabled={saving || crew.size === 0 || !workTypeId || project.status !== 'active' || date > localToday()} onClick={() => void start()}>
+        <button type="button" className="btn btn--primary btn--lg btn--block" disabled={saving || crew.size === 0 || !workTypeId || project.status !== 'active' || date > localToday() || closedMonth} onClick={() => void start()}>
           {saving ? t('common.saving', 'Saving…')
             : crew.size === 0 ? t('fo.start.pickCrew', 'Select the crew to start')
             : !workTypeId ? t('fo.start.pickWorkType', 'Choose the work type')

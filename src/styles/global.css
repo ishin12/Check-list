@@ -1467,7 +1467,7 @@ table.data th, table.data td {
   text-align: start;
   white-space: nowrap;
 }
-table.data th { background: var(--color-surface-2); font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--color-text-muted); position: sticky; top: 0; }
+table.data th { background: var(--color-surface-2); font-weight: 700; font-size: 0.8rem; color: var(--color-text-muted); position: sticky; top: 0; }
 table.data td.num, table.data th.num { text-align: end; font-variant-numeric: tabular-nums; }
 table.data tr:last-child td { border-bottom: none; }
 table.data tfoot td { font-weight: 800; background: var(--color-surface-2); }
@@ -1531,3 +1531,8 @@ a.btn--ghost { color: var(--color-text); }
 /* UAT L5: working-day chips wrap on narrow screens. */
 .weekdays { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .weekdays .chip { padding: 6px 12px; }
+
+/* Desktop: report tabs wrap instead of hiding the last ones (UAT v2.2 D3). */
+@media (min-width: 700px) {
+  .tabs { flex-wrap: wrap; overflow-x: visible; }
+}

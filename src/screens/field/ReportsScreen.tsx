@@ -115,8 +115,10 @@ export function ReportsScreen() {
   const statusText = (s: string) => t(`fo.status.${s}`, s);
   const label = (k: Tab) => tabs.find((x) => x.key === k)!.label;
   const durText = (d: number) => (d === 1 ? t('fo.crew.full', 'Full') : t('fo.crew.half', 'Half'));
+  /** Targets carry ◇ everywhere — screen and Excel — so they are never read as projects. */
+  const placeLabel = (key: string) => `${targetOfPlace(key) !== undefined ? '◇ ' : ''}${names.place(key)}`;
   const placeLink = (key: string) => (targetOfPlace(key) !== undefined || !fd.project(key)
-    ? <span key="p">{targetOfPlace(key) !== undefined ? '◇ ' : ''}{names.place(key)}</span>
+    ? <span key="p">{placeLabel(key)}</span>
     : <Link key="p" to={`/projects/${key}`}>{names.place(key)}</Link>);
 
   function sheets(): Record<Tab, ExportSheet> {
@@ -124,26 +126,26 @@ export function ReportsScreen() {
     return {
       workers: {
         name: label('workers'), header: [H.worker, H.place, H.days],
-        rows: f.workers.flatMap((w) => w.byProject.map((p) => [names.employee(w.employeeId), names.place(p.projectId), p.days])),
+        rows: f.workers.flatMap((w) => w.byProject.map((p) => [names.employee(w.employeeId), placeLabel(p.projectId), p.days])),
         footer: [[H.total, '', f.workers.reduce((s, w) => s + w.days, 0)]],
       },
       projects: {
         name: label('projects'), header: [H.place, H.client, H.worker, H.days],
-        rows: f.projects.flatMap((p) => p.byWorker.map((w) => [names.place(p.projectId), targetOfPlace(p.projectId) !== undefined ? '' : names.client(fd.project(p.projectId)?.clientId), names.employee(w.employeeId), w.days])),
+        rows: f.projects.flatMap((p) => p.byWorker.map((w) => [placeLabel(p.projectId), targetOfPlace(p.projectId) !== undefined ? '' : names.client(fd.project(p.projectId)?.clientId), names.employee(w.employeeId), w.days])),
         footer: [[H.total, '', '', f.projects.reduce((s, p) => s + p.days, 0)]],
       },
       worktypes: {
         name: label('worktypes'), header: [H.workType, H.place, H.days],
-        rows: f.workTypes.flatMap((w) => w.byPlace.map((p) => [names.workType(w.workTypeId || undefined), names.place(p.placeKey), p.days])),
+        rows: f.workTypes.flatMap((w) => w.byPlace.map((p) => [names.workType(w.workTypeId || undefined), placeLabel(p.placeKey), p.days])),
         footer: [[H.total, '', f.workTypes.reduce((s, w) => s + w.days, 0)]],
       },
       lines: {
         name: label('lines'), header: [H.day, H.worker, H.place, H.workType, H.duration, H.days, H.supervisor],
-        rows: f.lines.map((a) => [a.workDate, names.employee(a.employeeId), names.place(placeOf(a)), names.workType(a.workTypeId), durText(a.duration), a.duration, names.person(a.supervisorId)]),
+        rows: f.lines.map((a) => [a.workDate, names.employee(a.employeeId), placeLabel(placeOf(a)), names.workType(a.workTypeId), durText(a.duration), a.duration, names.person(a.supervisorId)]),
         footer: [[H.total, '', '', '', '', f.lines.reduce((s, a) => s + a.duration, 0), '']],
       },
       matrix: {
-        name: label('matrix'), header: [H.worker, ...f.matrix.projectIds.map((id) => names.place(id)), H.total],
+        name: label('matrix'), header: [H.worker, ...f.matrix.projectIds.map((id) => placeLabel(id)), H.total],
         rows: f.matrix.employeeIds.map((e) => [names.employee(e), ...f.matrix.projectIds.map((p) => f.matrix.cells.get(`${e}|${p}`) ?? null), f.matrix.rowTotals.get(e) ?? 0]),
         footer: [[H.total, ...f.matrix.projectIds.map((p) => f.matrix.colTotals.get(p) ?? 0), f.matrix.total]],
       },
@@ -235,7 +237,7 @@ export function ReportsScreen() {
 
         {filtered && tab === 'projects' ? (
           <Table head={[H.place, H.worker, H.days]} numeric={[2]}
-            rows={filtered.projects.flatMap((p) => p.byWorker.map((w, i) => [i === 0 ? <strong key="n">{targetOfPlace(p.projectId) !== undefined ? '◇ ' : ''}{names.place(p.projectId)} · {fmt(p.days)}</strong> : '', names.employee(w.employeeId), fmt(w.days)]))}
+            rows={filtered.projects.flatMap((p) => p.byWorker.map((w, i) => [i === 0 ? <strong key="n">{placeLabel(p.projectId)} · {fmt(p.days)}</strong> : '', names.employee(w.employeeId), fmt(w.days)]))}
             foot={[H.total, '', fmt(filtered.projects.reduce((s, p) => s + p.days, 0))]} empty={t('fo.rep.noLabor', 'No labor recorded in this period.')} />
         ) : null}
 
@@ -252,7 +254,7 @@ export function ReportsScreen() {
         ) : null}
 
         {filtered && tab === 'matrix' ? (
-          <Table head={[H.worker, ...filtered.matrix.projectIds.map((id) => names.place(id)), H.total]}
+          <Table head={[H.worker, ...filtered.matrix.projectIds.map((id) => placeLabel(id)), H.total]}
             numeric={filtered.matrix.projectIds.map((_, i) => i + 1).concat(filtered.matrix.projectIds.length + 1)}
             rows={filtered.matrix.employeeIds.map((e) => [names.employee(e), ...filtered.matrix.projectIds.map((p) => { const v = filtered.matrix.cells.get(`${e}|${p}`); return v ? fmt(v) : ''; }), <strong key="t">{fmt(filtered.matrix.rowTotals.get(e) ?? 0)}</strong>])}
             foot={[H.total, ...filtered.matrix.projectIds.map((p) => fmt(filtered.matrix.colTotals.get(p) ?? 0)), fmt(filtered.matrix.total)]}

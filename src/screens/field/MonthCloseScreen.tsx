@@ -61,6 +61,8 @@ export function MonthCloseScreen() {
       await closes.reload();
     } catch (e) {
       setError(friendlyError(e, t));
+      // Show what changed meanwhile (e.g. a visit started elsewhere) — UAT v2.2 F4.
+      await Promise.all([closes.reload(), detail.reload()]);
     }
   }
 

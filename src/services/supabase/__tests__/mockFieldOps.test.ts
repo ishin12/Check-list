@@ -216,6 +216,13 @@ describe('Master Spec v2.2 in the demo backend (0009)', () => {
     expect((await sb.from('labor_allocations').insert(labor('em-6', 1, { work_type_id: null }))).error?.message).toMatch(/WORK-TYPE/);
   });
 
+  it('list names need English and Arabic and are unique', async () => {
+    await asUser('u-mgr');
+    expect((await sb.from('work_types').insert({ code: 'x', name: { en: 'planting ', ar: 'جديد' } })).error?.message).toMatch(/unique/);
+    expect((await sb.from('operational_targets').insert({ code: 'y', name: { en: 'Yard' } })).error?.message).toMatch(/_names/);
+    expect((await sb.from('operational_targets').insert({ code: 'y', name: { en: 'Yard', ar: 'الساحة' } })).error).toBeNull();
+  });
+
   it('a month with a visit in progress cannot be closed (§36A)', async () => {
     await asUser('u-mgr');
     const month = `${localToday().slice(0, 7)}-01`;

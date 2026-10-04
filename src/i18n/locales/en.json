@@ -450,7 +450,10 @@
     "workTypeOff": "This work type is switched off. Choose another one.",
     "workType": "Choose the work type first.",
     "targetOff": "This operational target is switched off. Choose another one.",
-    "placeRequired": "Choose either a project or an operational target."
+    "placeRequired": "Choose either a project or an operational target.",
+    "futureDay": "Days cannot be recorded in advance. Choose today or an earlier date.",
+    "duplicateName": "An entry with this name already exists. Edit or reactivate it instead.",
+    "namesRequired": "Enter the name in English and Arabic."
   },
   "fo": {
     "add": "Add",
@@ -541,7 +544,9 @@
       "targetSaved_other": "{{count}} workers recorded on {{target}}.",
       "saveTarget": "Record {{count}} worker(s)",
       "saveTarget_one": "Record {{count}} worker",
-      "saveTarget_other": "Record {{count}} workers"
+      "saveTarget_other": "Record {{count}} workers",
+      "orProject": "Or start a visit on a project",
+      "monthClosed": "This month is closed. Days in it can no longer be recorded here — only finance can correct them, with a reason."
     },
     "crew": {
       "copyPrevious": "Copy last crew",
@@ -564,7 +569,10 @@
       "skippedInactive": "inactive",
       "skippedBooked": "already booked today",
       "addSelected_one": "Add {{count}} worker",
-      "addSelected_other": "Add {{count}} workers"
+      "addSelected_other": "Add {{count}} workers",
+      "notAdded": "You ticked {{count}} worker(s) but did not add them. Tap “Add” below, or untick them.",
+      "notAdded_one": "You ticked {{count}} worker but did not add them. Tap “Add” below, or untick them.",
+      "notAdded_other": "You ticked {{count}} workers but did not add them. Tap “Add” below, or untick them."
     },
     "visit": {
       "title": "Visit",
@@ -744,7 +752,8 @@
       "workDaysHint": "Used for the \"not allocated\" list and report.",
       "nameEn": "Name (English)",
       "nameAr": "Name (Arabic)",
-      "nameUr": "Name (Urdu, optional)"
+      "nameUr": "Name (Urdu, optional)",
+      "duplicate": "“{{name}}” already exists. Edit or reactivate it instead."
     },
     "tpl": {
       "scope": "Used for",
@@ -855,7 +864,8 @@
       "label": "Work type",
       "choose": "Choose the work type — it applies to all the workers selected here.",
       "title": "Work types",
-      "hint": "Chosen once per visit and applied to its workers. Shown in labor reports and Excel."
+      "hint": "Chosen once per visit and applied to its workers. Shown in labor reports and Excel.",
+      "suggested": "Suggested from the last visit on this project — tap another type if today’s work is different."
     },
     "ot": {
       "title": "Operational targets",

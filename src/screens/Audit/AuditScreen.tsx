@@ -21,6 +21,9 @@ interface Row {
   actor?: { full_name: string | null; email: string | null }[] | null;
 }
 
+/** Keeps an English name and an Arabic date in their own direction inside one line (UAT v2.2 D4). */
+const iso = (x: string | undefined) => `\u2068${x ?? ''}\u2069`;
+
 const LEGACY_ENTITIES = ['task', 'client_note', 'task_proofs', 'client'];
 const ENTITY_OPTIONS = ['all', 'labor_allocations', 'month_closes', 'projects', 'visits', 'project_tasks', 'employees', 'templates', 'profiles', 'project_types', 'project_stages', 'work_types', 'operational_targets', 'app_settings',
   ...(features.legacyTasks ? LEGACY_ENTITIES : [])];
@@ -94,11 +97,11 @@ export function AuditScreen() {
     const s = (v: unknown) => (typeof v === 'string' ? v : undefined);
     switch (r.entity) {
       case 'projects': return s(row.name) ?? '';
-      case 'employees': return [s(row.full_name), s(row.code)].filter(Boolean).join(' · ');
-      case 'project_tasks': return [names.taskLabel({ templateId: s(row.template_id), templateItemId: s(row.template_item_id), description: s(row.description) ?? '' } as never), names.project(s(row.project_id))].filter(Boolean).join(' · ');
-      case 'visits': return [names.project(s(row.project_id)), day(s(row.visit_date))].filter(Boolean).join(' · ');
+      case 'employees': return [s(row.full_name), s(row.code)].filter(Boolean).map(iso).join(' · ');
+      case 'project_tasks': return [names.taskLabel({ templateId: s(row.template_id), templateItemId: s(row.template_item_id), description: s(row.description) ?? '' } as never), names.project(s(row.project_id))].filter(Boolean).map(iso).join(' · ');
+      case 'visits': return [names.project(s(row.project_id)), day(s(row.visit_date))].filter(Boolean).map(iso).join(' · ');
       case 'labor_allocations': return [names.employee(s(row.employee_id)), day(s(row.work_date)),
-        row.operational_target_id ? names.target(s(row.operational_target_id)) : names.project(s(row.project_id))].filter(Boolean).join(' · ');
+        row.operational_target_id ? names.target(s(row.operational_target_id)) : names.project(s(row.project_id))].filter(Boolean).map(iso).join(' · ');
       case 'month_closes': return s(row.month) ? formatMonth(s(row.month)!, language) : '';
       case 'app_settings': return t('fo.config.workDays', 'Working days');
       case 'templates': return configText(row.title as never, language) || '';
@@ -117,7 +120,8 @@ export function AuditScreen() {
     if (field === 'status') return t(`fo.status.${v}`, v);
     if (field === 'role') return t(`demo.role.${v}`, v);
     if (field === 'work_days') { try { return (JSON.parse(v) as number[]).map((d) => weekdayName(d, language)).join('، '); } catch { return v; } }
-    if (field === 'name') { try { return configText(JSON.parse(v), language) || v; } catch { return v; } }
+    // Every language, so an Arabic or Urdu rename is visible too (UAT v2.2 D5).
+    if (field === 'name') { try { const n = JSON.parse(v); return typeof n === 'object' && n ? [n.en, n.ar, n.ur].filter(Boolean).map(iso).join(' / ') : v; } catch { return v; } }
     if (field === 'title') { try { return configText(JSON.parse(v), language) || v; } catch { return v; } }
     if (field === 'tasks') { try { return t('templates.tasksCount', { count: (JSON.parse(v) as unknown[]).length }); } catch { return v; } }
     if (field === 'duration') return v === '1' ? t('fo.crew.full', 'Full') : v === '0.5' ? t('fo.crew.half', 'Half') : v;
@@ -217,6 +221,10 @@ const CREATED_FIELDS: Record<string, string[]> = {
   labor_allocations: ['duration', 'work_type_id', 'operational_target_id', 'change_reason', 'notes'],
   project_tasks: ['status', 'note'],
   visits: ['status', 'work_type_id'],
+  work_types: ['name', 'sort_order'],
+  operational_targets: ['name', 'sort_order'],
+  project_types: ['name', 'sort_order'],
+  project_stages: ['name', 'sort_order'],
   month_closes: [],
 };
 
