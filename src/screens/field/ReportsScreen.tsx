@@ -8,13 +8,19 @@ import { useFieldData } from '@/app/providers/FieldDataContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { getWorkDays, listLabor, listRecurring, listReports, listTasks, listVisits } from '@/services/data/fieldOps';
 import {
+  laborLines,
   laborMatrix,
   openWorkReport,
+  placeOf,
   projectReport,
+  targetOfPlace,
   unallocatedByWorker,
   unallocatedReport,
   workerReport,
+  workTypeReport,
 } from '@/domain/reports/reports';
+import { PlaceSelect } from '@/components/field/PlaceSelect';
+import { configText } from '@/lib/configText';
 import { exportExcel, type ExportSheet } from '@/services/export/excel';
 import { addMonths, eachDay, formatDate, localToday, monthEnd, monthStart, weekday, riyadhDate } from '@/lib/dates';
 import { friendlyError } from '@/lib/ruleErrors';
@@ -22,7 +28,7 @@ import { useAsync } from '@/lib/useAsync';
 import { useNames, useRoles } from './common';
 import { ErrorBanner } from '@/components/ErrorBanner';
 
-type Tab = 'workers' | 'projects' | 'matrix' | 'unallocated' | 'open' | 'visits';
+type Tab = 'workers' | 'projects' | 'worktypes' | 'matrix' | 'lines' | 'unallocated' | 'open' | 'visits';
 
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
@@ -42,8 +48,11 @@ export function ReportsScreen() {
   const tab = (params.get('tab') as Tab) || 'workers';
   const from = params.get('from') || monthStart(today);
   const to = params.get('to') || monthEnd(today);
-  const projectId = params.get('project') || '';
+  // A project id, or `ot:<id>` for an operational target (v2.2).
+  const place = params.get('project') || '';
+  const isTarget = targetOfPlace(place) !== undefined;
   const employeeId = params.get('worker') || '';
+  const workTypeId = params.get('wt') || '';
   const setPeriod = (monthFirstDay: string) => {
     const n = new URLSearchParams(params); n.set('from', monthFirstDay); n.set('to', monthEnd(monthFirstDay)); setParams(n, { replace: true });
   };
@@ -62,10 +71,12 @@ export function ReportsScreen() {
 
   const filtered = useMemo(() => {
     if (!data) return null;
-    const labor = data.labor.filter((a) => (!projectId || a.projectId === projectId) && (!employeeId || a.employeeId === employeeId));
-    const visits = data.visits.filter((v) => !projectId || v.projectId === projectId);
-    const tasks = data.tasks.filter((x) => !projectId || x.projectId === projectId);
-    const recurring = data.recurring.filter((r) => !projectId || r.projectId === projectId);
+    const labor = data.labor.filter((a) => (!place || placeOf(a) === place) && (!employeeId || a.employeeId === employeeId)
+      && (!workTypeId || a.workTypeId === workTypeId));
+    // Operational targets have no visits or tasks.
+    const visits = data.visits.filter((v) => (!place || (!isTarget && v.projectId === place)) && (!workTypeId || v.workTypeId === workTypeId));
+    const tasks = data.tasks.filter((x) => !place || (!isTarget && x.projectId === place));
+    const recurring = data.recurring.filter((r) => !place || (!isTarget && r.projectId === place));
     const employees = fd.employees.filter((e) => !employeeId || e.id === employeeId);
     const days = eachDay(from, to > today ? today : to);
     const unalloc = unallocatedReport(employees, data.labor, days, data.workDays, weekday, (iso) => riyadhDate(new Date(iso)));
@@ -73,17 +84,21 @@ export function ReportsScreen() {
       labor, visits, tasks, recurring,
       workers: workerReport(labor, from, to),
       projects: projectReport(labor, from, to),
+      workTypes: workTypeReport(labor, from, to),
       matrix: laborMatrix(labor, from, to),
+      lines: laborLines(labor, from, to),
       unalloc,
       unallocSummary: unallocatedByWorker(unalloc),
       open: openWorkReport(tasks, recurring, today),
     };
-  }, [data, projectId, employeeId, from, to, today, fd.employees]);
+  }, [data, place, isTarget, employeeId, workTypeId, from, to, today, fd.employees]);
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'workers', label: t('fo.rep.workers', 'By worker') },
-    { key: 'projects', label: t('fo.rep.projects', 'By project') },
+    { key: 'projects', label: t('fo.rep.projectsTargets', 'By project / target') },
+    { key: 'worktypes', label: t('fo.rep.workTypes', 'By work type') },
     { key: 'matrix', label: t('fo.rep.matrix', 'Monthly distribution') },
+    { key: 'lines', label: t('fo.rep.lines', 'Labor detail') },
     { key: 'unallocated', label: t('fo.rep.unallocated', 'Not allocated') },
     { key: 'open', label: t('fo.rep.open', 'Open & overdue') },
     { key: 'visits', label: t('fo.rep.visits', 'Visits') },
@@ -92,37 +107,53 @@ export function ReportsScreen() {
   const period = `${formatDate(from, language)} – ${formatDate(to, language)}`;
   const H = {
     worker: t('fo.labor.worker', 'Worker'), project: t('fo.report.project', 'Project / site'), days: t('fo.labor.days', 'Days'),
+    place: t('fo.ot.placeLabel', 'Project / operational target'), workType: t('fo.wt.label', 'Work type'), duration: t('fo.rep.duration', 'Full / half'),
     date: t('fo.report.date', 'Visit date'), day: t('fo.rep.day', 'Date'), status: t('fo.rep.status', 'Status'), supervisor: t('fo.report.supervisor', 'Supervisor'),
     client: t('fo.report.client', 'Client'), total: t('fo.total', 'Total'), free: t('fo.rep.freeDays', 'Unallocated days'),
     task: t('fo.rep.task', 'Task'), note: t('fo.rep.note', 'Note'), due: t('fo.pd.nextDue', 'Next due'), report: t('fo.report.number', 'Report no.'),
   };
   const statusText = (s: string) => t(`fo.status.${s}`, s);
+  const label = (k: Tab) => tabs.find((x) => x.key === k)!.label;
+  const durText = (d: number) => (d === 1 ? t('fo.crew.full', 'Full') : t('fo.crew.half', 'Half'));
+  const placeLink = (key: string) => (targetOfPlace(key) !== undefined || !fd.project(key)
+    ? <span key="p">{targetOfPlace(key) !== undefined ? '◇ ' : ''}{names.place(key)}</span>
+    : <Link key="p" to={`/projects/${key}`}>{names.place(key)}</Link>);
 
   function sheets(): Record<Tab, ExportSheet> {
     const f = filtered!;
     return {
       workers: {
-        name: tabs[0].label, header: [H.worker, H.project, H.days],
-        rows: f.workers.flatMap((w) => w.byProject.map((p) => [names.employee(w.employeeId), names.project(p.projectId), p.days])),
+        name: label('workers'), header: [H.worker, H.place, H.days],
+        rows: f.workers.flatMap((w) => w.byProject.map((p) => [names.employee(w.employeeId), names.place(p.projectId), p.days])),
         footer: [[H.total, '', f.workers.reduce((s, w) => s + w.days, 0)]],
       },
       projects: {
-        name: tabs[1].label, header: [H.project, H.client, H.worker, H.days],
-        rows: f.projects.flatMap((p) => p.byWorker.map((w) => [names.project(p.projectId), names.client(fd.project(p.projectId)?.clientId), names.employee(w.employeeId), w.days])),
+        name: label('projects'), header: [H.place, H.client, H.worker, H.days],
+        rows: f.projects.flatMap((p) => p.byWorker.map((w) => [names.place(p.projectId), targetOfPlace(p.projectId) !== undefined ? '' : names.client(fd.project(p.projectId)?.clientId), names.employee(w.employeeId), w.days])),
         footer: [[H.total, '', '', f.projects.reduce((s, p) => s + p.days, 0)]],
       },
+      worktypes: {
+        name: label('worktypes'), header: [H.workType, H.place, H.days],
+        rows: f.workTypes.flatMap((w) => w.byPlace.map((p) => [names.workType(w.workTypeId || undefined), names.place(p.placeKey), p.days])),
+        footer: [[H.total, '', f.workTypes.reduce((s, w) => s + w.days, 0)]],
+      },
+      lines: {
+        name: label('lines'), header: [H.day, H.worker, H.place, H.workType, H.duration, H.days, H.supervisor],
+        rows: f.lines.map((a) => [a.workDate, names.employee(a.employeeId), names.place(placeOf(a)), names.workType(a.workTypeId), durText(a.duration), a.duration, names.person(a.supervisorId)]),
+        footer: [[H.total, '', '', '', '', f.lines.reduce((s, a) => s + a.duration, 0), '']],
+      },
       matrix: {
-        name: tabs[2].label, header: [H.worker, ...f.matrix.projectIds.map((id) => names.project(id)), H.total],
+        name: label('matrix'), header: [H.worker, ...f.matrix.projectIds.map((id) => names.place(id)), H.total],
         rows: f.matrix.employeeIds.map((e) => [names.employee(e), ...f.matrix.projectIds.map((p) => f.matrix.cells.get(`${e}|${p}`) ?? null), f.matrix.rowTotals.get(e) ?? 0]),
         footer: [[H.total, ...f.matrix.projectIds.map((p) => f.matrix.colTotals.get(p) ?? 0), f.matrix.total]],
       },
       unallocated: {
-        name: tabs[3].label, header: [H.day, H.worker, H.free],
+        name: label('unallocated'), header: [H.day, H.worker, H.free],
         rows: f.unalloc.flatMap((d) => d.items.map((x) => [d.date, names.employee(x.employeeId), x.free])),
         footer: [[H.total, '', f.unallocSummary.reduce((s, x) => s + x.freeDays, 0)]],
       },
       open: {
-        name: tabs[4].label, header: [H.project, H.task, H.status, H.note, H.due],
+        name: label('open'), header: [H.project, H.task, H.status, H.note, H.due],
         rows: [
           ...f.open.followUp.map((x) => [names.project(x.projectId), names.taskLabel(x), statusText(x.status), x.note ?? '', '']),
           ...f.open.open.map((x) => [names.project(x.projectId), names.taskLabel(x), statusText(x.status), x.note ?? '', '']),
@@ -130,8 +161,8 @@ export function ReportsScreen() {
         ],
       },
       visits: {
-        name: tabs[5].label, header: [H.date, H.project, H.client, H.supervisor, H.status, H.report],
-        rows: f.visits.map((v) => [v.visitDate, names.project(v.projectId), names.client(fd.project(v.projectId)?.clientId), names.person(v.supervisorId), statusText(v.status),
+        name: label('visits'), header: [H.date, H.project, H.client, H.workType, H.supervisor, H.status, H.report],
+        rows: f.visits.map((v) => [v.visitDate, names.project(v.projectId), names.client(fd.project(v.projectId)?.clientId), names.workType(v.workTypeId), names.person(v.supervisorId), statusText(v.status),
           (() => { const no = data!.reports.find((r) => r.visitId === v.id)?.reportNumber; return no ? `#${String(no).padStart(5, '0')}` : ''; })()]),
       },
     };
@@ -159,10 +190,12 @@ export function ReportsScreen() {
             <input id="r-from" className="input" type="date" value={from} onChange={(e) => set('from', e.target.value)} /></div>
           <div className="field"><label className="field__label" htmlFor="r-to">{t('audit.to', 'To')}</label>
             <input id="r-to" className="input" type="date" value={to} onChange={(e) => set('to', e.target.value)} /></div>
-          <div className="field"><label className="field__label" htmlFor="r-proj">{t('fo.report.project', 'Project / site')}</label>
-            <select id="r-proj" className="input" value={projectId} onChange={(e) => set('project', e.target.value)}>
+          <div className="field"><label className="field__label" htmlFor="r-proj">{H.place}</label>
+            <PlaceSelect id="r-proj" value={place} onChange={(v) => set('project', v)} allLabel={t('fo.all', 'All')} /></div>
+          <div className="field"><label className="field__label" htmlFor="r-wt">{H.workType}</label>
+            <select id="r-wt" className="input" value={workTypeId} onChange={(e) => set('wt', e.target.value)}>
               <option value="">{t('fo.all', 'All')}</option>
-              {[...fd.projects].sort((a, b) => a.name.localeCompare(b.name)).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {fd.workTypes.map((w) => <option key={w.id} value={w.id}>{configText(w.name, language)}</option>)}
             </select></div>
           <div className="field"><label className="field__label" htmlFor="r-emp">{t('fo.labor.worker', 'Worker')}</label>
             <select id="r-emp" className="input" value={employeeId} onChange={(e) => set('worker', e.target.value)}>
@@ -195,19 +228,31 @@ export function ReportsScreen() {
         {loading && !filtered ? <p className="hint">{t('common.loading', 'Loading…')}</p> : null}
 
         {filtered && tab === 'workers' ? (
-          <Table head={[H.worker, H.project, H.days]} numeric={[2]}
-            rows={filtered.workers.flatMap((w) => w.byProject.map((p, i) => [i === 0 ? <strong key="n">{names.employee(w.employeeId)} · {fmt(w.days)}</strong> : '', <Link key="p" to={`/projects/${p.projectId}`}>{names.project(p.projectId)}</Link>, fmt(p.days)]))}
+          <Table head={[H.worker, H.place, H.days]} numeric={[2]}
+            rows={filtered.workers.flatMap((w) => w.byProject.map((p, i) => [i === 0 ? <strong key="n">{names.employee(w.employeeId)} · {fmt(w.days)}</strong> : '', placeLink(p.projectId), fmt(p.days)]))}
             foot={[H.total, '', fmt(filtered.workers.reduce((s, w) => s + w.days, 0))]} empty={t('fo.rep.noLabor', 'No labor recorded in this period.')} />
         ) : null}
 
         {filtered && tab === 'projects' ? (
-          <Table head={[H.project, H.worker, H.days]} numeric={[2]}
-            rows={filtered.projects.flatMap((p) => p.byWorker.map((w, i) => [i === 0 ? <strong key="n">{names.project(p.projectId)} · {fmt(p.days)}</strong> : '', names.employee(w.employeeId), fmt(w.days)]))}
+          <Table head={[H.place, H.worker, H.days]} numeric={[2]}
+            rows={filtered.projects.flatMap((p) => p.byWorker.map((w, i) => [i === 0 ? <strong key="n">{targetOfPlace(p.projectId) !== undefined ? '◇ ' : ''}{names.place(p.projectId)} · {fmt(p.days)}</strong> : '', names.employee(w.employeeId), fmt(w.days)]))}
             foot={[H.total, '', fmt(filtered.projects.reduce((s, p) => s + p.days, 0))]} empty={t('fo.rep.noLabor', 'No labor recorded in this period.')} />
         ) : null}
 
+        {filtered && tab === 'worktypes' ? (
+          <Table head={[H.workType, H.place, H.days]} numeric={[2]}
+            rows={filtered.workTypes.flatMap((w) => w.byPlace.map((p, i) => [i === 0 ? <strong key="n">{names.workType(w.workTypeId || undefined)} · {fmt(w.days)}</strong> : '', placeLink(p.placeKey), fmt(p.days)]))}
+            foot={[H.total, '', fmt(filtered.workTypes.reduce((s, w) => s + w.days, 0))]} empty={t('fo.rep.noLabor', 'No labor recorded in this period.')} />
+        ) : null}
+
+        {filtered && tab === 'lines' ? (
+          <Table head={[H.day, H.worker, H.place, H.workType, H.duration]}
+            rows={filtered.lines.map((a) => [formatDate(a.workDate, language, { day: 'numeric', month: 'short' }), names.employee(a.employeeId), placeLink(placeOf(a)), names.workType(a.workTypeId), durText(a.duration)])}
+            foot={[H.total, '', '', '', fmt(filtered.lines.reduce((s, a) => s + a.duration, 0))]} empty={t('fo.rep.noLabor', 'No labor recorded in this period.')} />
+        ) : null}
+
         {filtered && tab === 'matrix' ? (
-          <Table head={[H.worker, ...filtered.matrix.projectIds.map((id) => names.project(id)), H.total]}
+          <Table head={[H.worker, ...filtered.matrix.projectIds.map((id) => names.place(id)), H.total]}
             numeric={filtered.matrix.projectIds.map((_, i) => i + 1).concat(filtered.matrix.projectIds.length + 1)}
             rows={filtered.matrix.employeeIds.map((e) => [names.employee(e), ...filtered.matrix.projectIds.map((p) => { const v = filtered.matrix.cells.get(`${e}|${p}`); return v ? fmt(v) : ''; }), <strong key="t">{fmt(filtered.matrix.rowTotals.get(e) ?? 0)}</strong>])}
             foot={[H.total, ...filtered.matrix.projectIds.map((p) => fmt(filtered.matrix.colTotals.get(p) ?? 0)), fmt(filtered.matrix.total)]}
@@ -254,10 +299,10 @@ export function ReportsScreen() {
         ) : null}
 
         {filtered && tab === 'visits' ? (
-          <Table head={[H.date, H.project, H.supervisor, H.status, H.report]}
+          <Table head={[H.date, H.project, H.workType, H.supervisor, H.status, H.report]}
             rows={filtered.visits.map((v) => {
               const rep = data!.reports.find((r) => r.visitId === v.id);
-              return [formatDate(v.visitDate, language), <Link key="p" to={`/visits/${v.id}`}>{names.project(v.projectId)}</Link>, names.person(v.supervisorId), <FieldStatusPill key="s" status={v.status} />,
+              return [formatDate(v.visitDate, language), <Link key="p" to={`/visits/${v.id}`}>{names.project(v.projectId)}</Link>, names.workType(v.workTypeId), names.person(v.supervisorId), <FieldStatusPill key="s" status={v.status} />,
                 rep ? <Link key="r" to={`/visits/${v.id}/report`}>#{String(rep.reportNumber).padStart(5, '0')}</Link> : ''];
             })}
             empty={t('fo.pd.noVisits', 'No visits yet.')} />

@@ -26,8 +26,8 @@ done
 EMP=30000000-0000-0000-0000-000000000009
 PRJ=20000000-0000-0000-0000-000000000001
 SUP=00000000-0000-0000-0000-00000000000c
-INSERT="insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
-        values ('2026-10-10', '$EMP', '$PRJ', %s, '$SUP')"
+INSERT="insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, work_type_id)
+        values ('2026-10-10', '$EMP', '$PRJ', %s, '$SUP', (select id from public.work_types where code = 'maintenance'))"
 "${PSQL[@]}" -d "$DB" -c "begin; $(printf "$INSERT" 1.0); select pg_sleep(2); commit;" >/dev/null &
 FIRST=$!
 sleep 0.5

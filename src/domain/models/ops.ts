@@ -137,6 +137,24 @@ export interface ProjectStage {
   active: boolean;
 }
 
+/** Operational classification of a visit / labor day (v2.2 §23, §25). Managed list. */
+export interface WorkType {
+  id: string;
+  code: string;
+  name: ConfigText;
+  sortOrder: number;
+  active: boolean;
+}
+
+/** Where a worker's day goes when it is not a project: warehouse, office, leave… (v2.2 §23). */
+export interface OperationalTarget {
+  id: string;
+  code: string;
+  name: ConfigText;
+  sortOrder: number;
+  active: boolean;
+}
+
 export type ProjectStatus = 'active' | 'on_hold' | 'completed' | 'closed';
 
 export interface Project {
@@ -179,6 +197,8 @@ export interface Visit {
   visitDate: string;
   supervisorId: string;
   status: VisitStatus;
+  /** Chosen once when the visit starts; applied to its crew (v2.2, TC-13). */
+  workTypeId?: string;
   startedAt?: string;
   completedAt?: string;
   notes?: string;
@@ -248,8 +268,11 @@ export interface LaborAllocation {
   /** YYYY-MM-DD */
   workDate: string;
   employeeId: string;
-  projectId: string;
+  /** Exactly one of projectId / operationalTargetId is set (v2.2, no fake projects). */
+  projectId?: string;
+  operationalTargetId?: string;
   visitId?: string;
+  workTypeId?: string;
   duration: LaborDuration;
   supervisorId: string;
   notes?: string;

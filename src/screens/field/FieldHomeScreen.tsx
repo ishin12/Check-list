@@ -64,6 +64,8 @@ export function FieldHomeScreen() {
         </div>
 
         <Link to="/visits/start" className="btn btn--primary btn--lg btn--block">＋ {t('fo.home.startVisit', 'Start visit')}</Link>
+        {/* v2.2: a day with no project is booked on an operational target, not a made-up project. */}
+        <Link to="/visits/start?show=targets" className="btn btn--ghost btn--block">◇ {t('fo.home.noProject', 'Work without a project (warehouse, office, leave…)')}</Link>
 
         <div className="kpis">
           <a href="#today" className="kpi"><div className="kpi__value">{visitsToday.length}</div><div className="kpi__label">{t('fo.home.visitsToday', 'Visits today')}</div></a>

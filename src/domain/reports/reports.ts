@@ -4,7 +4,24 @@
  */
 import type { Employee, LaborAllocation, ProjectRecurringItem, ProjectTask } from '@/domain/models/ops';
 
-type Alloc = Pick<LaborAllocation, 'employeeId' | 'projectId' | 'workDate' | 'duration' | 'voidedAt'>;
+type Alloc = Pick<LaborAllocation, 'employeeId' | 'workDate' | 'duration' | 'voidedAt'>
+  & Partial<Pick<LaborAllocation, 'projectId' | 'operationalTargetId' | 'workTypeId'>>;
+
+/** Prefix of an operational-target key in the report "project / target" columns (v2.2). */
+export const TARGET_KEY = 'ot:';
+
+/**
+ * Where a labor row was spent: the project id, or `ot:<targetId>` for an
+ * operational target (warehouse, office, leave…). Reports group by this key,
+ * so a day split between a project and a target shows both (TC-15).
+ */
+export function placeOf(a: Pick<LaborAllocation, 'projectId' | 'operationalTargetId'>): string {
+  return a.projectId ?? `${TARGET_KEY}${a.operationalTargetId ?? ''}`;
+}
+
+export function targetOfPlace(key: string): string | undefined {
+  return key.startsWith(TARGET_KEY) ? key.slice(TARGET_KEY.length) : undefined;
+}
 
 const live = <A extends Alloc>(list: A[], from: string, to: string) =>
   list.filter((a) => !a.voidedAt && a.workDate >= from && a.workDate <= to);
@@ -14,6 +31,7 @@ const sum = (list: { duration: number }[]) => list.reduce((s, a) => s + Number(a
 export interface WorkerRow {
   employeeId: string;
   days: number;
+  /** projectId is the place key (see placeOf). */
   byProject: { projectId: string; days: number }[];
 }
 
@@ -22,7 +40,7 @@ export function workerReport(allocations: Alloc[], from: string, to: string): Wo
   const rows = new Map<string, Map<string, number>>();
   for (const a of live(allocations, from, to)) {
     const m = rows.get(a.employeeId) ?? new Map<string, number>();
-    m.set(a.projectId, (m.get(a.projectId) ?? 0) + Number(a.duration));
+    m.set(placeOf(a), (m.get(placeOf(a)) ?? 0) + Number(a.duration));
     rows.set(a.employeeId, m);
   }
   return [...rows].map(([employeeId, m]) => ({
@@ -42,9 +60,9 @@ export interface ProjectRow {
 export function projectReport(allocations: Alloc[], from: string, to: string): ProjectRow[] {
   const rows = new Map<string, Map<string, number>>();
   for (const a of live(allocations, from, to)) {
-    const m = rows.get(a.projectId) ?? new Map<string, number>();
+    const m = rows.get(placeOf(a)) ?? new Map<string, number>();
     m.set(a.employeeId, (m.get(a.employeeId) ?? 0) + Number(a.duration));
-    rows.set(a.projectId, m);
+    rows.set(placeOf(a), m);
   }
   return [...rows].map(([projectId, m]) => ({
     projectId,
@@ -71,16 +89,47 @@ export function laborMatrix(allocations: Alloc[], from: string, to: string): Mat
   const colTotals = new Map<string, number>();
   for (const a of rows) {
     const d = Number(a.duration);
-    const k = `${a.employeeId}|${a.projectId}`;
+    const k = `${a.employeeId}|${placeOf(a)}`;
     cells.set(k, (cells.get(k) ?? 0) + d);
     rowTotals.set(a.employeeId, (rowTotals.get(a.employeeId) ?? 0) + d);
-    colTotals.set(a.projectId, (colTotals.get(a.projectId) ?? 0) + d);
+    colTotals.set(placeOf(a), (colTotals.get(placeOf(a)) ?? 0) + d);
   }
   return {
     employeeIds: [...rowTotals.keys()],
     projectIds: [...colTotals.keys()],
     cells, rowTotals, colTotals, total: sum(rows),
   };
+}
+
+export interface WorkTypeRow {
+  /** '' when a row has no work type (only rows recorded before v2.2). */
+  workTypeId: string;
+  days: number;
+  byPlace: { placeKey: string; days: number }[];
+}
+
+/** Days per work type, split by project / operational target (v2.2 §20, §36A). */
+export function workTypeReport(allocations: Alloc[], from: string, to: string): WorkTypeRow[] {
+  const rows = new Map<string, Map<string, number>>();
+  for (const a of live(allocations, from, to)) {
+    const k = a.workTypeId ?? '';
+    const m = rows.get(k) ?? new Map<string, number>();
+    m.set(placeOf(a), (m.get(placeOf(a)) ?? 0) + Number(a.duration));
+    rows.set(k, m);
+  }
+  return [...rows].map(([workTypeId, m]) => ({
+    workTypeId,
+    days: [...m.values()].reduce((s, d) => s + d, 0),
+    byPlace: [...m].map(([placeKey, days]) => ({ placeKey, days })).sort((x, y) => y.days - x.days),
+  })).sort((x, y) => y.days - x.days);
+}
+
+/**
+ * The labor output finance takes out of the system (§36A): worker + date +
+ * project / operational target + work type + full / half day, one line per row.
+ */
+export function laborLines<A extends Alloc>(allocations: A[], from: string, to: string): A[] {
+  return live(allocations, from, to).sort((x, y) => x.workDate.localeCompare(y.workDate) || x.employeeId.localeCompare(y.employeeId));
 }
 
 export interface UnallocatedDay {

@@ -28,8 +28,8 @@ import {
 
 const DB_NAME = 'checklist-demo';
 // Re-seed when this changes (bump on each schema-affecting change).
-const SEED_VERSION = 'v13';
-const DB_VERSION = 2; // 2: field-ops tables (0006)
+const SEED_VERSION = 'v14';
+const DB_VERSION = 3; // 2: field-ops tables (0006); 3: work types + operational targets (0009)
 
 const TABLES = [
   'profiles',
@@ -74,6 +74,8 @@ const state: Record<Table, Row[]> = {
   month_closes: [],
   labor_allocations: [],
   visit_reports: [],
+  work_types: [],
+  operational_targets: [],
 };
 const blobs: Map<string, Blob> = new Map();
 

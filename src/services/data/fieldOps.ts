@@ -9,6 +9,7 @@ import type {
   Employee,
   LaborAllocation,
   MonthClose,
+  OperationalTarget,
   Project,
   ProjectRecurringItem,
   ProjectStage,
@@ -17,6 +18,7 @@ import type {
   TaskPhoto,
   Visit,
   VisitReport,
+  WorkType,
 } from '@/domain/models/ops';
 import type { Template } from '@/domain/models/types';
 
@@ -68,7 +70,7 @@ export const toEmployee = (r: Row): Employee => ({
 
 export const toVisit = (r: Row): Visit => ({
   id: r.id, projectId: r.project_id, visitDate: String(r.visit_date).slice(0, 10), supervisorId: r.supervisor_id,
-  status: r.status, startedAt: u(r.started_at), completedAt: u(r.completed_at), notes: u(r.notes),
+  status: r.status, workTypeId: u(r.work_type_id), startedAt: u(r.started_at), completedAt: u(r.completed_at), notes: u(r.notes),
 });
 
 export const toTask = (r: Row): ProjectTask => ({
@@ -91,9 +93,17 @@ export const toPhoto = (r: Row): TaskPhoto => ({
 });
 
 export const toLabor = (r: Row): LaborAllocation => ({
-  id: r.id, workDate: String(r.work_date).slice(0, 10), employeeId: r.employee_id, projectId: r.project_id,
-  visitId: u(r.visit_id), duration: Number(r.duration) as LaborAllocation['duration'], supervisorId: r.supervisor_id,
+  id: r.id, workDate: String(r.work_date).slice(0, 10), employeeId: r.employee_id, projectId: u(r.project_id),
+  operationalTargetId: u(r.operational_target_id), workTypeId: u(r.work_type_id), visitId: u(r.visit_id), duration: Number(r.duration) as LaborAllocation['duration'], supervisorId: r.supervisor_id,
   notes: u(r.notes), changeReason: u(r.change_reason), voidedAt: u(r.voided_at), voidReason: u(r.void_reason),
+});
+
+export const toWorkType = (r: Row): WorkType => ({
+  id: r.id, code: r.code, name: r.name ?? {}, sortOrder: r.sort_order ?? 0, active: r.active !== false,
+});
+
+export const toTarget = (r: Row): OperationalTarget => ({
+  id: r.id, code: r.code, name: r.name ?? {}, sortOrder: r.sort_order ?? 0, active: r.active !== false,
 });
 
 export const toMonthClose = (r: Row): MonthClose => ({
@@ -134,6 +144,30 @@ export async function saveStage(s: { id?: string; projectTypeId: string; code: s
   const row = { project_type_id: s.projectTypeId, code: s.code, name: s.name, sort_order: s.sortOrder, active: s.active };
   if (s.id) changed(await sb().from('project_stages').update(row).eq('id', s.id).select('id'));
   else check(await sb().from('project_stages').insert(row));
+}
+
+/** Work types (v2.2): managed list, switched off rather than deleted. */
+export async function listWorkTypes(): Promise<WorkType[]> {
+  const rows = check(await sb().from('work_types').select('*').order('sort_order'));
+  return (rows as Row[]).map(toWorkType);
+}
+
+export async function saveWorkType(w: { id?: string; code: string; name: ConfigText; sortOrder: number; active: boolean }): Promise<void> {
+  const row = { code: w.code, name: w.name, sort_order: w.sortOrder, active: w.active };
+  if (w.id) changed(await sb().from('work_types').update(row).eq('id', w.id).select('id'));
+  else check(await sb().from('work_types').insert(row));
+}
+
+/** Operational targets (v2.2): warehouse, office, leave… for days with no project. */
+export async function listTargets(): Promise<OperationalTarget[]> {
+  const rows = check(await sb().from('operational_targets').select('*').order('sort_order'));
+  return (rows as Row[]).map(toTarget);
+}
+
+export async function saveTarget(o: { id?: string; code: string; name: ConfigText; sortOrder: number; active: boolean }): Promise<void> {
+  const row = { code: o.code, name: o.name, sort_order: o.sortOrder, active: o.active };
+  if (o.id) changed(await sb().from('operational_targets').update(row).eq('id', o.id).select('id'));
+  else check(await sb().from('operational_targets').insert(row));
 }
 
 export async function listFieldTemplates(): Promise<(Template & { active: boolean })[]> {
@@ -240,15 +274,17 @@ export async function getVisit(id: string): Promise<Visit | null> {
   return row ? toVisit(row as Row) : null;
 }
 
-export async function createVisit(v: { projectId: string; visitDate: string; supervisorId: string; notes?: string }): Promise<Visit> {
+export async function createVisit(v: { projectId: string; visitDate: string; supervisorId: string; notes?: string; workTypeId?: string }): Promise<Visit> {
   const row = check(await sb().from('visits').insert({
     project_id: v.projectId, visit_date: v.visitDate, supervisor_id: v.supervisorId, notes: v.notes || null,
+    ...(v.workTypeId ? { work_type_id: v.workTypeId } : {}),
   }).select().single());
   return toVisit(row as Row);
 }
 
-export async function updateVisit(id: string, patch: { status?: Visit['status']; supervisorId?: string; notes?: string; visitDate?: string }): Promise<void> {
+export async function updateVisit(id: string, patch: { status?: Visit['status']; supervisorId?: string; notes?: string; visitDate?: string; workTypeId?: string }): Promise<void> {
   const row: Row = {};
+  if (patch.workTypeId) row.work_type_id = patch.workTypeId;
   if (patch.status) row.status = patch.status;
   if (patch.supervisorId) row.supervisor_id = patch.supervisorId;
   if (patch.notes !== undefined) row.notes = patch.notes || null;
@@ -404,8 +440,10 @@ export async function voidPhoto(id: string, reason: string): Promise<void> {
 // Labor
 // ---------------------------------------------------------------------------
 
-export async function listLabor(opts: { from?: string; to?: string; projectId?: string; visitId?: string; employeeId?: string; includeVoided?: boolean } = {}): Promise<LaborAllocation[]> {
+export async function listLabor(opts: { from?: string; to?: string; projectId?: string; targetId?: string; visitId?: string; employeeId?: string; workTypeId?: string; includeVoided?: boolean } = {}): Promise<LaborAllocation[]> {
   let q = sb().from('labor_allocations').select('*');
+  if (opts.targetId) q = q.eq('operational_target_id', opts.targetId);
+  if (opts.workTypeId) q = q.eq('work_type_id', opts.workTypeId);
   if (opts.from) q = q.gte('work_date', opts.from);
   if (opts.to) q = q.lte('work_date', opts.to);
   if (opts.projectId) q = q.eq('project_id', opts.projectId);
@@ -425,17 +463,22 @@ export async function dayLoads(from: string, to: string): Promise<Map<string, nu
 }
 
 /** One statement → all rows or none (BR-004, TC-03). */
-export async function insertCrew(rows: (Pick<LaborAllocation, 'workDate' | 'employeeId' | 'projectId' | 'visitId' | 'duration' | 'supervisorId'> & { changeReason?: string })[]): Promise<void> {
+export async function insertCrew(rows: (Pick<LaborAllocation, 'workDate' | 'employeeId' | 'duration' | 'supervisorId'>
+  & Partial<Pick<LaborAllocation, 'projectId' | 'operationalTargetId' | 'visitId' | 'workTypeId'>> & { changeReason?: string })[]): Promise<void> {
   if (rows.length === 0) return;
   check(await sb().from('labor_allocations').insert(rows.map((r) => ({
-    work_date: r.workDate, employee_id: r.employeeId, project_id: r.projectId, visit_id: r.visitId ?? null,
+    work_date: r.workDate, employee_id: r.employeeId, project_id: r.projectId ?? null,
+    operational_target_id: r.operationalTargetId ?? null, visit_id: r.visitId ?? null,
+    // A visit's crew takes the visit's work type in the database (TC-13).
+    ...(r.workTypeId ? { work_type_id: r.workTypeId } : {}),
     duration: r.duration, supervisor_id: r.supervisorId,
     ...(r.changeReason ? { change_reason: r.changeReason } : {}),
   }))));
 }
 
-export async function updateLabor(id: string, patch: { duration?: 0.5 | 1; notes?: string; changeReason?: string; workDate?: string; projectId?: string; employeeId?: string }): Promise<void> {
+export async function updateLabor(id: string, patch: { duration?: 0.5 | 1; notes?: string; changeReason?: string; workDate?: string; projectId?: string; employeeId?: string; workTypeId?: string }): Promise<void> {
   const row: Row = {};
+  if (patch.workTypeId) row.work_type_id = patch.workTypeId;
   if (patch.duration !== undefined) row.duration = patch.duration;
   if (patch.notes !== undefined) row.notes = patch.notes || null;
   if (patch.changeReason !== undefined) row.change_reason = patch.changeReason || null;

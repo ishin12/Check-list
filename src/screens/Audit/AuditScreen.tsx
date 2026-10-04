@@ -22,7 +22,7 @@ interface Row {
 }
 
 const LEGACY_ENTITIES = ['task', 'client_note', 'task_proofs', 'client'];
-const ENTITY_OPTIONS = ['all', 'labor_allocations', 'month_closes', 'projects', 'visits', 'project_tasks', 'employees', 'templates', 'profiles', 'project_types', 'project_stages', 'app_settings',
+const ENTITY_OPTIONS = ['all', 'labor_allocations', 'month_closes', 'projects', 'visits', 'project_tasks', 'employees', 'templates', 'profiles', 'project_types', 'project_stages', 'work_types', 'operational_targets', 'app_settings',
   ...(features.legacyTasks ? LEGACY_ENTITIES : [])];
 
 export function AuditScreen() {
@@ -97,13 +97,16 @@ export function AuditScreen() {
       case 'employees': return [s(row.full_name), s(row.code)].filter(Boolean).join(' · ');
       case 'project_tasks': return [names.taskLabel({ templateId: s(row.template_id), templateItemId: s(row.template_item_id), description: s(row.description) ?? '' } as never), names.project(s(row.project_id))].filter(Boolean).join(' · ');
       case 'visits': return [names.project(s(row.project_id)), day(s(row.visit_date))].filter(Boolean).join(' · ');
-      case 'labor_allocations': return [names.employee(s(row.employee_id)), day(s(row.work_date)), names.project(s(row.project_id))].filter(Boolean).join(' · ');
+      case 'labor_allocations': return [names.employee(s(row.employee_id)), day(s(row.work_date)),
+        row.operational_target_id ? names.target(s(row.operational_target_id)) : names.project(s(row.project_id))].filter(Boolean).join(' · ');
       case 'month_closes': return s(row.month) ? formatMonth(s(row.month)!, language) : '';
       case 'app_settings': return t('fo.config.workDays', 'Working days');
       case 'templates': return configText(row.title as never, language) || '';
       case 'profiles': return s(row.full_name) ?? s(row.email) ?? '';
       case 'project_types':
-      case 'project_stages': return configText(row.name as never, language) || s(row.code) || '';
+      case 'project_stages':
+      case 'work_types':
+      case 'operational_targets': return configText(row.name as never, language) || s(row.code) || '';
       default: return '';
     }
   }
@@ -124,6 +127,8 @@ export function AuditScreen() {
     if (field === 'project_id') return names.project(v);
     if (field === 'supervisor_id' || field === 'voided_by') return names.person(v);
     if (field === 'stage_id') return configText(fd.stage(v)?.name, language) || v;
+    if (field === 'work_type_id') return names.workType(v);
+    if (field === 'operational_target_id') return names.target(v);
     if (field.endsWith('_at') && /^\d{4}-\d{2}-\d{2}T/.test(v)) return formatDateTime(v, language);
     if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return formatDate(v, language);
     return v;
@@ -209,9 +214,9 @@ const NOISE = new Set(['updated_at', 'updated_by', 'created_at', 'created_by', '
 
 /** Fields worth showing for a newly created record (UAT D-2). */
 const CREATED_FIELDS: Record<string, string[]> = {
-  labor_allocations: ['duration', 'change_reason', 'notes'],
+  labor_allocations: ['duration', 'work_type_id', 'operational_target_id', 'change_reason', 'notes'],
   project_tasks: ['status', 'note'],
-  visits: ['status'],
+  visits: ['status', 'work_type_id'],
   month_closes: [],
 };
 

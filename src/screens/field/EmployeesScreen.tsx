@@ -65,7 +65,7 @@ export function EmployeesScreen() {
       if (e.status === 'active' && !confirmed) {
         const today = localToday();
         const rows = await listLabor({ employeeId: e.id, from: today, to: today });
-        if (rows.length) { setConfirmOff({ e, projects: rows.map((r) => names.project(r.projectId)) }); return; }
+        if (rows.length) { setConfirmOff({ e, projects: rows.map((r) => (r.operationalTargetId ? names.target(r.operationalTargetId) : names.project(r.projectId))) }); return; }
       }
       setConfirmOff(null);
       await saveEmployee({ ...e, status: e.status === 'active' ? 'inactive' : 'active' });

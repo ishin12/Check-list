@@ -256,7 +256,9 @@
       "project_types": "Project type",
       "project_stages": "Stage",
       "profiles": "Team member",
-      "app_settings": "Setup"
+      "app_settings": "Setup",
+      "work_types": "Work type",
+      "operational_targets": "Operational target"
     },
     "field": {
       "duration": "Days",
@@ -298,7 +300,9 @@
       "finance_access": "Finance access",
       "sort_order": "Order",
       "uses_stages": "Has stages",
-      "work_days": "Working days"
+      "work_days": "Working days",
+      "work_type_id": "Work type",
+      "operational_target_id": "Operational target"
     }
   },
   "recurrence": {
@@ -441,7 +445,12 @@
     "stageGate": "The current stage checklist is not finished. Complete its required items on a visit first.",
     "projectOpenVisit": "This project has a visit in progress. Complete it first.",
     "futureVisit": "A visit cannot be started before its date.",
-    "self": "You cannot deactivate your own account or change your own role. Ask another manager."
+    "self": "You cannot deactivate your own account or change your own role. Ask another manager.",
+    "monthOpenVisits": "A visit in this month is still in progress. Complete it before closing the month.",
+    "workTypeOff": "This work type is switched off. Choose another one.",
+    "workType": "Choose the work type first.",
+    "targetOff": "This operational target is switched off. Choose another one.",
+    "placeRequired": "Choose either a project or an operational target."
   },
   "fo": {
     "add": "Add",
@@ -497,7 +506,8 @@
       "unallocatedTitle": "Workers not allocated today",
       "dayOff": "Today is not a working day.",
       "allAllocated": "Everyone is allocated.",
-      "legacy": "Open the older task list"
+      "legacy": "Open the older task list",
+      "noProject": "Work without a project (warehouse, office, leave…)"
     },
     "start": {
       "pickProject": "Choose project",
@@ -518,7 +528,20 @@
       "openItems_one": "{{count}} open item, {{follow}} follow-up",
       "openItems_other": "{{count}} open items, {{follow}} follow-up",
       "go_one": "Start visit with {{count}} worker",
-      "go_other": "Start visit with {{count}} workers"
+      "go_other": "Start visit with {{count}} workers",
+      "targetTitle": "Work without a project",
+      "targetHint": "Operational target — the days are recorded here, with no project, checklist or client report.",
+      "targetCrew": "Workers",
+      "pickWorkers": "Select the workers",
+      "pickWorkType": "Choose the work type",
+      "noProjectTitle": "Work without a project",
+      "noProjectHint": "Warehouse, office, training, leave or absence: record the workers here — no project is created.",
+      "targetSaved": "{{count}} worker(s) recorded on {{target}}.",
+      "targetSaved_one": "{{count}} worker recorded on {{target}}.",
+      "targetSaved_other": "{{count}} workers recorded on {{target}}.",
+      "saveTarget": "Record {{count}} worker(s)",
+      "saveTarget_one": "Record {{count}} worker",
+      "saveTarget_other": "Record {{count}} workers"
     },
     "crew": {
       "copyPrevious": "Copy last crew",
@@ -756,7 +779,11 @@
       "note": "Note",
       "day": "Date",
       "swipe": "Swipe sideways to see every column.",
-      "notYetAdded": "{{name}} was added on {{date}}, after this period."
+      "notYetAdded": "{{name}} was added on {{date}}, after this period.",
+      "projectsTargets": "By project / target",
+      "workTypes": "By work type",
+      "lines": "Labor detail",
+      "duration": "Full / half"
     },
     "labor": {
       "title": "Labor",
@@ -801,7 +828,17 @@
       "unclosedWarnTitle_one": "{{count}} visit in this month is not completed",
       "unclosedWarnTitle_other": "{{count}} visits in this month are not completed",
       "confirmUnclosed_one": "{{count}} visit in this month is still not completed.",
-      "confirmUnclosed_other": "{{count}} visits in this month are still not completed."
+      "confirmUnclosed_other": "{{count}} visits in this month are still not completed.",
+      "places": "Projects & targets",
+      "inProgressVisits": "Visits in progress",
+      "exportV22": "Export labor days by project / target and work type to Excel",
+      "inProgressBody": "The month cannot be closed until they are completed. Their supervisor or a manager completes them first.",
+      "inProgressTitle": "{{count}} visit(s) in this month are still in progress",
+      "inProgressTitle_one": "{{count}} visit in this month is still in progress",
+      "inProgressTitle_other": "{{count}} visits in this month are still in progress",
+      "notStarted": "{{count}} planned visit(s) in this month were not started. They have no labor and do not block the close.",
+      "notStarted_one": "{{count}} planned visit in this month was not started. It has no labor and does not block the close.",
+      "notStarted_other": "{{count}} planned visits in this month were not started. They have no labor and do not block the close."
     },
     "stage": {
       "title": "Stage {{n}} of {{total}}",
@@ -813,6 +850,17 @@
       "confirmTitle": "Move to the next stage?",
       "confirmBody": "The project moves to \"{{stage}}\". Its checklist will appear on the next visit.",
       "editHint": "To move forward, use \"Move to next stage\" on the project page once the stage checklist is done."
+    },
+    "wt": {
+      "label": "Work type",
+      "choose": "Choose the work type — it applies to all the workers selected here.",
+      "title": "Work types",
+      "hint": "Chosen once per visit and applied to its workers. Shown in labor reports and Excel."
+    },
+    "ot": {
+      "title": "Operational targets",
+      "hint": "Where a worker’s day goes when it is not a project (warehouse, office, leave…). No made-up projects.",
+      "placeLabel": "Project / operational target"
     }
   }
 }

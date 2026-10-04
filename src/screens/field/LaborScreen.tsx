@@ -7,6 +7,9 @@ import { useFieldData } from '@/app/providers/FieldDataContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { dayLoads, insertCrew, listLabor, listMonthCloses, updateLabor, voidLabor } from '@/services/data/fieldOps';
 import { isMonthClosed } from '@/domain/labor/allocation';
+import { targetOfPlace } from '@/domain/reports/reports';
+import { PlaceSelect } from '@/components/field/PlaceSelect';
+import { configText } from '@/lib/configText';
 import type { LaborAllocation, LaborDuration } from '@/domain/models/ops';
 import { formatDate, localToday, monthEnd, monthStart } from '@/lib/dates';
 import { friendlyError } from '@/lib/ruleErrors';
@@ -31,18 +34,23 @@ export function LaborScreen() {
 
   const from = params.get('from') || monthStart(today);
   const to = params.get('to') || monthEnd(today);
-  const projectId = params.get('project') || '';
+  // "project" holds a project id or `ot:<targetId>` for an operational target (v2.2).
+  const place = params.get('project') || '';
+  const targetId = targetOfPlace(place);
+  const projectId = targetId === undefined ? place : '';
   const employeeId = params.get('worker') || '';
+  const workTypeId = params.get('wt') || '';
   const [showVoided, setShowVoided] = useState(false);
   const set = (k: string, v: string) => { const n = new URLSearchParams(params); if (v) n.set(k, v); else n.delete(k); setParams(n, { replace: true }); };
 
   const { data, error, reload } = useAsync(async () => {
     const [rows, closes] = await Promise.all([
-      listLabor({ from, to, projectId: projectId || undefined, employeeId: employeeId || undefined, includeVoided: true }),
+      listLabor({ from, to, projectId: projectId || undefined, targetId: targetId || undefined, employeeId: employeeId || undefined,
+        workTypeId: workTypeId || undefined, includeVoided: true }),
       listMonthCloses(),
     ]);
     return { rows, closes };
-  }, [from, to, projectId, employeeId]);
+  }, [from, to, projectId, targetId, employeeId, workTypeId]);
 
   const rows = useMemo(() => (data?.rows ?? []).filter((r) => showVoided || !r.voidedAt), [data, showVoided]);
   const total = rows.filter((r) => !r.voidedAt).reduce((s, r) => s + r.duration, 0);
@@ -60,10 +68,12 @@ export function LaborScreen() {
             <input id="l-from" className="input" type="date" value={from} onChange={(e) => set('from', e.target.value)} /></div>
           <div className="field"><label className="field__label" htmlFor="l-to">{t('audit.to', 'To')}</label>
             <input id="l-to" className="input" type="date" value={to} onChange={(e) => set('to', e.target.value)} /></div>
-          <div className="field"><label className="field__label" htmlFor="l-proj">{t('fo.report.project', 'Project / site')}</label>
-            <select id="l-proj" className="input" value={projectId} onChange={(e) => set('project', e.target.value)}>
+          <div className="field"><label className="field__label" htmlFor="l-proj">{t('fo.ot.placeLabel', 'Project / operational target')}</label>
+            <PlaceSelect id="l-proj" value={place} onChange={(v) => set('project', v)} allLabel={t('fo.all', 'All')} /></div>
+          <div className="field"><label className="field__label" htmlFor="l-wt">{t('fo.wt.label', 'Work type')}</label>
+            <select id="l-wt" className="input" value={workTypeId} onChange={(e) => set('wt', e.target.value)}>
               <option value="">{t('fo.all', 'All')}</option>
-              {[...fd.projects].sort((a, b) => a.name.localeCompare(b.name)).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {fd.workTypes.map((w) => <option key={w.id} value={w.id}>{configText(w.name, language)}</option>)}
             </select></div>
           <div className="field"><label className="field__label" htmlFor="l-emp">{t('fo.labor.worker', 'Worker')}</label>
             <select id="l-emp" className="input" value={employeeId} onChange={(e) => set('worker', e.target.value)}>
@@ -82,7 +92,7 @@ export function LaborScreen() {
             const closed = isMonthClosed(r.workDate, data?.closes ?? []);
             // Open month: managers, or the supervisor who recorded it while still on the project.
             // Closed month: finance only, with a reason (§29, BR-009/010).
-            const own = r.supervisorId === user?.id && fd.project(r.projectId)?.supervisorId === user?.id;
+            const own = r.supervisorId === user?.id && (r.projectId ? fd.project(r.projectId)?.supervisorId === user?.id : !!r.operationalTargetId);
             const canEdit = !r.voidedAt && (closed ? isFinance : (isManager || own));
             return (
               <div key={r.id} className="card" style={r.voidedAt ? { opacity: 0.6 } : undefined}>
@@ -92,7 +102,7 @@ export function LaborScreen() {
                     <div className="card__meta">
                       {formatDate(r.workDate, language, { weekday: 'short', day: 'numeric', month: 'short' })}
                       {/* A project reassigned to someone else stays in their own labor history, without dead links (UAT M2). */}
-                      {fd.project(r.projectId) ? (
+                      {r.operationalTargetId ? <> · ◇ {names.target(r.operationalTargetId)}</> : fd.project(r.projectId) ? (
                         <>
                           {' · '}<Link to={`/projects/${r.projectId}`}>{names.project(r.projectId)}</Link>
                           {r.visitId ? <> · <Link to={`/visits/${r.visitId}`}>{t('fo.visit.title', 'Visit')}</Link></> : null}
@@ -100,6 +110,7 @@ export function LaborScreen() {
                       ) : <> · {t('fo.labor.otherProject', 'A project no longer assigned to you')}</>}
                       {' · '}{names.person(r.supervisorId)}
                     </div>
+                    <div className="card__meta">{t('fo.wt.label', 'Work type')}: {names.workType(r.workTypeId)}</div>
                     {r.notes ? <div className="card__meta">📝 {r.notes}</div> : null}
                     {r.changeReason ? <div className="card__meta">✎ {t('fo.labor.reason', 'Reason')}: {r.changeReason}</div> : null}
                     {r.voidedAt ? <div className="card__meta">⊘ {t('fo.labor.voided', 'Voided')}: {r.voidReason}</div> : null}
@@ -123,7 +134,10 @@ export function LaborScreen() {
 
 function EditAllocation({ row, closed, onDone, onCancel }: { row: LaborAllocation; closed: boolean; onDone: () => Promise<void>; onCancel: () => void }) {
   const { t } = useTranslation();
+  const fd = useFieldData();
+  const { language } = useLanguage();
   const [duration, setDuration] = useState<LaborDuration>(row.duration);
+  const [workTypeId, setWorkTypeId] = useState(row.workTypeId ?? '');
   const [notes, setNotes] = useState(row.notes ?? '');
   const [reason, setReason] = useState('');
   const [voidReason, setVoidReason] = useState('');
@@ -142,11 +156,20 @@ function EditAllocation({ row, closed, onDone, onCancel }: { row: LaborAllocatio
         <button type="button" className={duration === 1 ? 'dur--on' : ''} onClick={() => setDuration(1)}>{t('fo.crew.full', 'Full')}</button>
         <button type="button" className={duration === 0.5 ? 'dur--on' : ''} onClick={() => setDuration(0.5)}>{t('fo.crew.half', 'Half')}</button>
       </div>
+      {/* A visit's crew follows the visit's work type; it is changed on the visit (TC-13). */}
+      {row.visitId ? null : (
+        <div className="field"><label className="field__label" htmlFor={`wt-${row.id}`}>{t('fo.wt.label', 'Work type')}</label>
+          <select id={`wt-${row.id}`} className="input" value={workTypeId} onChange={(e) => setWorkTypeId(e.target.value)}>
+            {fd.workTypes.filter((w) => w.active || w.id === row.workTypeId).map((w) => <option key={w.id} value={w.id}>{configText(w.name, language)}</option>)}
+          </select></div>
+      )}
       <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('fo.rep.note', 'Note') ?? ''} />
       {closed ? <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('fo.labor.reasonRequired', 'Reason for the change (required)') ?? ''} /> : null}
       <div className="row wrap" style={{ gap: 8 }}>
         <button type="button" className="btn btn--primary" disabled={busy || (closed && !reason.trim())}
-          onClick={() => void act(() => updateLabor(row.id, { duration, notes, ...(closed ? { changeReason: reason } : {}) }))}>{t('common.save', 'Save')}</button>
+          onClick={() => void act(() => updateLabor(row.id, { duration, notes,
+            ...(!row.visitId && workTypeId && workTypeId !== row.workTypeId ? { workTypeId } : {}),
+            ...(closed ? { changeReason: reason } : {}) }))}>{t('common.save', 'Save')}</button>
         <button type="button" className="btn btn--ghost" onClick={onCancel}>{t('common.cancel', 'Cancel')}</button>
       </div>
       <div className="row wrap" style={{ gap: 8 }}>
@@ -168,12 +191,16 @@ function AddAllocation({ closes, onDone }: { closes: { month: string }[]; onDone
   const { user, isManager } = useRoles();
   const [date, setDate] = useState(localToday());
   const [employeeId, setEmployeeId] = useState('');
-  const [projectId, setProjectId] = useState('');
+  const { language } = useLanguage();
+  const [place, setPlace] = useState('');
+  const [workTypeId, setWorkTypeId] = useState('');
   const [duration, setDuration] = useState<LaborDuration>(1);
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const project = fd.project(projectId);
+  const targetId = targetOfPlace(place);
+  const projectId = targetId === undefined ? place : '';
+  const project = fd.project(projectId || undefined);
   const closed = isMonthClosed(date, closes);
   const load = useAsync(async () => (employeeId ? (await dayLoads(date, date)).get(`${employeeId}|${date}`) ?? 0 : 0), [employeeId, date]);
 
@@ -188,10 +215,12 @@ function AddAllocation({ closes, onDone }: { closes: { month: string }[]; onDone
             <option value="">—</option>
             {fd.employees.filter((e) => e.status === 'active').map((e) => <option key={e.id} value={e.id}>{names.employee(e.id)}</option>)}
           </select></div>
-        <div className="field"><label className="field__label">{t('fo.report.project', 'Project / site')}</label>
-          <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+        <div className="field"><label className="field__label" htmlFor="add-place">{t('fo.ot.placeLabel', 'Project / operational target')}</label>
+          <PlaceSelect id="add-place" value={place} onChange={setPlace} allLabel="—" openOnly /></div>
+        <div className="field"><label className="field__label" htmlFor="add-wt">{t('fo.wt.label', 'Work type')}</label>
+          <select id="add-wt" className="input" value={workTypeId} onChange={(e) => setWorkTypeId(e.target.value)}>
             <option value="">—</option>
-            {fd.projects.filter((p) => p.status === 'active' || p.status === 'on_hold').map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {fd.workTypes.filter((w) => w.active).map((w) => <option key={w.id} value={w.id}>{configText(w.name, language)}</option>)}
           </select></div>
       </div>
       <div className="dur" role="group">
@@ -201,11 +230,13 @@ function AddAllocation({ closes, onDone }: { closes: { month: string }[]; onDone
       {!closed && !isManager ? <div className="banner banner--info">{t('fo.labor.financeOpenMonth', 'Finance can add labor only to closed months. In an open month the supervisor records it on the visit.')}</div> : null}
       {employeeId ? <div className="card__meta">{t('fo.labor.booked', 'Already booked that day: {{days}}', { days: load.data ?? 0 })}</div> : null}
       {closed ? <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('fo.labor.reasonRequired', 'Reason for the change (required)') ?? ''} /> : null}
-      <button type="button" className="btn btn--primary" disabled={busy || !employeeId || !projectId || (closed && !reason.trim()) || (!closed && !isManager)} onClick={async () => {
+      <button type="button" className="btn btn--primary" disabled={busy || !employeeId || !place || !workTypeId || (closed && !reason.trim()) || (!closed && !isManager)} onClick={async () => {
         setBusy(true); setError(null);
         try {
           // In a closed month the reason lets the database accept and audit it (BR-010).
-          await insertCrew([{ workDate: date, employeeId, projectId, duration, supervisorId: project?.supervisorId ?? user!.id,
+          await insertCrew([{ workDate: date, employeeId, duration, workTypeId,
+            ...(targetId ? { operationalTargetId: targetId } : { projectId }),
+            supervisorId: project?.supervisorId ?? user!.id,
             ...(closed ? { changeReason: reason } : {}) }]);
           await onDone();
         } catch (e) { setError(friendlyError(e, t)); } finally { setBusy(false); }

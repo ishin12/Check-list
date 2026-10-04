@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  laborLines,
   laborMatrix,
+  placeOf,
+  TARGET_KEY,
+  targetOfPlace,
+  workTypeReport,
   openWorkReport,
   projectReport,
   unallocatedByWorker,
@@ -75,5 +80,40 @@ describe('open work report', () => {
     expect(out.open.map((x) => x.id)).toEqual(['1']);
     expect(out.overduePeriodic.map((x) => x.id)).toEqual(['a']);
     expect(out.duePeriodic.map((x) => x.id)).toEqual(['b']);
+  });
+});
+
+describe('v2.2 operational targets and work types in reports', () => {
+  const rows: LaborAllocation[] = [
+    { id: '1', employeeId: 'e1', projectId: 'A', workDate: '2026-11-03', duration: 0.5, supervisorId: 's', workTypeId: 'maint' },
+    { id: '2', employeeId: 'e1', operationalTargetId: 'general', workDate: '2026-11-03', duration: 0.5, supervisorId: 's', workTypeId: 'gen' },
+    { id: '3', employeeId: 'e2', operationalTargetId: 'warehouse', workDate: '2026-11-03', duration: 1, supervisorId: 's', workTypeId: 'transport' },
+  ];
+
+  it('TC-15 a day split between a project and a target shows both, total 1.0', () => {
+    const w = workerReport(rows, '2026-11-01', '2026-11-30').find((x) => x.employeeId === 'e1')!;
+    expect(w.days).toBe(1);
+    expect(w.byProject.map((p) => p.projectId).sort()).toEqual(['A', `${TARGET_KEY}general`]);
+  });
+
+  it('TC-14 a target day is reported on the target, never as a project', () => {
+    expect(placeOf(rows[2])).toBe(`${TARGET_KEY}warehouse`);
+    expect(targetOfPlace(placeOf(rows[2]))).toBe('warehouse');
+    expect(targetOfPlace('A')).toBeUndefined();
+    const m = laborMatrix(rows, '2026-11-01', '2026-11-30');
+    expect(m.colTotals.get(`${TARGET_KEY}warehouse`)).toBe(1);
+    expect(m.total).toBe(2);
+  });
+
+  it('TC-13 days by work type, split by project / target', () => {
+    const r = workTypeReport(rows, '2026-11-01', '2026-11-30');
+    expect(r.find((x) => x.workTypeId === 'transport')).toEqual({ workTypeId: 'transport', days: 1, byPlace: [{ placeKey: `${TARGET_KEY}warehouse`, days: 1 }] });
+    expect(r.reduce((s, x) => s + x.days, 0)).toBe(2);
+  });
+
+  it('labor detail lines: worker + date + place + work type + duration, voided rows left out', () => {
+    const lines = laborLines([...rows, { ...rows[0], id: '4', voidedAt: 'x' }], '2026-11-01', '2026-11-30');
+    expect(lines).toHaveLength(3);
+    expect(lines.map((l) => l.employeeId)).toEqual(['e1', 'e1', 'e2']);
   });
 });

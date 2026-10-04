@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { CrewPicker, type CrewSelection } from '@/components/field/CrewPicker';
 import { FieldStatusPill } from '@/components/field/FieldStatusPill';
 import { TaskItemCard } from '@/components/field/TaskItemCard';
+import { WorkTypePicker } from '@/components/field/WorkTypePicker';
 import { useFieldData } from '@/app/providers/FieldDataContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import {
@@ -66,6 +67,7 @@ export function VisitScreen() {
   }, [id]);
 
   const [editCrew, setEditCrew] = useState(false);
+  const [editWorkType, setEditWorkType] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -158,6 +160,20 @@ export function VisitScreen() {
             </div>
             <FieldStatusPill status={visit.status} />
           </div>
+          {/* Work type: one per visit, applied to the whole crew (v2.2, TC-13). */}
+          <div className="row wrap" style={{ gap: 8, marginTop: 8, alignItems: 'center' }}>
+            <span className="tag">{t('fo.wt.label', 'Work type')}: {names.workType(visit.workTypeId)}</span>
+            {editable && !data.monthClosed && !editWorkType ? (
+              <button type="button" className="btn btn--ghost" onClick={() => setEditWorkType(true)}>{t('fo.start.change', 'Change')}</button>
+            ) : null}
+          </div>
+          {editWorkType && editable ? (
+            <div style={{ marginTop: 8 }}>
+              <WorkTypePicker id="visit-work-type" workTypes={fd.workTypes} value={visit.workTypeId ?? ''} disabled={busy}
+                onChange={(wt) => void run(async () => { if (wt !== visit.workTypeId) await updateVisit(visit.id, { workTypeId: wt }); setEditWorkType(false); })} />
+              <button type="button" className="btn btn--ghost" onClick={() => setEditWorkType(false)}>{t('common.cancel', 'Cancel')}</button>
+            </div>
+          ) : null}
           <div className="row wrap" style={{ gap: 8, marginTop: 10 }}>
             <Link className="btn btn--ghost" to={`/projects/${visit.projectId}`}>{t('fo.visit.history', 'Project history')}</Link>
             {visit.status === 'completed' ? <Link className="btn btn--primary" to={`/visits/${visit.id}/report`}>{t('fo.visit.report', 'Visit report')}</Link> : null}

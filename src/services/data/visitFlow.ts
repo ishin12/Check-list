@@ -31,6 +31,8 @@ export interface StartVisitInput {
   /** YYYY-MM-DD */
   date: string;
   crew: { employeeId: string; duration: LaborDuration }[];
+  /** Chosen once for the visit and applied to its crew (v2.2, TC-13). */
+  workTypeId: string;
   /** Start a visit the manager already planned instead of creating one. */
   plannedVisit?: Visit;
 }
@@ -40,25 +42,31 @@ export interface StartVisitInput {
  * progress and adds the due checklist. If the crew is refused (e.g. BR-001),
  * a visit created here is removed again so nothing half-saved is left.
  */
+/** Same checks the database makes, before anything is written (UAT D-02). */
+async function precheckCrew(date: string, crew: { employeeId: string; duration: LaborDuration }[]): Promise<void> {
+  const [loads, closes] = await Promise.all([dayLoads(date, date), listMonthCloses()]);
+  if (isMonthClosed(date, closes)) throw new Error(`BR-009: labor for ${date.slice(0, 7)} is closed`);
+  for (const c of crew) {
+    const booked = loads.get(`${c.employeeId}|${date}`) ?? 0;
+    if (booked + c.duration > 1) {
+      throw new Error(`BR-001: employee already has ${booked} day(s) on ${date}; adding ${c.duration} would exceed 1.0`);
+    }
+  }
+}
+
 export async function startVisit(input: StartVisitInput): Promise<string> {
+  if (!input.workTypeId) throw new Error('WORK-TYPE: choose the work type of the visit first');
   // Check the crew first so a refused start leaves nothing behind — not even a
   // created-then-removed visit in the audit log (UAT D-02). The database still
   // re-checks under a lock (BR-001, TC-12) in case two supervisors race.
-  const [loads, closes] = await Promise.all([dayLoads(input.date, input.date), listMonthCloses()]);
-  if (isMonthClosed(input.date, closes)) throw new Error(`BR-009: labor for ${input.date.slice(0, 7)} is closed`);
-  for (const c of input.crew) {
-    const booked = loads.get(`${c.employeeId}|${input.date}`) ?? 0;
-    if (booked + c.duration > 1) {
-      throw new Error(`BR-001: employee already has ${booked} day(s) on ${input.date}; adding ${c.duration} would exceed 1.0`);
-    }
-  }
+  await precheckCrew(input.date, input.crew);
   let visit = input.plannedVisit ?? await createVisit({
-    projectId: input.project.id, visitDate: input.date, supervisorId: input.supervisorId,
+    projectId: input.project.id, visitDate: input.date, supervisorId: input.supervisorId, workTypeId: input.workTypeId,
   });
   // A planned visit is started on the day it actually happens (and by whoever starts it).
-  if (input.plannedVisit && (visit.visitDate !== input.date || visit.supervisorId !== input.supervisorId)) {
-    await updateVisit(visit.id, { visitDate: input.date, supervisorId: input.supervisorId });
-    visit = { ...visit, visitDate: input.date, supervisorId: input.supervisorId };
+  if (input.plannedVisit && (visit.visitDate !== input.date || visit.supervisorId !== input.supervisorId || visit.workTypeId !== input.workTypeId)) {
+    await updateVisit(visit.id, { visitDate: input.date, supervisorId: input.supervisorId, workTypeId: input.workTypeId });
+    visit = { ...visit, visitDate: input.date, supervisorId: input.supervisorId, workTypeId: input.workTypeId };
   }
   try {
     await insertCrew(input.crew.map((c) => ({
@@ -72,6 +80,23 @@ export async function startVisit(input: StartVisitInput): Promise<string> {
   await updateVisit(visit.id, { status: 'in_progress' });
   await syncVisitTasks(input.project, visit.id, input.date);
   return visit.id;
+}
+
+/**
+ * A day with no project (v2.2 §17, TC-14): the crew is booked on an
+ * operational target (warehouse, office, leave…) with a work type. No visit,
+ * checklist or client report — and no fake project. All rows or none.
+ */
+export async function recordTargetDay(input: {
+  targetId: string; workTypeId: string; supervisorId: string; date: string;
+  crew: { employeeId: string; duration: LaborDuration }[];
+}): Promise<void> {
+  if (!input.workTypeId) throw new Error('WORK-TYPE: a work type is required');
+  await precheckCrew(input.date, input.crew);
+  await insertCrew(input.crew.map((c) => ({
+    workDate: input.date, employeeId: c.employeeId, operationalTargetId: input.targetId, workTypeId: input.workTypeId,
+    duration: c.duration, supervisorId: input.supervisorId,
+  })));
 }
 
 /**

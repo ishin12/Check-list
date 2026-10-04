@@ -19,7 +19,7 @@ beforeEach(async () => {
 });
 
 function labor(employee_id: string, duration: number, extra: Record<string, unknown> = {}) {
-  return { work_date: '2026-09-01', employee_id, project_id: 'pr-1', duration, supervisor_id: 'u-wa', ...extra };
+  return { work_date: '2026-09-01', employee_id, project_id: 'pr-1', duration, supervisor_id: 'u-wa', work_type_id: 'wt-maintenance', ...extra };
 }
 
 describe('demo backend mirrors the field-ops rules', () => {
@@ -108,7 +108,7 @@ describe('demo backend mirrors the field-ops rules', () => {
 
     expect((await sb.from('project_tasks').update({ status: 'open' }).eq('id', 'pt-4')).error?.message).toMatch(/cannot go back/);
     expect((await sb.from('project_tasks').update({ status: 'open' }).eq('id', 'pt-5')).error?.message).toMatch(/cannot be reopened/);
-    expect((await sb.from('visits').update({ status: 'in_progress' }).eq('id', 'vi-2')).error?.message).toMatch(/cannot move/);
+    expect((await sb.from('visits').update({ status: 'in_progress', work_type_id: 'wt-maintenance' }).eq('id', 'vi-2')).error?.message).toMatch(/cannot move/);
   });
 
   it('D-10: a supervisor sees only the projects they supervise (RLS)', async () => {
@@ -138,7 +138,7 @@ describe('demo backend mirrors the field-ops rules', () => {
 describe('review fixes mirrored in the demo backend', () => {
   it('a Done correction on a follow-up stays a follow-up', async () => {
     const { data: v } = await sb.from('visits').insert({ project_id: 'pr-1', visit_date: localToday(), supervisor_id: 'u-wa' }).select().single();
-    await sb.from('visits').update({ status: 'in_progress' }).eq('id', v.id);
+    await sb.from('visits').update({ status: 'in_progress', work_type_id: 'wt-maintenance' }).eq('id', v.id);
     await sb.from('project_tasks').update({ status: 'completed', completed_in_visit_id: v.id }).eq('id', 'pt-1');
     await sb.from('project_tasks').update({ status: 'open' }).eq('id', 'pt-1');
     const { data } = await sb.from('project_tasks').select('*').eq('id', 'pt-1').single();
@@ -180,3 +180,46 @@ describe('review fixes mirrored in the demo backend', () => {
     expect((await sb.from('visit_reports').update({ signer_name: 'Khaled' }).eq('id', 'vr-1')).error).toBeNull();
   });
 });
+
+describe('Master Spec v2.2 in the demo backend (0009)', () => {
+  it('TC-13 the visit work type goes to its crew without per-worker entry, and follows a change', async () => {
+    const { data: v } = await sb.from('visits').insert({ project_id: 'pr-1', visit_date: localToday(), supervisor_id: 'u-wa' }).select().single();
+    expect((await sb.from('visits').update({ status: 'in_progress' }).eq('id', v.id)).error?.message).toMatch(/WORK-TYPE/);
+    await sb.from('visits').update({ status: 'in_progress', work_type_id: 'wt-maintenance' }).eq('id', v.id);
+    const crew = ['em-1', 'em-2'].map((e) => ({ work_date: localToday(), employee_id: e, project_id: 'pr-1', visit_id: v.id, duration: 0.5, supervisor_id: 'u-wa' }));
+    expect((await sb.from('labor_allocations').insert(crew)).error).toBeNull();
+    let { data } = await sb.from('labor_allocations').select('*').eq('visit_id', v.id);
+    expect(data.map((r: { work_type_id: string }) => r.work_type_id)).toEqual(['wt-maintenance', 'wt-maintenance']);
+    await sb.from('visits').update({ work_type_id: 'wt-irrigation' }).eq('id', v.id);
+    ({ data } = await sb.from('labor_allocations').select('*').eq('visit_id', v.id));
+    expect(data.every((r: { work_type_id: string }) => r.work_type_id === 'wt-irrigation')).toBe(true);
+  });
+
+  it('TC-14 a full day on the warehouse target, no project', async () => {
+    const before = (await sb.from('projects').select('*')).data.length;
+    const { error } = await sb.from('labor_allocations').insert({ work_date: '2026-09-05', employee_id: 'em-6', operational_target_id: 'ot-warehouse', work_type_id: 'wt-transport', duration: 1, supervisor_id: 'u-wa' });
+    expect(error).toBeNull();
+    expect((await sb.from('projects').select('*')).data.length).toBe(before);
+    expect((await sb.from('labor_allocations').insert(labor('em-6', 0.5, { work_date: '2026-09-05' }))).error?.message).toMatch(/BR-001/);
+  });
+
+  it('TC-15 half project + half target = 1.0, a third half is refused', async () => {
+    expect((await sb.from('labor_allocations').insert(labor('em-6', 0.5, { work_date: '2026-09-06' }))).error).toBeNull();
+    expect((await sb.from('labor_allocations').insert({ work_date: '2026-09-06', employee_id: 'em-6', operational_target_id: 'ot-company_general', work_type_id: 'wt-general', duration: 0.5, supervisor_id: 'u-wa' })).error).toBeNull();
+    const third = await sb.from('labor_allocations').insert({ work_date: '2026-09-06', employee_id: 'em-6', operational_target_id: 'ot-office', work_type_id: 'wt-general', duration: 0.5, supervisor_id: 'u-wa' });
+    expect(third.error?.message).toMatch(/BR-001/);
+  });
+
+  it('a row is on a project or a target, never both or neither, and needs a work type', async () => {
+    expect((await sb.from('labor_allocations').insert(labor('em-6', 1, { operational_target_id: 'ot-office' }))).error?.message).toMatch(/labor_project_or_target/);
+    expect((await sb.from('labor_allocations').insert(labor('em-6', 1, { project_id: null }))).error?.message).toMatch(/labor_project_or_target/);
+    expect((await sb.from('labor_allocations').insert(labor('em-6', 1, { work_type_id: null }))).error?.message).toMatch(/WORK-TYPE/);
+  });
+
+  it('a month with a visit in progress cannot be closed (§36A)', async () => {
+    await asUser('u-mgr');
+    const month = `${localToday().slice(0, 7)}-01`;
+    expect((await sb.from('month_closes').insert({ month })).error?.message).toMatch(/MONTH-OPEN-VISITS/);
+  });
+});
+

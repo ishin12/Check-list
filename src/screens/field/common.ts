@@ -7,6 +7,8 @@ import { useLanguage } from '@/app/providers/LanguageContext';
 import { can, hasFinance, isSupervisorRole } from '@/domain/auth/permissions';
 import { makeTaskLabeler } from '@/services/data/visitFlow';
 import type { Project } from '@/domain/models/ops';
+import { configText } from '@/lib/configText';
+import { targetOfPlace } from '@/domain/reports/reports';
 
 export function useRoles() {
   const { user } = useAuth();
@@ -38,6 +40,15 @@ export function useNames() {
     }, [fd]),
     project: useCallback((id?: string) => (id ? fd.project(id)?.name ?? t('fo.labor.otherProject', 'A project no longer assigned to you') : '—'), [fd, t]),
     taskLabel: labeler,
+    workType: useCallback((id?: string) => (id ? configText(fd.workType(id)?.name, language) || '—' : '—'), [fd, language]),
+    target: useCallback((id?: string) => (id ? configText(fd.target(id)?.name, language) || '—' : '—'), [fd, language]),
+    /** A report "project / target" key (placeOf): project name, or the operational target's name. */
+    place: useCallback((key?: string) => {
+      if (!key) return '—';
+      const target = targetOfPlace(key);
+      if (target !== undefined) return configText(fd.target(target)?.name, language) || '—';
+      return fd.project(key)?.name ?? t('fo.labor.otherProject', 'A project no longer assigned to you');
+    }, [fd, language, t]),
   };
 }
 

@@ -7,16 +7,16 @@ import { AppShell } from '@/components/AppShell';
 import { FieldStatusPill } from '@/components/field/FieldStatusPill';
 import { useFieldData } from '@/app/providers/FieldDataContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
-import { getWorkDays, saveProjectType, saveStage, saveWorkDays } from '@/services/data/fieldOps';
-import type { ConfigText, ProjectStage, ProjectType } from '@/domain/models/ops';
+import { getWorkDays, saveProjectType, saveStage, saveTarget, saveWorkDays, saveWorkType } from '@/services/data/fieldOps';
+import type { ConfigText, OperationalTarget, ProjectStage, ProjectType, WorkType } from '@/domain/models/ops';
 import { configText } from '@/lib/configText';
 import { weekdayName } from '@/lib/dates';
 import { friendlyError } from '@/lib/ruleErrors';
 import { ErrorBanner } from '@/components/ErrorBanner';
 
 /**
- * Configuration over code (§25): project types, new-project stages and
- * working days are managed here; checklists and their frequencies live under
+ * Configuration over code (§25): project types, new-project stages, work
+ * types, operational targets (v2.2) and working days are managed here; checklists and their frequencies live under
  * Checklists. Nothing here is deleted — items are deactivated.
  */
 export function ConfigScreen() {
@@ -31,9 +31,9 @@ export function ConfigScreen() {
 
   useEffect(() => { void getWorkDays().then(setWorkDays).catch((e) => setError(friendlyError(e, t))); }, [t]);
 
-  async function run(fn: () => Promise<unknown>, done?: string) {
+  async function run(fn: () => Promise<unknown>, done?: string): Promise<boolean> {
     setError(null); setMsg(null);
-    try { await fn(); await fd.refresh(); if (done) setMsg(done); } catch (e) { setError(friendlyError(e, t)); }
+    try { await fn(); await fd.refresh(); if (done) setMsg(done); return true; } catch (e) { setError(friendlyError(e, t)); return false; }
   }
 
   const codeOf = (name: ConfigText) => (name.en || name.ar || 'item').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || `item_${Date.now()}`;
@@ -120,6 +120,21 @@ export function ConfigScreen() {
           );
         })}
 
+        <ManagedList<WorkType>
+          title={t('fo.wt.title', 'Work types')}
+          hint={t('fo.wt.hint', 'Chosen once per visit and applied to its workers. Shown in labor reports and Excel.')}
+          items={fd.workTypes}
+          codeOf={codeOf}
+          onSave={(x) => run(() => saveWorkType(x), t('fo.saved', 'Saved.') ?? '')}
+        />
+        <ManagedList<OperationalTarget>
+          title={t('fo.ot.title', 'Operational targets')}
+          hint={t('fo.ot.hint', 'Where a worker’s day goes when it is not a project (warehouse, office, leave…). No made-up projects.')}
+          items={fd.targets}
+          codeOf={codeOf}
+          onSave={(x) => run(() => saveTarget(x), t('fo.saved', 'Saved.') ?? '')}
+        />
+
         <section className="card stack">
           <div className="card__title">{t('fo.config.workDays', 'Working days')}</div>
           <div className="card__meta">{t('fo.config.workDaysHint', 'Used for the "not allocated" list and report.')}</div>
@@ -158,3 +173,50 @@ function NameEditor({ value, onChange, extra, onSave, onCancel }: {
     </div>
   );
 }
+
+/** A managed list (work types, operational targets): add, rename, reorder, switch off — never delete. */
+function ManagedList<T extends { id: string; code: string; name: ConfigText; sortOrder: number; active: boolean }>({ title, hint, items, codeOf, onSave }: {
+  title: string; hint: string; items: T[]; codeOf: (name: ConfigText) => string;
+  onSave: (x: { id?: string; code: string; name: ConfigText; sortOrder: number; active: boolean }) => Promise<boolean>;
+}) {
+  const { t } = useTranslation();
+  const { language } = useLanguage();
+  const [edit, setEdit] = useState<Partial<T> | null>(null);
+  return (
+    <section className="card stack">
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <div className="card__title">{title}</div>
+        <button type="button" className="btn btn--ghost" onClick={() => setEdit({ name: {}, active: true, sortOrder: items.length + 1 } as Partial<T>)}>＋ {t('fo.add', 'Add')}</button>
+      </div>
+      <div className="card__meta">{hint}</div>
+      {edit ? (
+        <NameEditor
+          value={edit.name ?? {}}
+          onChange={(name) => setEdit({ ...edit, name })}
+          extra={<div className="field"><label className="field__label">{t('fo.config.order', 'Order')}</label>
+            <input className="input" type="number" min={1} value={edit.sortOrder ?? 1} onChange={(e) => setEdit({ ...edit, sortOrder: Number(e.target.value) })} /></div>}
+          onCancel={() => setEdit(null)}
+          onSave={() => {
+            const name = edit.name ?? {};
+            const code = edit.code ?? `${codeOf(name)}_${Date.now().toString(36)}`;
+            void onSave({ id: edit.id, code, name, sortOrder: edit.sortOrder ?? 99, active: edit.active !== false }).then((ok) => { if (ok) setEdit(null); });
+          }}
+        />
+      ) : null}
+      {[...items].sort((a, b) => a.sortOrder - b.sortOrder).map((x) => (
+        <div key={x.id} className="row" style={{ justifyContent: 'space-between', borderTop: '1px solid var(--color-border)', paddingTop: 8 }}>
+          <div className="grow">
+            <div style={{ fontWeight: 700 }}>{configText(x.name, language)}</div>
+            <div className="card__meta">{[x.name.en, x.name.ar, x.name.ur].filter(Boolean).join(' · ')}</div>
+          </div>
+          {!x.active ? <FieldStatusPill status="inactive" /> : null}
+          <button type="button" className="btn btn--ghost" onClick={() => setEdit(x)}>{t('common.edit', 'Edit')}</button>
+          <button type="button" className="btn btn--ghost" onClick={() => void onSave({ ...x, active: !x.active })}>
+            {x.active ? t('users.deactivate', 'Deactivate') : t('users.activate', 'Activate')}
+          </button>
+        </div>
+      ))}
+    </section>
+  );
+}
+

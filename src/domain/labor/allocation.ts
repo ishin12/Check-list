@@ -174,7 +174,7 @@ export function unallocatedEmployees<E extends { id: string; status: string }>(
 export function previousCrew(
   projectId: string,
   beforeDate: string,
-  allocations: (Allocation & { projectId: string })[],
+  allocations: (Allocation & { projectId?: string })[],
 ): CrewPick[] {
   const earlier = allocations.filter((a) => a.projectId === projectId && a.workDate < beforeDate && !a.voidedAt);
   if (earlier.length === 0) return [];

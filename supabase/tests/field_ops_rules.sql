@@ -35,6 +35,9 @@ begin
   raise exception '% — expected failure containing "%" but it succeeded', p_label, p_expect;
 end $$;
 
+create or replace function pg_temp.wt(p_code text) returns uuid language sql stable as $$
+  select id from public.work_types where code = p_code $$;
+
 create or replace function pg_temp.ok(p_label text, p_cond boolean) returns void language plpgsql as $$
 begin
   if not coalesce(p_cond, false) then raise exception 'FAIL %', p_label; end if;
@@ -76,28 +79,28 @@ select ('30000000-0000-0000-0000-00000000000' || n)::uuid, 'Worker ' || n from g
 -- ---------------------------------------------------------------------------
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');
 
-insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, work_type_id)
 values ('2026-09-01', '30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 1.0,
-        '00000000-0000-0000-0000-00000000000b');
+        '00000000-0000-0000-0000-00000000000b', pg_temp.wt('maintenance'));
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');
 select pg_temp.expect_fail('TC-01 1.0 on A then 0.5 on B is rejected', $$
-  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, work_type_id)
   values ('2026-09-01', '30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000002', 0.5,
-          '00000000-0000-0000-0000-00000000000c') $$, 'BR-001');
+          '00000000-0000-0000-0000-00000000000c', pg_temp.wt('maintenance')) $$, 'BR-001');
 select pg_temp.act_as(null);
 select pg_temp.ok('TC-01 original record unchanged',
   (select count(*) = 1 and sum(duration) = 1.0 from public.labor_allocations
    where employee_id = '30000000-0000-0000-0000-000000000001'));
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');
-insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, work_type_id)
 values ('2026-09-01', '30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', 0.5,
-        '00000000-0000-0000-0000-00000000000b');
+        '00000000-0000-0000-0000-00000000000b', pg_temp.wt('maintenance'));
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');
-insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, work_type_id)
 values ('2026-09-01', '30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 0.5,
-        '00000000-0000-0000-0000-00000000000c');
+        '00000000-0000-0000-0000-00000000000c', pg_temp.wt('maintenance'));
 select pg_temp.act_as(null);
 select pg_temp.ok('TC-02 0.5 + 0.5 on two projects = 1.0',
   (select sum(duration) = 1.0 from public.labor_allocations
@@ -105,21 +108,21 @@ select pg_temp.ok('TC-02 0.5 + 0.5 on two projects = 1.0',
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');
 select pg_temp.expect_fail('BR-002 only 0.5 or 1.0', $$
-  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, work_type_id)
   values ('2026-09-02', '30000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001', 0.7,
-          '00000000-0000-0000-0000-00000000000b') $$, 'duration_full_or_half');
+          '00000000-0000-0000-0000-00000000000b', pg_temp.wt('maintenance')) $$, 'duration_full_or_half');
 
-insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, work_type_id)
 select '2026-09-03', ('30000000-0000-0000-0000-00000000000' || n)::uuid,
-       '20000000-0000-0000-0000-000000000001', 1.0, '00000000-0000-0000-0000-00000000000b'
+       '20000000-0000-0000-0000-000000000001', 1.0, '00000000-0000-0000-0000-00000000000b', pg_temp.wt('maintenance')
 from generate_series(1, 8) n;
 select pg_temp.ok('TC-03 8 workers at once = 8 records',
   (select count(*) = 8 from public.labor_allocations where work_date = '2026-09-03'));
 
 select pg_temp.expect_fail('Supervisor cannot load crew on a project they do not supervise', $$
-  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, work_type_id)
   values ('2026-09-04', '30000000-0000-0000-0000-000000000009', '20000000-0000-0000-0000-000000000002', 1.0,
-          '00000000-0000-0000-0000-00000000000b') $$, 'row-level security');
+          '00000000-0000-0000-0000-00000000000b', pg_temp.wt('maintenance')) $$, 'row-level security');
 
 -- Voiding frees the day; a void needs a reason.
 select pg_temp.act_as(null);
@@ -142,9 +145,9 @@ select pg_temp.expect_fail('TC-07 supervisor edit after close is rejected', $$
   update public.labor_allocations set duration = 0.5
   where employee_id = '30000000-0000-0000-0000-000000000001' and work_date = '2026-09-01' $$, 'BR-009');
 select pg_temp.expect_fail('TC-07 supervisor insert into closed month is rejected', $$
-  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, work_type_id)
   values ('2026-09-20', '30000000-0000-0000-0000-000000000009', '20000000-0000-0000-0000-000000000001', 1.0,
-          '00000000-0000-0000-0000-00000000000b') $$, 'BR-009');
+          '00000000-0000-0000-0000-00000000000b', pg_temp.wt('maintenance')) $$, 'BR-009');
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
 select pg_temp.expect_fail('Manager without finance cannot edit after close', $$
@@ -190,7 +193,7 @@ values ('40000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-0000000
         '00000000-0000-0000-0000-00000000000b');
 select pg_temp.expect_fail('Visit cannot skip IN_PROGRESS', $$
   update public.visits set status = 'completed' where id = '40000000-0000-0000-0000-000000000001' $$, 'cannot move');
-update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000001';
+update public.visits set status = 'in_progress', work_type_id = pg_temp.wt('maintenance') where id = '40000000-0000-0000-0000-000000000001';
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
 insert into public.project_tasks (id, project_id, visit_id, description) values
@@ -313,7 +316,7 @@ values ('60000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-0000000
 insert into public.visits (id, project_id, visit_date, supervisor_id, status)
 values ('40000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000001', '2026-10-21',
         '00000000-0000-0000-0000-00000000000c', 'planned');
-update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000005';
+update public.visits set status = 'in_progress', work_type_id = pg_temp.wt('maintenance') where id = '40000000-0000-0000-0000-000000000005';
 insert into public.project_tasks (id, project_id, visit_id, source, recurring_item_id, description)
 values ('50000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000001',
         '40000000-0000-0000-0000-000000000005', 'recurring', '60000000-0000-0000-0000-000000000002', 'Weekly check');
@@ -337,24 +340,24 @@ select pg_temp.expect_fail('After the visit completes, Done is final', $$
 -- Finance adds to a closed month (with reason) but not to an open one
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000d');
 select pg_temp.expect_fail('Finance cannot add labor to an open month', $$
-  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, work_type_id)
   values ('2026-10-15', '30000000-0000-0000-0000-000000000007', '20000000-0000-0000-0000-000000000001', 1.0,
-          '00000000-0000-0000-0000-00000000000c') $$, 'row-level security');
+          '00000000-0000-0000-0000-00000000000c', pg_temp.wt('maintenance')) $$, 'row-level security');
 select pg_temp.expect_fail('Finance adding to a closed month needs a reason', $$
-  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, work_type_id)
   values ('2026-09-15', '30000000-0000-0000-0000-000000000007', '20000000-0000-0000-0000-000000000001', 1.0,
-          '00000000-0000-0000-0000-00000000000c') $$, 'BR-010');
-insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, change_reason)
+          '00000000-0000-0000-0000-00000000000c', pg_temp.wt('maintenance')) $$, 'BR-010');
+insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, change_reason, work_type_id)
 values ('2026-09-15', '30000000-0000-0000-0000-000000000007', '20000000-0000-0000-0000-000000000001', 1.0,
-        '00000000-0000-0000-0000-00000000000c', 'Missed on the day');
+        '00000000-0000-0000-0000-00000000000c', 'Missed on the day', pg_temp.wt('maintenance'));
 select pg_temp.ok('Finance adds a missing allocation to a closed month with a reason',
   (select count(*) = 1 from public.labor_allocations where work_date = '2026-09-15'));
 
 -- Review fixes
 select pg_temp.act_as(null);
-insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id, work_type_id)
 values ('2026-10-12', '30000000-0000-0000-0000-000000000008', '20000000-0000-0000-0000-000000000001', 1.0,
-        '00000000-0000-0000-0000-00000000000c');
+        '00000000-0000-0000-0000-00000000000c', pg_temp.wt('maintenance'));
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000d');   -- finance
 update public.labor_allocations set voided_at = now(), void_reason = 'test'
 where work_date = '2026-10-12';
@@ -365,7 +368,7 @@ select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');   -- manager
 insert into public.visits (id, project_id, visit_date, supervisor_id, status)
 values ('40000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000001', '2026-10-22',
         '00000000-0000-0000-0000-00000000000c', 'planned');
-update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000006';
+update public.visits set status = 'in_progress', work_type_id = pg_temp.wt('maintenance') where id = '40000000-0000-0000-0000-000000000006';
 insert into public.project_tasks (id, project_id, visit_id, description)
 values ('50000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000001',
         '40000000-0000-0000-0000-000000000006', 'Mulching');
@@ -431,7 +434,7 @@ select pg_temp.expect_fail('I04 a closed project takes no new visit', $$
   insert into public.visits (project_id, visit_date, supervisor_id)
   values ('20000000-0000-0000-0000-000000000003', '2026-10-23', '00000000-0000-0000-0000-00000000000b') $$, 'BR-008');
 select pg_temp.expect_fail('I04 a planned visit on a closed project cannot be started', $$
-  update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000007' $$, 'BR-008');
+  update public.visits set status = 'in_progress', work_type_id = pg_temp.wt('maintenance') where id = '40000000-0000-0000-0000-000000000007' $$, 'BR-008');
 select pg_temp.expect_fail('I04 a closed project cannot be deleted', $$
   delete from public.projects where id = '20000000-0000-0000-0000-000000000003' $$, 'BR-014');
 select pg_temp.ok('I04 a closed project stays searchable',
@@ -460,7 +463,7 @@ select pg_temp.expect_fail('I01 cannot skip stages either', $$
 insert into public.visits (id, project_id, visit_date, supervisor_id, status)
 values ('40000000-0000-0000-0000-000000000008', '20000000-0000-0000-0000-000000000005', '2026-10-24',
         '00000000-0000-0000-0000-00000000000b', 'planned');
-update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000008';
+update public.visits set status = 'in_progress', work_type_id = pg_temp.wt('maintenance') where id = '40000000-0000-0000-0000-000000000008';
 insert into public.project_tasks (project_id, visit_id, source, template_id, template_item_id, description)
 select '20000000-0000-0000-0000-000000000005', '40000000-0000-0000-0000-000000000008', 'stage', t.id, item ->> 'id', item -> 'label' ->> 'en'
 from public.templates t
@@ -504,7 +507,7 @@ select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
 insert into public.visits (id, project_id, visit_date, supervisor_id, status)
 values ('40000000-0000-0000-0000-000000000009', '20000000-0000-0000-0000-000000000001', '2026-10-25',
         '00000000-0000-0000-0000-00000000000b', 'planned');
-update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000009';
+update public.visits set status = 'in_progress', work_type_id = pg_temp.wt('maintenance') where id = '40000000-0000-0000-0000-000000000009';
 insert into public.project_tasks (id, project_id, visit_id, description)
 values ('50000000-0000-0000-0000-000000000010', '20000000-0000-0000-0000-000000000001',
         '40000000-0000-0000-0000-000000000009', 'Hedge trimming');
@@ -534,7 +537,7 @@ values ('20000000-0000-0000-0000-000000000006', 'P-6', 'Project 6', '10000000-00
 insert into public.visits (id, project_id, visit_date, supervisor_id, status)
 values ('40000000-0000-0000-0000-000000000010', '20000000-0000-0000-0000-000000000006',
         '2026-12-31', '00000000-0000-0000-0000-00000000000b', 'planned');
-update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000010';
+update public.visits set status = 'in_progress', work_type_id = pg_temp.wt('maintenance') where id = '40000000-0000-0000-0000-000000000010';
 select pg_temp.expect_fail('D-07 a project with a visit in progress cannot be closed', $$
   update public.projects set status = 'closed' where id = '20000000-0000-0000-0000-000000000006' $$, 'visit in progress');
 insert into public.visits (id, project_id, visit_date, supervisor_id, status)
@@ -542,7 +545,7 @@ values ('40000000-0000-0000-0000-000000000011', '20000000-0000-0000-0000-0000000
         '2027-01-03', '00000000-0000-0000-0000-00000000000b', 'planned');
 select pg_temp.ok('D-13 a future visit can be planned', true);
 select pg_temp.expect_fail('D-13 a future visit cannot be started early', $$
-  update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000011' $$, 'before its date');
+  update public.visits set status = 'in_progress', work_type_id = pg_temp.wt('maintenance') where id = '40000000-0000-0000-0000-000000000011' $$, 'before its date');
 
 -- D-29: done on a visit = done on the visit's date.
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
@@ -552,7 +555,7 @@ values ('60000000-0000-0000-0000-00000000000a', '20000000-0000-0000-0000-0000000
 insert into public.visits (id, project_id, visit_date, supervisor_id, status)
 values ('40000000-0000-0000-0000-000000000012', '20000000-0000-0000-0000-000000000006', '2026-12-20',
         '00000000-0000-0000-0000-00000000000b', 'planned');
-update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000012';
+update public.visits set status = 'in_progress', work_type_id = pg_temp.wt('maintenance') where id = '40000000-0000-0000-0000-000000000012';
 insert into public.project_tasks (id, project_id, visit_id, source, recurring_item_id, description)
 values ('50000000-0000-0000-0000-000000000011', '20000000-0000-0000-0000-000000000006',
         '40000000-0000-0000-0000-000000000012', 'recurring', '60000000-0000-0000-0000-00000000000a', 'Spraying');
@@ -579,6 +582,129 @@ select pg_temp.ok('D4 working-day changes are audited',
 update public.profiles set active = false where id = '00000000-0000-0000-0000-00000000000c';
 select pg_temp.ok('L7 team changes are audited',
   (select count(*) >= 1 from public.audit_log where entity = 'profiles' and entity_id = '00000000-0000-0000-0000-00000000000c'));
+
+-- ---------------------------------------------------------------------------
+-- Master Spec v2.2 (0009): Work Type, Operational Target, month close
+-- ---------------------------------------------------------------------------
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');
+insert into public.visits (id, project_id, visit_date, supervisor_id)
+values ('40000000-0000-0000-0000-000000000020', '20000000-0000-0000-0000-000000000006', '2026-11-02',
+        '00000000-0000-0000-0000-00000000000b');
+select pg_temp.expect_fail('v2.2 a visit cannot start without a work type', $$
+  update public.visits set status = 'in_progress' where id = '40000000-0000-0000-0000-000000000020' $$, 'WORK-TYPE');
+update public.visits set status = 'in_progress', work_type_id = pg_temp.wt('maintenance')
+where id = '40000000-0000-0000-0000-000000000020';
+-- The crew is picked without any per-worker work type.
+insert into public.labor_allocations (work_date, employee_id, project_id, visit_id, duration, supervisor_id)
+select '2026-11-02', ('30000000-0000-0000-0000-00000000000' || n)::uuid, '20000000-0000-0000-0000-000000000006',
+       '40000000-0000-0000-0000-000000000020', 1.0, '00000000-0000-0000-0000-00000000000b'
+from generate_series(1, 3) n;
+select pg_temp.ok('TC-13 work type is saved on the visit and applied to every crew row',
+  (select count(*) = 3 and bool_and(work_type_id = pg_temp.wt('maintenance'))
+   from public.labor_allocations where visit_id = '40000000-0000-0000-0000-000000000020'));
+update public.visits set work_type_id = pg_temp.wt('irrigation') where id = '40000000-0000-0000-0000-000000000020';
+select pg_temp.ok('TC-13 changing the visit work type updates its crew rows',
+  (select bool_and(work_type_id = pg_temp.wt('irrigation'))
+   from public.labor_allocations where visit_id = '40000000-0000-0000-0000-000000000020'));
+select pg_temp.expect_fail('v2.2 labor outside a visit needs a work type', $$
+  insert into public.labor_allocations (work_date, employee_id, project_id, duration, supervisor_id)
+  values ('2026-11-02', '30000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000006', 1.0,
+          '00000000-0000-0000-0000-00000000000b') $$, 'WORK-TYPE');
+
+-- TC-14: a full day in the warehouse, no project.
+select count(*) as n_projects from public.projects \gset
+insert into public.labor_allocations (work_date, employee_id, operational_target_id, work_type_id, duration, supervisor_id)
+values ('2026-11-02', '30000000-0000-0000-0000-000000000004',
+        (select id from public.operational_targets where code = 'warehouse'), pg_temp.wt('transport'), 1.0,
+        '00000000-0000-0000-0000-00000000000b');
+select pg_temp.ok('TC-14 1.0 day on Operational Target = warehouse with no project',
+  (select project_id is null and duration = 1.0 from public.labor_allocations
+   where employee_id = '30000000-0000-0000-0000-000000000004' and work_date = '2026-11-02'));
+select pg_temp.ok('TC-14 no project was created for it',
+  (select count(*) = :n_projects from public.projects));
+select pg_temp.expect_fail('TC-14 the same worker cannot get more that day (BR-001 across targets)', $$
+  insert into public.labor_allocations (work_date, employee_id, project_id, work_type_id, duration, supervisor_id)
+  values ('2026-11-02', '30000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000006',
+          pg_temp.wt('maintenance'), 0.5, '00000000-0000-0000-0000-00000000000b') $$, 'BR-001');
+select pg_temp.expect_fail('v2.2 a row cannot be on a project and a target at once', $$
+  insert into public.labor_allocations (work_date, employee_id, project_id, operational_target_id, work_type_id, duration, supervisor_id)
+  values ('2026-11-05', '30000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000006',
+          (select id from public.operational_targets where code = 'office'), pg_temp.wt('general'), 1.0,
+          '00000000-0000-0000-0000-00000000000b') $$, 'labor_project_or_target');
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
+select pg_temp.expect_fail('v2.2 a row needs a project or a target', $$
+  insert into public.labor_allocations (work_date, employee_id, work_type_id, duration, supervisor_id)
+  values ('2026-11-05', '30000000-0000-0000-0000-000000000006', pg_temp.wt('general'), 1.0,
+          '00000000-0000-0000-0000-00000000000b') $$, 'labor_project_or_target');
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');
+
+-- TC-15: half a day on project A + half on company general works = 1.0.
+insert into public.labor_allocations (work_date, employee_id, project_id, work_type_id, duration, supervisor_id)
+values ('2026-11-03', '30000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000006',
+        pg_temp.wt('maintenance'), 0.5, '00000000-0000-0000-0000-00000000000b');
+insert into public.labor_allocations (work_date, employee_id, operational_target_id, work_type_id, duration, supervisor_id)
+values ('2026-11-03', '30000000-0000-0000-0000-000000000005',
+        (select id from public.operational_targets where code = 'company_general'), pg_temp.wt('general'), 0.5,
+        '00000000-0000-0000-0000-00000000000b');
+select pg_temp.ok('TC-15 both rows accepted, day total = 1.0, both kept',
+  (select count(*) = 2 and sum(duration) = 1.0 and count(project_id) = 1 and count(operational_target_id) = 1
+   from public.labor_allocations
+   where employee_id = '30000000-0000-0000-0000-000000000005' and work_date = '2026-11-03' and voided_at is null));
+select pg_temp.expect_fail('TC-15 a third half day is refused (BR-001)', $$
+  insert into public.labor_allocations (work_date, employee_id, operational_target_id, work_type_id, duration, supervisor_id)
+  values ('2026-11-03', '30000000-0000-0000-0000-000000000005',
+          (select id from public.operational_targets where code = 'office'), pg_temp.wt('general'), 0.5,
+          '00000000-0000-0000-0000-00000000000b') $$, 'BR-001');
+
+-- Who may do what with the lists and target rows.
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');
+select pg_temp.expect_fail('v2.2 a supervisor cannot book target labor in another supervisor''s name', $$
+  insert into public.labor_allocations (work_date, employee_id, operational_target_id, work_type_id, duration, supervisor_id)
+  values ('2026-11-05', '30000000-0000-0000-0000-000000000007',
+          (select id from public.operational_targets where code = 'office'), pg_temp.wt('general'), 1.0,
+          '00000000-0000-0000-0000-00000000000b') $$, 'row-level security');
+select pg_temp.expect_fail('v2.2 a supervisor cannot add a work type', $$
+  insert into public.work_types (code, name) values ('x', '{"en":"X"}') $$, 'row-level security');
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
+insert into public.work_types (code, name, sort_order) values ('landscaping', '{"en":"Landscaping","ar":"تنسيق"}', 9);
+select pg_temp.ok('v2.2 a manager adds a work type without code changes',
+  exists (select 1 from public.work_types where code = 'landscaping'));
+select pg_temp.expect_fail('v2.2 work types are switched off, never deleted', $$
+  delete from public.work_types where code = 'landscaping' $$, 'BR-014');
+update public.operational_targets set active = false where code = 'training';
+select pg_temp.expect_fail('v2.2 a switched-off target takes no new rows', $$
+  insert into public.labor_allocations (work_date, employee_id, operational_target_id, work_type_id, duration, supervisor_id)
+  values ('2026-11-05', '30000000-0000-0000-0000-000000000007',
+          (select id from public.operational_targets where code = 'training'), pg_temp.wt('general'), 1.0,
+          '00000000-0000-0000-0000-00000000000a') $$, 'TARGET');
+select pg_temp.ok('v2.2 list changes are audited',
+  (select count(*) >= 2 from public.audit_log where entity in ('work_types', 'operational_targets')));
+
+-- Month close with a visit in progress (§36A).
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000d');
+select pg_temp.expect_fail('v2.2 a month with a visit in progress cannot be closed', $$
+  insert into public.month_closes (month) values ('2026-11-01') $$, 'MONTH-OPEN-VISITS');
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');
+update public.visits set status = 'completed' where id = '40000000-0000-0000-0000-000000000020';
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000d');
+insert into public.month_closes (month) values ('2026-11-01');
+select pg_temp.ok('v2.2 once the visit is completed the month closes',
+  exists (select 1 from public.month_closes where month = '2026-11-01'));
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
+insert into public.visits (id, project_id, visit_date, supervisor_id)
+values ('40000000-0000-0000-0000-000000000021', '20000000-0000-0000-0000-000000000006', '2026-11-20',
+        '00000000-0000-0000-0000-00000000000b');
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');
+select pg_temp.expect_fail('v2.2 a visit cannot start in a closed month', $$
+  update public.visits set status = 'in_progress', work_type_id = pg_temp.wt('maintenance')
+  where id = '40000000-0000-0000-0000-000000000021' $$, 'BR-009');
+
+-- TC-16: nothing about pay or cost is stored anywhere.
+select pg_temp.act_as(null);
+select pg_temp.ok('TC-16 no salary, allowance, wage, payroll or cost column exists',
+  not exists (select 1 from information_schema.columns
+              where table_schema = 'public'
+                and column_name ~* '(^|_)(salary|salaries|allowance|allowances|wage|wages|payroll|cost|costs|rate|price|amount)(_|$)'));
 
 select pg_temp.act_as(null);
 \o

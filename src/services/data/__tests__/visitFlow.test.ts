@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { completeVisit, optionalVisitItems, saveOptionalItem, startVisit, syncVisitTasks } from '@/services/data/visitFlow';
+import { completeVisit, optionalVisitItems, recordTargetDay, saveOptionalItem, startVisit, syncVisitTasks } from '@/services/data/visitFlow';
 import {
   answerTask,
   createVisit,
@@ -8,6 +8,7 @@ import {
   getReportForVisit,
   getVisit,
   listLabor,
+  listProjects,
   listRecurring,
   listTasks,
   listVisits,
@@ -34,7 +35,7 @@ describe('supervisor visit cycle (demo backend)', () => {
   it('starts a visit with crew, adds the due checklist, completes and issues the report', async () => {
     const project = (await getProject('pr-1'))!;
     const visitId = await startVisit({
-      project, supervisorId: 'u-wa', date: today,
+      project, supervisorId: 'u-wa', date: today, workTypeId: 'wt-maintenance',
       crew: [{ employeeId: 'em-1', duration: 1 }, { employeeId: 'em-2', duration: 0.5 }],
     });
 
@@ -96,7 +97,7 @@ describe('supervisor visit cycle (demo backend)', () => {
     const project = (await getProject('pr-1'))!;
     // em-3 is already on a full day at pr-2 today in the seed.
     await expect(startVisit({
-      project, supervisorId: 'u-wa', date: today,
+      project, supervisorId: 'u-wa', date: today, workTypeId: 'wt-maintenance',
       crew: [{ employeeId: 'em-1', duration: 1 }, { employeeId: 'em-3', duration: 0.5 }],
     })).rejects.toThrow(/BR-001/);
     expect(await listVisits({ projectId: 'pr-1', from: today, to: today })).toEqual([]);
@@ -108,15 +109,39 @@ describe('supervisor visit cycle (demo backend)', () => {
     const project = (await getProject('pr-1'))!;
     const planned = await createVisit({ projectId: 'pr-1', visitDate: '2099-01-15', supervisorId: 'u-wa' });
     await window.__demo!.setActiveUser('u-wa');
-    const id = await startVisit({ project, supervisorId: 'u-wa', date: today, crew: [{ employeeId: 'em-5', duration: 1 }], plannedVisit: planned });
+    const id = await startVisit({ project, supervisorId: 'u-wa', date: today, workTypeId: 'wt-maintenance', crew: [{ employeeId: 'em-5', duration: 1 }], plannedVisit: planned });
     expect(id).toBe(planned.id);
     expect((await getVisit(id))!.visitDate).toBe(today);
     expect((await listLabor({ visitId: id }))[0].workDate).toBe(today);
+    // TC-13: the work type chosen at start is on the visit and on its crew.
+    expect((await getVisit(id))!.workTypeId).toBe('wt-maintenance');
+    expect((await listLabor({ visitId: id }))[0].workTypeId).toBe('wt-maintenance');
+  });
+
+  it('TC-14 a day with no project is booked on an operational target — no visit, no project', async () => {
+    const before = (await listProjects()).length;
+    await recordTargetDay({ targetId: 'ot-warehouse', workTypeId: 'wt-transport', supervisorId: 'u-wa', date: today,
+      crew: [{ employeeId: 'em-6', duration: 1 }] });
+    const rows = await listLabor({ employeeId: 'em-6', from: today, to: today });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ operationalTargetId: 'ot-warehouse', workTypeId: 'wt-transport', duration: 1 });
+    expect(rows[0].projectId).toBeUndefined();
+    expect(rows[0].visitId).toBeUndefined();
+    expect((await listProjects()).length).toBe(before);
+    await expect(recordTargetDay({ targetId: 'ot-office', workTypeId: 'wt-general', supervisorId: 'u-wa', date: today,
+      crew: [{ employeeId: 'em-6', duration: 0.5 }] })).rejects.toThrow(/BR-001/);
+  });
+
+  it('a visit cannot start without a work type', async () => {
+    const project = (await getProject('pr-1'))!;
+    await expect(startVisit({ project, supervisorId: 'u-wa', date: today, workTypeId: '', crew: [{ employeeId: 'em-6', duration: 1 }] }))
+      .rejects.toThrow(/WORK-TYPE/);
+    expect((await listVisits({ projectId: 'pr-1' })).filter((v) => v.visitDate === today)).toHaveLength(0);
   });
 
   it('an optional item is saved when used and kept after completion', async () => {
     const project = (await getProject('pr-1'))!;
-    const visitId = await startVisit({ project, supervisorId: 'u-wa', date: today, crew: [{ employeeId: 'em-5', duration: 1 }] });
+    const visitId = await startVisit({ project, supervisorId: 'u-wa', date: today, workTypeId: 'wt-maintenance', crew: [{ employeeId: 'em-5', duration: 1 }] });
     const pending = (await optionalVisitItems(project, visitId, today)).find((t) => t.description === 'Pruning')!;
     const optional = await saveOptionalItem(pending);
     expect(optional.pending).toBe(false);
