@@ -72,10 +72,15 @@ create trigger trg_work_types_nodelete before delete on public.work_types
   for each row execute function public.forbid_delete();
 create trigger trg_targets_nodelete before delete on public.operational_targets
   for each row execute function public.forbid_delete();
-create trigger trg_audit_work_types after insert or update on public.work_types
+-- Audited on insert, and on update only when something actually changed.
+create trigger trg_audit_work_types after insert on public.work_types
   for each row execute function public.audit_row();
-create trigger trg_audit_targets after insert or update on public.operational_targets
+create trigger trg_audit_work_types_upd after update on public.work_types
+  for each row when (old.* is distinct from new.*) execute function public.audit_row();
+create trigger trg_audit_targets after insert on public.operational_targets
   for each row execute function public.audit_row();
+create trigger trg_audit_targets_upd after update on public.operational_targets
+  for each row when (old.* is distinct from new.*) execute function public.audit_row();
 
 -- ---------------------------------------------------------------------------
 -- Visits: work type (required once the visit starts)

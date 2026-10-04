@@ -1519,6 +1519,7 @@ a.btn--ghost { color: var(--color-text); }
 
 /* UAT D-42: on a phone, hint that wide tables and tab rows scroll sideways. */
 .scroll-hint { display: none; margin: 0 0 var(--space-1); }
+.scroll-hint--always { display: block; }
 @media (max-width: 640px) {
   .scroll-hint { display: block; }
   .tabs { -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); mask-image: linear-gradient(to right, #000 85%, transparent); padding-inline-end: 24px; }

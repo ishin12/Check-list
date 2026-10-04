@@ -328,7 +328,7 @@ function Table({ head, rows, foot, numeric = [], empty }: {
   if (rows.length === 0) return <p className="hint">{empty}</p>;
   return (
     <>
-    {head.length >= 3 ? <p className="hint scroll-hint">↔ {t('fo.rep.swipe', 'Swipe sideways to see every column.')}</p> : null}
+    {head.length >= 3 ? <p className={`hint scroll-hint${head.length > 6 ? ' scroll-hint--always' : ''}`}>↔ {t('fo.rep.swipe', 'Swipe sideways to see every column.')}</p> : null}
     <div className="table-wrap">
       <table className="data">
         <thead><tr>{head.map((h, i) => <th key={i} className={numeric.includes(i) ? 'num' : undefined}>{h}</th>)}</tr></thead>

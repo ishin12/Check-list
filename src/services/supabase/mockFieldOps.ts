@@ -368,7 +368,10 @@ const AUDITED = new Set(['projects', 'employees', 'visits', 'project_tasks', 'la
 
 /** AFTER-trigger logic: audit old/new and roll recurring items. */
 export function fieldOpsAfter(table: string, op: Op, prev: Row | null, next: Row | null, ctx: GuardContext): void {
-  if (AUDITED.has(table)) {
+  // 0009: list entries are audited only when something actually changed.
+  const unchanged = op === 'UPDATE' && (table === 'work_types' || table === 'operational_targets')
+    && JSON.stringify({ ...prev, updated_at: null, updated_by: null }) === JSON.stringify({ ...next, updated_at: null, updated_by: null });
+  if (AUDITED.has(table) && !unchanged) {
     const id = (next ?? prev)!.id;
     ctx.audit(`${table}.${op.toLowerCase()}`, table, table === 'month_closes' ? null : id, {
       old: op === 'INSERT' ? null : prev,

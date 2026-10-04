@@ -73,7 +73,7 @@ export function ConfigScreen() {
             <div key={ty.id} className="row" style={{ justifyContent: 'space-between', borderTop: '1px solid var(--color-border)', paddingTop: 8 }}>
               <div className="grow">
                 <div style={{ fontWeight: 700 }}>{configText(ty.name, language)}</div>
-                <div className="card__meta">{[ty.name.en, ty.name.ar, ty.name.ur].filter(Boolean).join(' · ')}{ty.usesStages ? ` · ${t('fo.config.stagesOn', 'stages')}` : ''}</div>
+                <div className="card__meta">{[ty.name.en, ty.name.ar, ty.name.ur].filter(Boolean).map((v, i) => <span key={i}>{i ? ' · ' : ''}<bdi>{v}</bdi></span>)}{ty.usesStages ? ` · ${t('fo.config.stagesOn', 'stages')}` : ''}</div>
               </div>
               {!ty.active ? <FieldStatusPill status="inactive" /> : null}
               <button type="button" className="btn btn--ghost" onClick={() => setEditType(ty)}>{t('common.edit', 'Edit')}</button>
@@ -204,6 +204,9 @@ function ManagedList<T extends { id: string; code: string; name: ConfigText; sor
             const dup = items.find((x) => x.id !== edit.id && (same(x.name.en, name.en) || same(x.name.ar, name.ar)));
             if (dup) { setDupError(t('fo.config.duplicate', '“{{name}}” already exists. Edit or reactivate it instead.', { name: configText(dup.name, language) })); return; }
             setDupError(null);
+            // Nothing changed: close without a save (and without an empty audit entry).
+            const before = items.find((x) => x.id === edit.id);
+            if (before && JSON.stringify(before.name) === JSON.stringify(name) && before.sortOrder === (edit.sortOrder ?? 99)) { setEdit(null); return; }
             const code = edit.code ?? `${codeOf(name)}_${Date.now().toString(36)}`;
             void onSave({ id: edit.id, code, name, sortOrder: edit.sortOrder ?? 99, active: edit.active !== false }).then((ok) => { if (ok) setEdit(null); });
           }}
@@ -214,7 +217,7 @@ function ManagedList<T extends { id: string; code: string; name: ConfigText; sor
         <div key={x.id} className="row" style={{ justifyContent: 'space-between', borderTop: '1px solid var(--color-border)', paddingTop: 8 }}>
           <div className="grow">
             <div style={{ fontWeight: 700 }}>{configText(x.name, language)}</div>
-            <div className="card__meta">{[x.name.en, x.name.ar, x.name.ur].filter(Boolean).join(' · ')}</div>
+            <div className="card__meta">{[x.name.en, x.name.ar, x.name.ur].filter(Boolean).map((v, i) => <span key={i}>{i ? ' · ' : ''}<bdi>{v}</bdi></span>)}</div>
           </div>
           {!x.active ? <FieldStatusPill status="inactive" /> : null}
           <button type="button" className="btn btn--ghost" onClick={() => { setEdit(x); setDupError(null); }}>{t('common.edit', 'Edit')}</button>
