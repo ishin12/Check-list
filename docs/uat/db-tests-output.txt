@@ -11,89 +11,115 @@ migrate 0005_roles.sql
 migrate 0006_field_ops.sql
 migrate 0007_field_ops_app.sql
 migrate 0008_uat_fixes.sql
-psql:supabase/tests/field_ops_rules.sql:87: NOTICE:  ok  TC-01 1.0 on A then 0.5 on B is rejected
-psql:supabase/tests/field_ops_rules.sql:91: NOTICE:  ok  TC-01 original record unchanged
-psql:supabase/tests/field_ops_rules.sql:104: NOTICE:  ok  TC-02 0.5 + 0.5 on two projects = 1.0
-psql:supabase/tests/field_ops_rules.sql:110: NOTICE:  ok  BR-002 only 0.5 or 1.0
-psql:supabase/tests/field_ops_rules.sql:117: NOTICE:  ok  TC-03 8 workers at once = 8 records
-psql:supabase/tests/field_ops_rules.sql:122: NOTICE:  ok  Supervisor cannot load crew on a project they do not supervise
-psql:supabase/tests/field_ops_rules.sql:128: NOTICE:  ok  Void needs a reason
-psql:supabase/tests/field_ops_rules.sql:135: NOTICE:  ok  Supervisor cannot close a month
-psql:supabase/tests/field_ops_rules.sql:143: NOTICE:  ok  TC-07 supervisor edit after close is rejected
-psql:supabase/tests/field_ops_rules.sql:147: NOTICE:  ok  TC-07 supervisor insert into closed month is rejected
-psql:supabase/tests/field_ops_rules.sql:152: NOTICE:  ok  Manager without finance cannot edit after close
-psql:supabase/tests/field_ops_rules.sql:157: NOTICE:  ok  Finance edit after close needs a reason
-psql:supabase/tests/field_ops_rules.sql:169: NOTICE:  ok  TC-08 finance edit applied
-psql:supabase/tests/field_ops_rules.sql:176: NOTICE:  ok  TC-08 audit has old value, new value, reason and user
-psql:supabase/tests/field_ops_rules.sql:180: NOTICE:  ok  Manager granted finance can edit after close
-psql:supabase/tests/field_ops_rules.sql:182: NOTICE:  ok  Month close cannot be undone
-psql:supabase/tests/field_ops_rules.sql:192: NOTICE:  ok  Visit cannot skip IN_PROGRESS
-psql:supabase/tests/field_ops_rules.sql:211: NOTICE:  ok  TC-04 visit completed, follow-up task still open
-psql:supabase/tests/field_ops_rules.sql:213: NOTICE:  ok  Follow-up cannot go back to open
-psql:supabase/tests/field_ops_rules.sql:215: NOTICE:  ok  Completed task cannot be reopened
-psql:supabase/tests/field_ops_rules.sql:219: NOTICE:  ok  Completed task cannot be deleted
-psql:supabase/tests/field_ops_rules.sql:221: NOTICE:  ok  Completed visit cannot be deleted
-psql:supabase/tests/field_ops_rules.sql:223: NOTICE:  ok  Project with a follow-up task cannot close
-psql:supabase/tests/field_ops_rules.sql:233: NOTICE:  ok  TC-05 new supervisor sees previous visits
-psql:supabase/tests/field_ops_rules.sql:235: NOTICE:  ok  TC-05 new supervisor sees previous and open tasks
-psql:supabase/tests/field_ops_rules.sql:237: NOTICE:  ok  TC-05 new supervisor sees the project labor
-psql:supabase/tests/field_ops_rules.sql:240: NOTICE:  ok  Old supervisor no longer sees the project
-psql:supabase/tests/field_ops_rules.sql:254: NOTICE:  ok  TC-06 not done until updated
-psql:supabase/tests/field_ops_rules.sql:259: NOTICE:  ok  BR-011 last done and next due are rolled
-psql:supabase/tests/field_ops_rules.sql:265: NOTICE:  ok  TC-10 project cannot be deleted
-psql:supabase/tests/field_ops_rules.sql:267: NOTICE:  ok  Labor cannot be deleted
-psql:supabase/tests/field_ops_rules.sql:269: NOTICE:  ok  Employee cannot be deleted
-psql:supabase/tests/field_ops_rules.sql:271: NOTICE:  ok  Client with projects cannot be deleted
-psql:supabase/tests/field_ops_rules.sql:275: NOTICE:  ok  Completed project cannot be reopened
-psql:supabase/tests/field_ops_rules.sql:277: NOTICE:  ok  Completed project stays searchable
-psql:supabase/tests/field_ops_rules.sql:285: NOTICE:  ok  Supervisor cannot add manual tasks
-psql:supabase/tests/field_ops_rules.sql:289: NOTICE:  ok  Supervisor adds checklist tasks from templates
-psql:supabase/tests/field_ops_rules.sql:292: NOTICE:  ok  C03 supervisor cannot remove a checklist item (BR-014, 0008)
-psql:supabase/tests/field_ops_rules.sql:297: NOTICE:  ok  Day load shows bookings on projects the supervisor cannot see
-psql:supabase/tests/field_ops_rules.sql:299: NOTICE:  ok  Staff can read colleague names
-psql:supabase/tests/field_ops_rules.sql:307: NOTICE:  ok  Supervisor removes a planned visit with no labor
-psql:supabase/tests/field_ops_rules.sql:323: NOTICE:  ok  Recurring item waits for the visit to complete
-psql:supabase/tests/field_ops_rules.sql:327: NOTICE:  ok  A Done tap can be corrected while the visit is in progress
-psql:supabase/tests/field_ops_rules.sql:333: NOTICE:  ok  Visit completion rolls the recurring item
-psql:supabase/tests/field_ops_rules.sql:335: NOTICE:  ok  After the visit completes, Done is final
-psql:supabase/tests/field_ops_rules.sql:342: NOTICE:  ok  Finance cannot add labor to an open month
-psql:supabase/tests/field_ops_rules.sql:346: NOTICE:  ok  Finance adding to a closed month needs a reason
-psql:supabase/tests/field_ops_rules.sql:351: NOTICE:  ok  Finance adds a missing allocation to a closed month with a reason
-psql:supabase/tests/field_ops_rules.sql:362: NOTICE:  ok  Finance cannot void labor in an open month
-psql:supabase/tests/field_ops_rules.sql:378: NOTICE:  ok  Correcting Done on a follow-up keeps it as follow-up
-psql:supabase/tests/field_ops_rules.sql:384: NOTICE:  ok  Supervisor-inserted tasks start open
-psql:supabase/tests/field_ops_rules.sql:388: NOTICE:  ok  Supervisor cannot hand a visit to someone else
-psql:supabase/tests/field_ops_rules.sql:390: NOTICE:  ok  Supervisor cannot move the date of a started visit
-psql:supabase/tests/field_ops_rules.sql:393: NOTICE:  ok  A completed visit is read-only to supervisors
-psql:supabase/tests/field_ops_rules.sql:399: NOTICE:  ok  Supervisor records the client representative
-psql:supabase/tests/field_ops_rules.sql:401: NOTICE:  ok  An issued report cannot be rewritten
-psql:supabase/tests/field_ops_rules.sql:410: NOTICE:  ok  C03 manager cannot delete a task
-psql:supabase/tests/field_ops_rules.sql:415: NOTICE:  ok  C03 supervisor delete removes nothing (no delete policy)
-psql:supabase/tests/field_ops_rules.sql:417: NOTICE:  ok  C03 not even the service role can delete a task
-psql:supabase/tests/field_ops_rules.sql:432: NOTICE:  ok  I04 a closed project takes no new visit
-psql:supabase/tests/field_ops_rules.sql:434: NOTICE:  ok  I04 a planned visit on a closed project cannot be started
-psql:supabase/tests/field_ops_rules.sql:436: NOTICE:  ok  I04 a closed project cannot be deleted
-psql:supabase/tests/field_ops_rules.sql:438: NOTICE:  ok  I04 a closed project stays searchable
-psql:supabase/tests/field_ops_rules.sql:444: NOTICE:  ok  I01 each establishment stage has a checklist
-psql:supabase/tests/field_ops_rules.sql:454: NOTICE:  ok  I01 cannot advance before the stage checklist is done
-psql:supabase/tests/field_ops_rules.sql:458: NOTICE:  ok  I01 cannot skip stages either
-psql:supabase/tests/field_ops_rules.sql:477: NOTICE:  ok  I01 one missing required item still blocks
-psql:supabase/tests/field_ops_rules.sql:483: NOTICE:  ok  L2 items done on a visit still in progress do not count yet
-psql:supabase/tests/field_ops_rules.sql:490: NOTICE:  ok  I01 advances once the required items are done
-psql:supabase/tests/field_ops_rules.sql:494: NOTICE:  ok  I01 optional "agricultural wool" item does not gate
-psql:supabase/tests/field_ops_rules.sql:500: NOTICE:  ok  I01 management can move a project back a stage
-psql:supabase/tests/field_ops_rules.sql:515: NOTICE:  ok  D-05 a mistaken follow-up is corrected to not done on the same visit
-psql:supabase/tests/field_ops_rules.sql:522: NOTICE:  ok  D-05 follow-up then done then not done, all on one visit, ends open
-psql:supabase/tests/field_ops_rules.sql:527: NOTICE:  ok  D-05 after the visit, a follow-up cannot go back to open (BR-006)
-psql:supabase/tests/field_ops_rules.sql:539: NOTICE:  ok  D-07 a project with a visit in progress cannot be closed
-psql:supabase/tests/field_ops_rules.sql:543: NOTICE:  ok  D-13 a future visit can be planned
-psql:supabase/tests/field_ops_rules.sql:545: NOTICE:  ok  D-13 a future visit cannot be started early
-psql:supabase/tests/field_ops_rules.sql:565: NOTICE:  ok  D-29 periodic item done on a visit rolls from the visit date
-psql:supabase/tests/field_ops_rules.sql:571: NOTICE:  ok  M1 employee numbers are unique (case-insensitive)
-psql:supabase/tests/field_ops_rules.sql:573: NOTICE:  ok  M4 a manager cannot deactivate their own account
-psql:supabase/tests/field_ops_rules.sql:575: NOTICE:  ok  D1 a manager cannot change their own role
-psql:supabase/tests/field_ops_rules.sql:578: NOTICE:  ok  D4 working-day changes are audited
-psql:supabase/tests/field_ops_rules.sql:581: NOTICE:  ok  L7 team changes are audited
+migrate 0009_v22.sql
+ok  TC-01 1.0 on A then 0.5 on B is rejected
+ok  TC-01 original record unchanged
+ok  TC-02 0.5 + 0.5 on two projects = 1.0
+ok  BR-002 only 0.5 or 1.0
+ok  TC-03 8 workers at once = 8 records
+ok  Supervisor cannot load crew on a project they do not supervise
+ok  Void needs a reason
+ok  Supervisor cannot close a month
+ok  TC-07 supervisor edit after close is rejected
+ok  TC-07 supervisor insert into closed month is rejected
+ok  Manager without finance cannot edit after close
+ok  Finance edit after close needs a reason
+ok  TC-08 finance edit applied
+ok  TC-08 audit has old value, new value, reason and user
+ok  Manager granted finance can edit after close
+ok  Month close cannot be undone
+ok  Visit cannot skip IN_PROGRESS
+ok  TC-04 visit completed, follow-up task still open
+ok  Follow-up cannot go back to open
+ok  Completed task cannot be reopened
+ok  Completed task cannot be deleted
+ok  Completed visit cannot be deleted
+ok  Project with a follow-up task cannot close
+ok  TC-05 new supervisor sees previous visits
+ok  TC-05 new supervisor sees previous and open tasks
+ok  TC-05 new supervisor sees the project labor
+ok  Old supervisor no longer sees the project
+ok  TC-06 not done until updated
+ok  BR-011 last done and next due are rolled
+ok  TC-10 project cannot be deleted
+ok  Labor cannot be deleted
+ok  Employee cannot be deleted
+ok  Client with projects cannot be deleted
+ok  Completed project cannot be reopened
+ok  Completed project stays searchable
+ok  Supervisor cannot add manual tasks
+ok  Supervisor adds checklist tasks from templates
+ok  C03 supervisor cannot remove a checklist item (BR-014, 0008)
+ok  Day load shows bookings on projects the supervisor cannot see
+ok  Staff can read colleague names
+ok  Supervisor removes a planned visit with no labor
+ok  Recurring item waits for the visit to complete
+ok  A Done tap can be corrected while the visit is in progress
+ok  Visit completion rolls the recurring item
+ok  After the visit completes, Done is final
+ok  Finance cannot add labor to an open month
+ok  Finance adding to a closed month needs a reason
+ok  Finance adds a missing allocation to a closed month with a reason
+ok  Finance cannot void labor in an open month
+ok  Correcting Done on a follow-up keeps it as follow-up
+ok  Supervisor-inserted tasks start open
+ok  Supervisor cannot hand a visit to someone else
+ok  Supervisor cannot move the date of a started visit
+ok  A completed visit is read-only to supervisors
+ok  Supervisor records the client representative
+ok  An issued report cannot be rewritten
+ok  C03 manager cannot delete a task
+ok  C03 supervisor delete removes nothing (no delete policy)
+ok  C03 not even the service role can delete a task
+ok  I04 a closed project takes no new visit
+ok  I04 a planned visit on a closed project cannot be started
+ok  I04 a closed project cannot be deleted
+ok  I04 a closed project stays searchable
+ok  I01 each establishment stage has a checklist
+ok  I01 cannot advance before the stage checklist is done
+ok  I01 cannot skip stages either
+ok  I01 one missing required item still blocks
+ok  L2 items done on a visit still in progress do not count yet
+ok  I01 advances once the required items are done
+ok  I01 optional "agricultural wool" item does not gate
+ok  I01 management can move a project back a stage
+ok  D-05 a mistaken follow-up is corrected to not done on the same visit
+ok  D-05 follow-up then done then not done, all on one visit, ends open
+ok  D-05 after the visit, a follow-up cannot go back to open (BR-006)
+ok  D-07 a project with a visit in progress cannot be closed
+ok  D-13 a future visit can be planned
+ok  D-13 a future visit cannot be started early
+ok  D-29 periodic item done on a visit rolls from the visit date
+ok  M1 employee numbers are unique (case-insensitive)
+ok  M4 a manager cannot deactivate their own account
+ok  D1 a manager cannot change their own role
+ok  D4 working-day changes are audited
+ok  L7 team changes are audited
+ok  v2.2 a visit cannot start without a work type
+ok  TC-13 work type is saved on the visit and applied to every crew row
+ok  TC-13 changing the visit work type updates its crew rows
+ok  v2.2 labor outside a visit needs a work type
+ok  TC-14 1.0 day on Operational Target = warehouse with no project
+ok  TC-14 no project was created for it
+ok  TC-14 the same worker cannot get more that day (BR-001 across targets)
+ok  v2.2 a row cannot be on a project and a target at once
+ok  v2.2 a row needs a project or a target
+ok  TC-15 both rows accepted, day total = 1.0, both kept
+ok  TC-15 a third half day is refused (BR-001)
+ok  v2.2 a supervisor cannot book target labor in another supervisor's name
+ok  v2.2 a supervisor cannot add a work type
+ok  v2.2 a manager adds a work type without code changes
+ok  v2.2 a duplicate work type name is refused
+ok  v2.2 a work type needs English and Arabic names
+ok  v2.2 a duplicate operational target name is refused
+ok  v2.2 work types are switched off, never deleted
+ok  v2.2 a switched-off target takes no new rows
+ok  v2.2 a save that changes nothing leaves no audit entry
+ok  v2.2 list changes are audited
+ok  v2.2 a month with a visit in progress cannot be closed
+ok  v2.2 once the visit is completed the month closes
+ok  v2.2 a visit cannot start in a closed month
+ok  TC-16 no salary, allowance, wage, payroll or cost column exists
 All field-ops rule checks passed.
 ok  TC-12 concurrent loads: one wins, the other is rejected (total 1.0)
 Database tests passed.

@@ -1,20 +1,120 @@
 
  RUN  v2.1.9 /home/user/Check-list
 
- ✓ src/domain/__tests__/visitPlan.test.ts (10 tests) 9ms
- ✓ src/services/data/__tests__/visitFlow.test.ts (4 tests) 208ms
- ✓ src/services/supabase/__tests__/mockFieldOps.test.ts (16 tests) 303ms
- ✓ src/domain/__tests__/fieldOps.test.ts (15 tests) 12ms
- ✓ src/domain/__tests__/labor.test.ts (15 tests) 9ms
- ✓ src/domain/__tests__/reports.test.ts (6 tests) 6ms
- ✓ src/domain/__tests__/taskFlow.test.ts (14 tests) 8ms
- ✓ src/domain/__tests__/recurrence.test.ts (10 tests) 4ms
- ✓ src/domain/__tests__/job.test.ts (3 tests) 4ms
- ✓ src/domain/__tests__/template.test.ts (4 tests) 6ms
- ✓ src/lib/__tests__/dates.test.ts (2 tests) 18ms
+ ✓ src/domain/__tests__/visitPlan.test.ts > applicableTemplates > takes the type checklists and the current stage checklist
+ ✓ src/domain/__tests__/visitPlan.test.ts > buildVisitTasks > adds type checklist items in order, skipping periodic ones
+ ✓ src/domain/__tests__/visitPlan.test.ts > buildVisitTasks > does not duplicate an item that is still open (carried over)
+ ✓ src/domain/__tests__/visitPlan.test.ts > buildVisitTasks > stage items are created once per project and keep their required flag
+ ✓ src/domain/__tests__/visitPlan.test.ts > buildVisitTasks > I01 stage progress lists the required items not completed yet
+ ✓ src/domain/__tests__/visitPlan.test.ts > buildVisitTasks > TC-06 adds due recurring items once, overdue included
+ ✓ src/domain/__tests__/visitPlan.test.ts > refreshing a visit does not duplicate done items > skips periodic and checklist items already completed on this visit
+ ✓ src/domain/__tests__/visitPlan.test.ts > refreshing a visit does not duplicate done items > still adds them on the next visit
+ ✓ src/domain/__tests__/visitPlan.test.ts > recurringItemsFromTemplates > creates tracked items for periodic template items only once
+ ✓ src/domain/__tests__/visitPlan.test.ts > buildReportContent (TC-09) > reflects recorded tasks, photos and crew without re-entry
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > seeds the configuration and demo data
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > TC-01 / BR-001 rejects loading a worker past 1.0 day
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > TC-03 inserts a crew as separate rows, all-or-nothing
+ ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > starts a visit with crew, adds the due checklist, completes and issues the report
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > BR-002 accepts only full or half days
+ ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > a refused crew leaves no half-started visit (BR-001)
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > TC-07 / TC-08 month close locks supervisors, finance edits with a reason
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > a refused update leaves the row unchanged
+ ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > a planned visit is started (and its crew booked) on the day it happens
+ ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > TC-14 a day with no project is booked on an operational target — no visit, no project
+ ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > a visit cannot start without a work type
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > BR-014 blocks hard deletes
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > TC-04 follow-up survives visit completion; states only move forward
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > D-10: a supervisor sees only the projects they supervise (RLS)
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > a project with open tasks cannot be closed
+ ✓ src/services/data/__tests__/visitFlow.test.ts > supervisor visit cycle (demo backend) > an optional item is saved when used and kept after completion
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > demo backend mirrors the field-ops rules > TC-06 / BR-011 completing a recurring task rolls its dates
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > review fixes mirrored in the demo backend > a Done correction on a follow-up stays a follow-up
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > review fixes mirrored in the demo backend > C03: no task can be deleted, used or not (BR-014, migration 0008)
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > review fixes mirrored in the demo backend > I04: a completed / closed project takes no new visit (BR-008)
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > review fixes mirrored in the demo backend > I01: a project cannot move past a stage whose required items are not done
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > review fixes mirrored in the demo backend > supervisors cannot hand visits to others or rewrite issued reports
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > Master Spec v2.2 in the demo backend (0009) > TC-13 the visit work type goes to its crew without per-worker entry, and follows a change
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > Master Spec v2.2 in the demo backend (0009) > TC-14 a full day on the warehouse target, no project
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > Master Spec v2.2 in the demo backend (0009) > TC-15 half project + half target = 1.0, a third half is refused
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > Master Spec v2.2 in the demo backend (0009) > a row is on a project or a target, never both or neither, and needs a work type
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > Master Spec v2.2 in the demo backend (0009) > list names need English and Arabic and are unique
+ ✓ src/services/supabase/__tests__/mockFieldOps.test.ts > Master Spec v2.2 in the demo backend (0009) > a month with a visit in progress cannot be closed (§36A)
+ ✓ src/domain/__tests__/fieldOps.test.ts > state machines (§27) > visits go planned -> in_progress -> completed only
+ ✓ src/domain/__tests__/fieldOps.test.ts > state machines (§27) > tasks: open -> completed | follow-up -> completed, never back
+ ✓ src/domain/__tests__/fieldOps.test.ts > state machines (§27) > completed or closed projects are final
+ ✓ src/domain/__tests__/fieldOps.test.ts > state machines (§27) > a project with open or follow-up tasks cannot close
+ ✓ src/domain/__tests__/fieldOps.test.ts > visits and follow-up > TC-04 follow-up stays open after the visit and shows on the next one
+ ✓ src/domain/__tests__/fieldOps.test.ts > visits and follow-up > "not done" is an answer: the task stays open and carries over
+ ✓ src/domain/__tests__/fieldOps.test.ts > visits and follow-up > unanswered required items, missing required photos and no crew block completion
+ ✓ src/domain/__tests__/fieldOps.test.ts > visits and follow-up > BR-012 photos are not needed unless configured
+ ✓ src/domain/__tests__/fieldOps.test.ts > recurring maintenance > computes next due like Postgres date + interval
+ ✓ src/domain/__tests__/fieldOps.test.ts > recurring maintenance > TC-06 due and overdue items show until done
+ ✓ src/domain/__tests__/fieldOps.test.ts > recurring maintenance > BR-011 rolls last done and next due from the actual done date
+ ✓ src/domain/__tests__/fieldOps.test.ts > permissions (§29) > finance is its own role and can be granted to a manager
+ ✓ src/domain/__tests__/fieldOps.test.ts > permissions (§29) > supervisors record labor and execute tasks but cannot manage or close
+ ✓ src/domain/__tests__/fieldOps.test.ts > permissions (§29) > finance reviews and exports but does not execute tasks
+ ✓ src/domain/__tests__/fieldOps.test.ts > permissions (§29) > inactive users can do nothing
+ ✓ src/domain/__tests__/labor.test.ts > labor allocation rules > TC-01 rejects 0.5 on B when already 1.0 on A
+ ✓ src/domain/__tests__/labor.test.ts > labor allocation rules > TC-02 accepts 0.5 + 0.5 on two projects
+ ✓ src/domain/__tests__/labor.test.ts > labor allocation rules > BR-002 only full or half day
+ ✓ src/domain/__tests__/labor.test.ts > labor allocation rules > voided rows do not count toward the day
+ ✓ src/domain/__tests__/labor.test.ts > labor allocation rules > editing a row does not count the row against itself
+ ✓ src/domain/__tests__/labor.test.ts > labor allocation rules > TC-03 eight workers at once become eight records
+ ✓ src/domain/__tests__/labor.test.ts > labor allocation rules > crew save is all-or-nothing when one worker is already full
+ ✓ src/domain/__tests__/labor.test.ts > labor allocation rules > the same worker picked twice in one visit is caught
+ ✓ src/domain/__tests__/labor.test.ts > month close > monthOf returns the first day
+ ✓ src/domain/__tests__/labor.test.ts > month close > TC-07 supervisor cannot change a closed month
+ ✓ src/domain/__tests__/labor.test.ts > month close > TC-08 finance can change a closed month with a reason
+ ✓ src/domain/__tests__/labor.test.ts > month close > moving a row out of a closed month is still a closed-month change
+ ✓ src/domain/__tests__/labor.test.ts > month close > open months are unaffected
+ ✓ src/domain/__tests__/labor.test.ts > unallocated and copy crew > TC-11 lists active workers with free time
+ ✓ src/domain/__tests__/labor.test.ts > unallocated and copy crew > copies the crew of the latest earlier day on the project
+ ✓ src/domain/__tests__/reports.test.ts > labor reports (§14, §21) > worker report: days per worker and where
+ ✓ src/domain/__tests__/reports.test.ts > labor reports (§14, §21) > project report: workers and days per worker; voided rows excluded
+ ✓ src/domain/__tests__/reports.test.ts > labor reports (§14, §21) > monthly matrix totals match
+ ✓ src/domain/__tests__/reports.test.ts > labor reports (§14, §21) > TC-11 unallocated workers on working days only
+ ✓ src/domain/__tests__/reports.test.ts > labor reports (§14, §21) > D-18 / L8 counts a worker only from joining until being switched off
+ ✓ src/domain/__tests__/reports.test.ts > open work report > splits follow-up, open and overdue periodic items
+ ✓ src/domain/__tests__/reports.test.ts > v2.2 operational targets and work types in reports > TC-15 a day split between a project and a target shows both, total 1.0
+ ✓ src/domain/__tests__/reports.test.ts > v2.2 operational targets and work types in reports > TC-14 a target day is reported on the target, never as a project
+ ✓ src/domain/__tests__/reports.test.ts > v2.2 operational targets and work types in reports > TC-13 days by work type, split by project / target
+ ✓ src/domain/__tests__/reports.test.ts > v2.2 operational targets and work types in reports > labor detail lines: worker + date + place + work type + duration, voided rows left out
+ ✓ src/domain/__tests__/taskFlow.test.ts > canTransition > worker can start a not_started task
+ ✓ src/domain/__tests__/taskFlow.test.ts > canTransition > worker cannot approve
+ ✓ src/domain/__tests__/taskFlow.test.ts > canTransition > manager can approve a submitted task
+ ✓ src/domain/__tests__/taskFlow.test.ts > canTransition > manager can reject a submitted task
+ ✓ src/domain/__tests__/taskFlow.test.ts > canTransition > client has no transitions
+ ✓ src/domain/__tests__/taskFlow.test.ts > canTransition > rejected can be reopened
+ ✓ src/domain/__tests__/taskFlow.test.ts > availableActions > lists worker actions on an in-progress task
+ ✓ src/domain/__tests__/taskFlow.test.ts > availableActions > lists manager actions on a submitted task
+ ✓ src/domain/__tests__/taskFlow.test.ts > timeOnTaskMinutes > returns 0 before start
+ ✓ src/domain/__tests__/taskFlow.test.ts > timeOnTaskMinutes > computes minutes between start and finish
+ ✓ src/domain/__tests__/taskFlow.test.ts > dailySummary > groups tasks for a worker on a given day
+ ✓ src/domain/__tests__/taskFlow.test.ts > proofRequirements > requires a start proof before starting
+ ✓ src/domain/__tests__/taskFlow.test.ts > proofRequirements > does not require start proof once captured
+ ✓ src/domain/__tests__/taskFlow.test.ts > proofRequirements > requires a finish proof while in progress
+ ✓ src/domain/__tests__/recurrence.test.ts > nextOccurrenceDate > returns null when recurrence is none
+ ✓ src/domain/__tests__/recurrence.test.ts > nextOccurrenceDate > adds 7 days for weekly
+ ✓ src/domain/__tests__/recurrence.test.ts > nextOccurrenceDate > adds 1 month for monthly
+ ✓ src/domain/__tests__/recurrence.test.ts > nextOccurrenceDate > adds 3 months for quarterly
+ ✓ src/domain/__tests__/recurrence.test.ts > nextOccurrenceDate > adds 6 months for biannual
+ ✓ src/domain/__tests__/recurrence.test.ts > nextOccurrenceDate > clamps Jan 31 -> Feb 28 in a non-leap year
+ ✓ src/domain/__tests__/recurrence.test.ts > nextOccurrenceDate > clamps Jan 31 -> Feb 29 in a leap year
+ ✓ src/domain/__tests__/recurrence.test.ts > nextOccurrenceDate > clamps Mar 31 -> Apr 30
+ ✓ src/domain/__tests__/recurrence.test.ts > nextOccurrenceDate > preserves time-of-day on monthly clamp
+ ✓ src/domain/__tests__/recurrence.test.ts > recurrenceLabel > returns a label for each option
+ ✓ src/domain/__tests__/job.test.ts > job domain > starts a job with a frozen template snapshot and unchecked results
+ ✓ src/domain/__tests__/job.test.ts > job domain > requires required tasks to be checked before continuing
+ ✓ src/domain/__tests__/job.test.ts > job domain > only allows completion with required tasks done and a signature
+ ✓ src/domain/__tests__/template.test.ts > template domain > creates an empty bilingual template
+ ✓ src/domain/__tests__/template.test.ts > template domain > normalizes task order into a 0-based sequence
+ ✓ src/domain/__tests__/template.test.ts > template domain > moves a task and re-sequences order
+ ✓ src/domain/__tests__/template.test.ts > template domain > duplicates a template with fresh ids
+ ✓ src/lib/__tests__/dates.test.ts > Riyadh time (UAT I05) > dates an instant by the Riyadh calendar, not the device or UTC
+ ✓ src/lib/__tests__/dates.test.ts > Riyadh time (UAT I05) > shows times in Riyadh time around midnight
 
  Test Files  11 passed (11)
-      Tests  99 passed (99)
-   Start at  18:30:07
-   Duration  3.08s (transform 537ms, setup 0ms, collect 906ms, tests 587ms, environment 4.03s, prepare 656ms)
+      Tests  111 passed (111)
+   Start at  22:41:18
+   Duration  3.18s (transform 639ms, setup 0ms, collect 1.09s, tests 713ms, environment 4.13s, prepare 781ms)
 
