@@ -388,7 +388,8 @@ export function ProjectDetailScreen() {
           return (
             <div key={v.id} className="card">
               <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Link to={v.status === 'planned' ? `/visits/start?visit=${v.id}` : `/visits/${v.id}`} className="grow list-link">
+                {/* Finance only views a planned visit; who can start it goes to Start visit (UAT v2.2). */}
+                <Link to={v.status === 'planned' && (isManager || user?.role === 'supervisor' || user?.role === 'worker') ? `/visits/start?visit=${v.id}` : `/visits/${v.id}`} className="grow list-link">
                   <div className="card__title" style={{ fontSize: '1rem' }}>{formatDate(v.visitDate, language, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</div>
                   <div className="card__meta">{names.person(v.supervisorId)}{crew.length ? ` · ${t('fo.pd.workerCount', '{{count}} workers', { count: crew.length })}` : ''}</div>
                 </Link>

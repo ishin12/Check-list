@@ -329,7 +329,7 @@ export type TaskAnswer = 'done' | 'not_done' | 'follow_up';
  * back to open, so "not done" on a follow-up keeps it as a follow-up.
  */
 export async function answerTask(
-  task: Pick<ProjectTask, 'id' | 'status'> & Partial<Pick<ProjectTask, 'followUpVisitId'>>,
+  task: Pick<ProjectTask, 'id' | 'status'> & Partial<Pick<ProjectTask, 'followUpVisitId' | 'lastVisitId' | 'note'>>,
   visitId: string,
   answer: TaskAnswer,
   note?: string,
@@ -341,6 +341,9 @@ export async function answerTask(
   // A follow-up set by mistake on this same visit can still become "not done" (0008).
   if (answer === 'not_done' && task.status === 'needs_follow_up' && task.followUpVisitId === visitId) row.status = 'open';
   if (note !== undefined) row.note = note.trim() || null;
+  // Done now: a reason left on an earlier visit ("not delivered yet") no longer applies,
+  // so it does not appear under a done item in this visit's report (UAT v2.2 D3).
+  else if (answer === 'done' && task.note && task.lastVisitId && task.lastVisitId !== visitId) row.note = null;
   changed(await sb().from('project_tasks').update(row).eq('id', task.id).select('id'));
 }
 

@@ -6,7 +6,7 @@ import { AppShell } from '@/components/AppShell';
 import { FieldStatusPill } from '@/components/field/FieldStatusPill';
 import { useFieldData } from '@/app/providers/FieldDataContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
-import { getWorkDays, listLabor, listRecurring, listReports, listTasks, listVisits } from '@/services/data/fieldOps';
+import { dayLoads, getWorkDays, listLabor, listRecurring, listReports, listTasks, listVisits } from '@/services/data/fieldOps';
 import {
   laborLines,
   laborMatrix,
@@ -65,8 +65,15 @@ export function ReportsScreen() {
     const [labor, visits, tasks, recurring, workDays] = await Promise.all([
       listLabor({ from, to }), listVisits({ from, to }), listTasks(), listRecurring(), getWorkDays(),
     ]);
+    // Day totals across every supervisor (a supervisor's own list only holds their rows),
+    // so "Not allocated" matches Home and Start visit (UAT v2.2 D2).
+    const loads = await dayLoads(from, to);
+    const dayTotals = [...loads].map(([key, total]) => {
+      const [employeeId, workDate] = key.split('|');
+      return { employeeId, workDate, duration: total as 0.5 | 1 };
+    });
     const reports = await listReports(visits.map((v) => v.id));
-    return { labor, visits, tasks, recurring, workDays, reports };
+    return { labor, visits, tasks, recurring, workDays, reports, dayTotals };
   }, [from, to]);
 
   const filtered = useMemo(() => {
@@ -79,7 +86,7 @@ export function ReportsScreen() {
     const recurring = data.recurring.filter((r) => !place || (!isTarget && r.projectId === place));
     const employees = fd.employees.filter((e) => !employeeId || e.id === employeeId);
     const days = eachDay(from, to > today ? today : to);
-    const unalloc = unallocatedReport(employees, data.labor, days, data.workDays, weekday, (iso) => riyadhDate(new Date(iso)));
+    const unalloc = unallocatedReport(employees, data.dayTotals, days, data.workDays, weekday, (iso) => riyadhDate(new Date(iso)));
     return {
       labor, visits, tasks, recurring,
       workers: workerReport(labor, from, to),
