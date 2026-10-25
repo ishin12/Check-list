@@ -38,6 +38,17 @@ export function MediaCaptureScreen() {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  // Re-render when connectivity changes so the offline hint stays accurate.
+  const [online, setOnline] = useState(() => navigator.onLine);
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+    };
+  }, []);
   const [file, setFile] = useState<File | null>(null);
   const [pending, setPending] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -210,7 +221,7 @@ export function MediaCaptureScreen() {
             ) : null}
           </div>
         ) : null}
-        {!navigator.onLine && !savedOffline ? (
+        {!online && !savedOffline ? (
           <div className="banner banner--info capture__banner">
             {t('photo.offlineHint', 'You are offline. The photo will be saved on this phone and uploaded when you are back online.')}
             {pending > 0 ? ` (${t('photo.queued', { count: pending, defaultValue: '{{count}} waiting' })})` : null}

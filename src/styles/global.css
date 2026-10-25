@@ -167,6 +167,7 @@ textarea {
   background: var(--color-surface-2);
   color: var(--color-text);
   transition: transform 0.05s ease, background 0.15s ease, opacity 0.15s ease;
+  text-decoration: none;
 }
 
 .btn:active {
@@ -1097,7 +1098,7 @@ html[dir='rtl'] .demo-account__arrow { transform: scaleX(-1); }
   z-index: 200;
   display: flex;
   flex-direction: column;
-  background: rgba(0,0,0,0.94);
+  background: #000;
   color: #fff;
 }
 .viewer__bar {
