@@ -38,6 +38,14 @@ begin
   insert into public.task_workers (task_id, worker_id)
   values (new.id, new.assigned_worker_id)
   on conflict do nothing;
+  -- A lead change made by updating the column directly (old cached app
+  -- versions) is a reassignment: the previous lead leaves the task. Inside
+  -- set_task_workers the previous lead is only replaced when it is not in the
+  -- new list, so this matches what that RPC does anyway.
+  if tg_op = 'UPDATE' and old.assigned_worker_id is distinct from new.assigned_worker_id then
+    delete from public.task_workers
+    where task_id = new.id and worker_id = old.assigned_worker_id;
+  end if;
   return new;
 end;
 $$;

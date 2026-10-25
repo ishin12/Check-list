@@ -43,6 +43,12 @@ Open the **SQL Editor** and run each file's contents, in this order:
 3. `supabase/migrations/0003_extra_work.sql` — the worker "extra work done" log.
 4. `supabase/migrations/0004_signing.sql` — WhatsApp signing links, `app_settings`,
    `approval_method`, and the two public sign RPCs.
+5. `supabase/migrations/0005_storage.sql` — `proofs` storage bucket and policies (see §3).
+6. `supabase/migrations/0006_task_workers.sql` — several workers per task (`task_workers`).
+7. `supabase/migrations/0007_task_location.sql` — optional Google Maps location on tasks.
+
+0005–0007 are additive and safe to re-run. Rollback statements are at the bottom
+of each file.
 
 ## 3. Storage bucket and policies
 Run `supabase/migrations/0005_storage.sql` in the SQL Editor (after 0004). It is safe

@@ -192,3 +192,24 @@ do $$ begin
   if not found then raise exception 'FAIL: lead could not submit'; end if;
 end $$;
 rollback;
+
+-- Old-app reassignment (direct update of the lead column) removes the
+-- previous lead's access.
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a1';
+update public.tasks set assigned_worker_id = '00000000-0000-0000-0000-0000000000b3'
+  where id = '30000000-0000-0000-0000-000000000002';
+set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000b2';
+do $$ begin
+  if exists (select 1 from public.tasks where id = '30000000-0000-0000-0000-000000000002') then
+    raise exception 'FAIL: previous lead still sees a reassigned task';
+  end if;
+end $$;
+set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000b3';
+do $$ begin
+  if not exists (select 1 from public.tasks where id = '30000000-0000-0000-0000-000000000002') then
+    raise exception 'FAIL: new lead cannot see the task';
+  end if;
+end $$;
+rollback;
