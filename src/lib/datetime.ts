@@ -34,7 +34,11 @@ export function formatDateAndTime(
   language: Language,
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  return new Date(value).toLocaleString(dateLocale(language), options);
+  const text = new Date(value).toLocaleString(dateLocale(language), options);
+  // Numeric date+time in Urdu mixes digits with the Urdu comma; isolate it as one
+  // left-to-right run so the comma does not jump to the wrong side. Textual
+  // formats (month names) are real Urdu words and must stay RTL.
+  return language === 'ur' && !options ? `\u2066${text}\u2069` : text;
 }
 
 export function formatDateTime(iso: string, language: Language): string {

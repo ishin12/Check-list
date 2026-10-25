@@ -30,6 +30,7 @@
 
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-ar: 'Cairo', system-ui, sans-serif;
+  --font-ur: 'Noto Nastaliq Urdu', 'Noto Naskh Arabic', 'Cairo', system-ui, sans-serif;
 
   /* Ghsoon Najd brand — extracted from the company profile deck. */
   --color-ink: #003C1B;            /* deep forest */
@@ -1368,3 +1369,84 @@ html[dir='rtl'] .demo-account__arrow { transform: scaleX(-1); }
 .worker-select__item span { min-width: 0; overflow-wrap: anywhere; }
 .worker-select__empty { padding: 12px; }
 .worker-edit { display: flex; flex-direction: column; gap: 10px; }
+
+/* Urdu (Nastaliq) ---------------------------------------------------------------
+   Nastaliq has tall ascenders and deep descenders and a diagonal baseline, so
+   everything that fixes a line box needs extra line-height / padding. These
+   rules are scoped to html[lang='ur'] only; English and Arabic are untouched. */
+html[lang='ur'] body {
+  font-family: var(--font-ur);
+  line-height: 2;
+}
+html[lang='ur'] button,
+html[lang='ur'] input,
+html[lang='ur'] textarea,
+html[lang='ur'] select {
+  font-family: var(--font-ur);
+  line-height: 1.9;
+}
+html[lang='ur'] .btn {
+  line-height: 1.9;
+  padding-block: 10px 6px;
+  min-block-size: 52px;
+}
+html[lang='ur'] .btn--icon { min-block-size: 44px; padding-block: 6px; }
+html[lang='ur'] .btn--lg { min-block-size: 60px; }
+html[lang='ur'] .icon-btn { line-height: 1.2; font-family: var(--font-sans); }
+html[lang='ur'] .input,
+html[lang='ur'] .textarea {
+  line-height: 2;
+  padding-block: 10px 6px;
+  min-block-size: 52px;
+}
+html[lang='ur'] .app-header { padding-block: 10px; }
+html[lang='ur'] .app-header__title {
+  line-height: 2.2;
+  padding-block: 6px 2px;
+}
+/* Linked cards render as <a>; browsers underline them in blue. Underlines cut through Nastaliq. */
+html[lang='ur'] a.card--tap { text-decoration: none; color: inherit; }
+html[lang='ur'] .tab-bar__item { font-size: 0.6875rem; }
+html[lang='ur'] .card__title { line-height: 2; }
+html[lang='ur'] .card__meta { line-height: 2; margin-top: 0; }
+html[lang='ur'] .card { padding-block: 14px 12px; }
+html[lang='ur'] .section-title,
+html[lang='ur'] .badge,
+html[lang='ur'] .status-pill {
+  letter-spacing: 0;
+  text-transform: none;
+}
+html[lang='ur'] .section-title { line-height: 2.2; }
+html[lang='ur'] .field__label,
+html[lang='ur'] .hint { line-height: 2; }
+html[lang='ur'] .badge {
+  line-height: 1.9;
+  padding-block: 4px 0;
+  font-size: 0.8125rem;
+}
+html[lang='ur'] .status-pill {
+  line-height: 1.9;
+  padding-block: 6px 2px;
+  font-size: 0.8125rem;
+  min-block-size: 30px;
+}
+html[lang='ur'] .tab-bar__item {
+  line-height: 1.9;
+  min-block-size: 68px;
+  font-size: 0.75rem;
+  padding-block: 8px 4px;
+}
+html[lang='ur'] .tab-bar__label { line-height: 2; }
+html[lang='ur'] .tab-bar { padding-block-end: env(safe-area-inset-bottom); }
+html[lang='ur'] .lang-toggle button { line-height: 1.9; min-block-size: 40px; padding-block: 6px 2px; }
+html[lang='ur'] .banner { line-height: 2; }
+html[lang='ur'] .check-item__label { line-height: 2; }
+html[lang='ur'] .agenda__date { line-height: 2.1; }
+html[lang='ur'] .demo-switcher__item,
+html[lang='ur'] .demo-switcher__chip { line-height: 1.9; }
+
+/* Direction-aware chevron (see components/Chevron.tsx). The path points left. */
+.chev { display: inline-block; vertical-align: middle; }
+.chev--forward { transform: scaleX(-1); }
+html[dir='rtl'] .chev--back { transform: scaleX(-1); }
+html[dir='rtl'] .chev--forward { transform: none; }

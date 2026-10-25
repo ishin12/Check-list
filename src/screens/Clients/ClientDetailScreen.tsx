@@ -60,13 +60,14 @@ export function ClientDetailScreen() {
   const history  = tasks.filter((x) => x.status !== 'not_started');
   const openNotes = notes.filter((n) => n.status === 'open');
 
+  const contactBits = [client.phone, client.email, client.address].filter(Boolean) as string[];
   return (
     <AppShell>
       <AppHeader title={client.name} showBack />
       <main className="app-main">
         <div className="card">
           <div className="card__title">{client.name}</div>
-          <div className="card__meta">{[client.phone, client.email, client.address].filter(Boolean).join(' · ') || '—'}</div>
+          <div className="card__meta">{contactBits.length ? contactBits.map((v, i) => <span key={i}>{i > 0 ? ' · ' : ''}<bdi>{v}</bdi></span>) : '—'}</div>
         </div>
 
         <section>
@@ -77,7 +78,7 @@ export function ClientDetailScreen() {
             <div className="stack">
               {openNotes.map((n) => (
                 <div key={n.id} className="note-card">
-                  <div>{n.body}</div>
+                  <div dir="auto">{n.body}</div>
                   <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
                     <span className="card__meta">{formatDate(n.createdAt, language)}</span>
                     <button className="btn btn--ghost" onClick={async () => { await resolveNote(n.id); await load(); }}>

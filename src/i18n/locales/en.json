@@ -230,7 +230,8 @@
     "from": "From",
     "to": "To",
     "anyone": "Anyone",
-    "allTypes": "All"
+    "allTypes": "All",
+    "system": "system"
   },
   "recurrence": {
     "none": "Does not repeat",
@@ -244,7 +245,12 @@
     "accountsTitle": "Demo accounts",
     "orEmail": "Or sign in with email below:",
     "chip": "Demo",
-    "switchRole": "Switch role"
+    "switchRole": "Switch role",
+    "blurb": {
+      "manager": "Full access — calendar, approvals, clients, audit",
+      "worker": "Sees only own tasks · capture proof · submit",
+      "client": "Read-only portal — visits & approved proof"
+    }
   },
   "proof": {
     "title": "Proof",
@@ -327,7 +333,8 @@
     "newPassword": "New password (min 8 chars)",
     "savePassword": "Save",
     "passwordSet": "Password updated.",
-    "passwordFailed": "Couldn’t set password."
+    "passwordFailed": "Couldn’t set password.",
+    "inactive": "inactive"
   },
   "common": {
     "save": "Save",
@@ -346,7 +353,8 @@
     "yes": "Yes",
     "no": "No",
     "saving": "Saving…",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "minutesShort": "{{count}} min"
   },
   "photo": {
     "close": "Close",

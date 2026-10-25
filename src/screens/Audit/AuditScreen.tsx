@@ -116,7 +116,7 @@ export function AuditScreen() {
                   <span className="card__meta">{formatDateAndTime(r.at, language)}</span>
                 </div>
                 <div className="card__meta">
-                  {r.actor?.[0]?.full_name ?? r.actor?.[0]?.email ?? r.actor_id ?? 'system'} · {r.entity}
+                  {r.actor?.[0]?.full_name ?? r.actor?.[0]?.email ?? r.actor_id ?? t('audit.system', 'system')} · {r.entity}
                 </div>
               </div>
             ))}

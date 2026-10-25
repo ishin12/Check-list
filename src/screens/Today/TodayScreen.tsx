@@ -88,7 +88,7 @@ export function TodayScreen() {
               <TaskWhoLine task={next} hideWorker={user?.role === 'worker'} />
               <div className="card__meta">
                 {formatTime(next.scheduledAt, language, { hour: '2-digit', minute: '2-digit' })}
-                {next.startedAt ? ` · ${timeOnTaskMinutes(next)} min` : null}
+                {next.startedAt ? ` · ${t('common.minutesShort', { count: timeOnTaskMinutes(next) })}` : null}
               </div>
             </div>
           </Link>

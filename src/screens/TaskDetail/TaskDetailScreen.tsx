@@ -230,7 +230,7 @@ export function TaskDetailScreen() {
             <div className="stack">
               {openNotes.map((n) => (
                 <div key={n.id} className="note-card">
-                  <div>{n.body}</div>
+                  <div dir="auto">{n.body}</div>
                   <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
                     <span className="card__meta">{formatDate(n.createdAt, language)}</span>
                     <button
@@ -297,7 +297,7 @@ export function TaskDetailScreen() {
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <span className="section-title">{t('proof.title', 'Proof')}</span>
             <span className="card__meta">
-              {task.startedAt ? `${timeOnTaskMinutes(task)} min` : '—'}
+              {task.startedAt ? t('common.minutesShort', { count: timeOnTaskMinutes(task) }) : '—'}
             </span>
           </div>
           <div className="stack" style={{ marginTop: 8 }}>

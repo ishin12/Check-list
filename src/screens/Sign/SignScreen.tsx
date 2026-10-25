@@ -117,7 +117,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="sign-row">
       <span className="sign-row__label">{label}</span>
-      <span className="sign-row__value">{value}</span>
+      <span className="sign-row__value"><bdi>{value}</bdi></span>
     </div>
   );
 }

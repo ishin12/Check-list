@@ -7,11 +7,6 @@ import { isDemoMode } from '@/services/supabase/client';
 
 interface DemoProfile { id: string; full_name: string; email: string; role: 'manager' | 'worker' | 'client' }
 
-const ROLE_BLURB: Record<DemoProfile['role'], string> = {
-  manager: 'Full access — calendar, approvals, clients, audit',
-  worker:  'Sees only own tasks · capture proof · submit',
-  client:  'Read-only portal — visits & approved proof',
-};
 
 export function LoginScreen() {
   const { t } = useTranslation();
@@ -106,11 +101,11 @@ export function LoginScreen() {
                   disabled={status === 'sending'}
                 >
                   <div className={`demo-account__role demo-account__role--${p.role}`}>
-                    {p.role}
+                    {t(`roles.${p.role}`, p.role)}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div className="card__title">{p.full_name}</div>
-                    <div className="card__meta">{ROLE_BLURB[p.role]}</div>
+                    <div className="card__meta">{t(`demo.blurb.${p.role}`)}</div>
                   </div>
                   <span className="demo-account__arrow" aria-hidden>→</span>
                 </button>

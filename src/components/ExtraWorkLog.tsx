@@ -73,9 +73,9 @@ export function ExtraWorkLog({
             return (
               <div key={e.id} className="extra-entry">
                 <div style={{ flex: 1 }}>
-                  <div>{e.body}</div>
+                  <div dir="auto">{e.body}</div>
                   <div className="card__meta" style={{ marginTop: 2 }}>
-                    {(e.addedByName ?? e.addedBy)} · {formatDateAndTime(e.addedAt, language, {
+                    <bdi>{(e.addedByName ?? e.addedBy)}</bdi> · {formatDateAndTime(e.addedAt, language, {
                       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                     })}
                   </div>
