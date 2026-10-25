@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/app/providers/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
@@ -9,9 +10,11 @@ import { listTasks } from '@/services/data/tasks';
 import type { Client, ClientNote, FieldTask } from '@/domain/models/ops';
 import { NoteComposer, resolveNote } from '@/components/NoteComposer';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
+import { formatDate, formatDateAndTime } from '@/lib/datetime';
 
 export function ClientDetailScreen() {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const { id } = useParams();
   const [client, setClient] = useState<Client | null>(null);
   const [tasks, setTasks] = useState<FieldTask[]>([]);
@@ -48,7 +51,7 @@ export function ClientDetailScreen() {
     return (
       <AppShell>
         <AppHeader title={t('clients.title', 'Client')} showBack />
-        <main className="app-main"><p className="hint">Loading…</p></main>
+        <main className="app-main"><p className="hint">{t('common.loading', 'Loading…')}</p></main>
       </AppShell>
     );
   }
@@ -76,7 +79,7 @@ export function ClientDetailScreen() {
                 <div key={n.id} className="note-card">
                   <div>{n.body}</div>
                   <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
-                    <span className="card__meta">{new Date(n.createdAt).toLocaleDateString()}</span>
+                    <span className="card__meta">{formatDate(n.createdAt, language)}</span>
                     <button className="btn btn--ghost" onClick={async () => { await resolveNote(n.id); await load(); }}>
                       {t('notes.resolve', 'Mark resolved')}
                     </button>
@@ -101,7 +104,7 @@ export function ClientDetailScreen() {
                   <div style={{ flex: 1 }}>
                     <div className="card__title">{x.title}</div>
                     <TaskWhoLine task={x} hideClient />
-                    <div className="card__meta">{new Date(x.scheduledAt).toLocaleString()}</div>
+                    <div className="card__meta">{formatDateAndTime(x.scheduledAt, language)}</div>
                   </div>
                   <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
                 </Link>
@@ -122,7 +125,7 @@ export function ClientDetailScreen() {
                   <div style={{ flex: 1 }}>
                     <div className="card__title">{x.title}</div>
                     <TaskWhoLine task={x} hideClient />
-                    <div className="card__meta">{new Date(x.scheduledAt).toLocaleDateString()}</div>
+                    <div className="card__meta">{formatDate(x.scheduledAt, language)}</div>
                   </div>
                   <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
                 </Link>

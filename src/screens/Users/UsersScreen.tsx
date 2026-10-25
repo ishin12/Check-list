@@ -115,9 +115,9 @@ export function UsersScreen() {
           <div className="field">
             <label className="field__label">{t('users.role', 'Role')}</label>
             <select className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-              <option value="worker">Worker</option>
-              <option value="manager">Manager</option>
-              <option value="client">Client</option>
+              <option value="worker">{t('roles.worker', 'Worker')}</option>
+              <option value="manager">{t('roles.manager', 'Manager')}</option>
+              <option value="client">{t('roles.client', 'Client')}</option>
             </select>
           </div>
           {role === 'client' ? (

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { localizedText } from '@/domain/template/template';
 import { useTranslation } from 'react-i18next';
 import { getSupabase } from '@/services/supabase/client';
 import { useLanguage } from '@/app/providers/LanguageContext';
@@ -49,19 +50,19 @@ export function TemplateRunner({ templateId, taskId, initialResults, readOnly, o
   }
 
   if (!template) return null;
-  const title = template.title?.[language] ?? template.title?.en ?? '';
+  const title = localizedText(template.title, language);
 
   return (
     <section className="card">
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <span className="section-title">{t('runner.title', 'Checklist')} · {title}</span>
-        <span className="card__meta">{done}/{items.length}{saving ? ' · saving' : ''}</span>
+        <span className="card__meta">{done}/{items.length}{saving ? ` · ${t('runner.saving', 'saving')}` : ''}</span>
       </div>
       <div className="stack" style={{ marginTop: 8 }}>
         {items.map((item) => {
           const r = results.find((x) => x.taskId === item.id);
           const checked = !!r?.checked;
-          const label = item.label?.[language] ?? item.label?.en ?? '';
+          const label = localizedText(item.label, language);
           const flagged = item.required && !checked;
           return (
             <button

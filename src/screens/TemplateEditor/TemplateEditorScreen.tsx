@@ -66,7 +66,7 @@ export function TemplateEditorScreen() {
     setTemplate({ ...template, tasks: moveTask(template.tasks, from, to) });
 
   const save = async () => {
-    if (!template.title.en.trim() && !template.title.ar.trim()) {
+    if (!template.title.en.trim() && !template.title.ar.trim() && !(template.title.ur ?? '').trim()) {
       setError(t('editor.nameRequired'));
       return;
     }
@@ -103,6 +103,19 @@ export function TemplateEditorScreen() {
               placeholder={t('editor.namePlaceholderAr')}
               onChange={(e) =>
                 update({ title: { ...template.title, ar: e.target.value } })
+              }
+            />
+          </div>
+          <div className="field">
+            <label className="field__label">{t('editor.nameUr')}</label>
+            <input
+              className="input"
+              dir="rtl"
+              lang="ur"
+              value={template.title.ur ?? ''}
+              placeholder={t('editor.namePlaceholderUr')}
+              onChange={(e) =>
+                update({ title: { ...template.title, ur: e.target.value } })
               }
             />
           </div>
@@ -165,6 +178,18 @@ export function TemplateEditorScreen() {
                   onChange={(e) =>
                     updateTask(task.id, {
                       label: { ...task.label, ar: e.target.value },
+                    })
+                  }
+                />
+                <input
+                  className="input"
+                  dir="rtl"
+                  lang="ur"
+                  value={task.label.ur ?? ''}
+                  placeholder={t('editor.taskUr')}
+                  onChange={(e) =>
+                    updateTask(task.id, {
+                      label: { ...task.label, ur: e.target.value },
                     })
                   }
                 />

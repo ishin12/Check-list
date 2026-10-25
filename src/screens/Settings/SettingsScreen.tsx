@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
@@ -65,7 +65,7 @@ export function SettingsScreen() {
         {user ? (
           <div className="card">
             <div className="card__title">{user.fullName ?? user.email}</div>
-            <div className="card__meta">{user.role}</div>
+            <div className="card__meta">{t(`roles.${user.role}`, user.role)}</div>
           </div>
         ) : null}
 
@@ -88,6 +88,13 @@ export function SettingsScreen() {
               onClick={() => setLanguage('ar')}
             >
               {t('settings.arabic')}
+            </button>
+            <button
+              type="button"
+              className={`btn btn--block ${language === 'ur' ? 'btn--primary' : 'btn--ghost'}`}
+              onClick={() => setLanguage('ur')}
+            >
+              {t('settings.urdu')}
             </button>
           </div>
         </div>
@@ -145,19 +152,16 @@ export function SettingsScreen() {
 
         {isDemoMode() ? (
           <div className="card stack">
-            <div className="card__title">Demo mode</div>
+            <div className="card__title">{t('settings.demoTitle', 'Demo mode')}</div>
             <div className="card__meta">
-              You're running against in-browser seed data. Switch roles from the “Demo” chip
-              in the header. To go live, set <code>VITE_SUPABASE_URL</code>,
-              <code>VITE_SUPABASE_ANON_KEY</code> in <code>.env.local</code>, run the SQL
-              migration, then set <code>VITE_DEMO_MODE=0</code>.
+              <Trans i18nKey="settings.demoDesc" components={{ c: <code dir="ltr" /> }} />
             </div>
             <button
               type="button"
               className="btn btn--ghost"
               onClick={async () => { await window.__demo?.reset(); location.reload(); }}
             >
-              Reset demo data
+              {t('settings.demoReset', 'Reset demo data')}
             </button>
           </div>
         ) : null}

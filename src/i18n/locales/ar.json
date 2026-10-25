@@ -53,9 +53,12 @@
     "nameAr": "الاسم (عربي)",
     "namePlaceholderEn": "مثال: AC Maintenance",
     "namePlaceholderAr": "مثال: صيانة المكيف",
+    "nameUr": "الاسم (أردو، اختياري)",
+    "namePlaceholderUr": "مثال: اے سی کی دیکھ بھال",
     "tasks": "المهام",
     "taskEn": "المهمة (إنجليزي)",
     "taskAr": "المهمة (عربي)",
+    "taskUr": "المهمة (أردو، اختياري)",
     "addTask": "إضافة مهمة",
     "required": "إلزامية",
     "moveUp": "تحريك لأعلى",
@@ -122,7 +125,11 @@
     "expiryDays": "أيام التوقيع",
     "reminderHours": "تذكير قبل الانتهاء (ساعات)",
     "saveWindow": "حفظ",
-    "windowSaved": "تم الحفظ. يُطبّق على الروابط الجديدة."
+    "windowSaved": "تم الحفظ. يُطبّق على الروابط الجديدة.",
+    "urdu": "اردو",
+    "demoTitle": "الوضع التجريبي",
+    "demoDesc": "أنت تعمل على بيانات تجريبية داخل المتصفح. بدّل الأدوار من زر «تجريبي» في الرأس. للانتقال إلى النظام الفعلي، اضبط <c>VITE_SUPABASE_URL</c> و<c>VITE_SUPABASE_ANON_KEY</c> في <c>.env.local</c>، ثم شغّل ترحيل SQL، ثم اضبط <c>VITE_DEMO_MODE=0</c>.",
+    "demoReset": "إعادة ضبط البيانات التجريبية"
   },
   "tabs": {
     "today": "اليوم",
@@ -142,7 +149,8 @@
     "sending": "جارٍ تسجيل الدخول…",
     "sendLink": "أرسل الرابط",
     "linkSent": "افحص بريدك واضغط الرابط للمتابعة.",
-    "notConfigured": "Supabase غير مهيأ. راجع .env.example."
+    "notConfigured": "Supabase غير مهيأ. راجع .env.example.",
+    "signingIn": "جارٍ تسجيل دخولك…"
   },
   "sign": {
     "heading": "يرجى المراجعة والتوقيع",
@@ -186,7 +194,11 @@
     "byWorker": "حسب العامل",
     "byClient": "حسب العميل",
     "all": "الكل",
-    "empty": "لا توجد زيارات في هذه الفترة."
+    "empty": "لا توجد زيارات في هذه الفترة.",
+    "dayToday": "اليوم",
+    "dayTomorrow": "غدًا",
+    "dayYesterday": "أمس",
+    "taskCount": "عدد المهام"
   },
   "task": {
     "title": "المهمة",
@@ -217,7 +229,8 @@
     "create": "إنشاء المهمة"
   },
   "runner": {
-    "title": "قائمة التحقق"
+    "title": "قائمة التحقق",
+    "saving": "جارٍ الحفظ"
   },
   "extras": {
     "title": "أعمال إضافية",
@@ -237,7 +250,9 @@
   "demo": {
     "loginHint": "وضع العرض — اختر حساباً أدناه لترى ما يراه كل شخص.",
     "accountsTitle": "حسابات العرض",
-    "orEmail": "أو سجّل الدخول بالبريد:"
+    "orEmail": "أو سجّل الدخول بالبريد:",
+    "chip": "تجريبي",
+    "switchRole": "تبديل الدور"
   },
   "proof": {
     "title": "الإثبات",
@@ -246,7 +261,8 @@
     "tapToCapture": "اضغط الزر لالتقاط صورة أو فيديو.",
     "use": "استخدم هذه",
     "saving": "جارٍ الحفظ…",
-    "offlineHint": "أنت خارج الشبكة — سيُرفع لاحقاً عند الاتصال."
+    "offlineHint": "أنت خارج الشبكة — سيُرفع لاحقاً عند الاتصال.",
+    "missing": "غير موجود"
   },
   "status": {
     "notStarted": "لم تبدأ",
@@ -287,7 +303,14 @@
   },
   "notifications": {
     "title": "الصندوق",
-    "empty": "لا إشعارات بعد."
+    "empty": "لا إشعارات بعد.",
+    "markAllRead": "تحديد الكل كمقروء",
+    "kind": {
+      "assigned": "تم إسناد مهمة جديدة إليك",
+      "submitted": "تم إرسال المهمة للاعتماد",
+      "approved": "تم اعتماد مهمتك",
+      "rejected": "تم رفض مهمتك"
+    }
   },
   "portal": {
     "title": "زياراتك",
@@ -400,5 +423,18 @@
       "unsupported": "هذا المتصفح لا يدعم مشاركة الموقع. الصق رابطًا بدلًا من ذلك.",
       "error": "تعذّر الحصول على موقعك."
     }
+  },
+  "a11y": {
+    "language": "اللغة",
+    "primaryNav": "التنقل الرئيسي"
+  },
+  "roles": {
+    "worker": "عامل",
+    "manager": "مدير",
+    "client": "عميل"
+  },
+  "setup": {
+    "notConfigured": "Supabase غير مهيأ. انسخ <c>.env.example</c> إلى <c>.env.local</c>.",
+    "notConfiguredFull": "Supabase غير مهيأ. انسخ <c>.env.example</c> إلى <c>.env.local</c> واضبط <c>VITE_SUPABASE_URL</c> و<c>VITE_SUPABASE_ANON_KEY</c>."
   }
 }

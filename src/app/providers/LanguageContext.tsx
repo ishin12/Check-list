@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import i18n, { applyDocumentLanguage } from '@/i18n';
+import i18n, { applyDocumentLanguage, SUPPORTED_LANGUAGES } from '@/i18n';
 import type { Language } from '@/domain/models/types';
 import { useStorage } from './StorageContext';
 
@@ -52,7 +52,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   );
 
   const toggleLanguage = useCallback(() => {
-    setLanguage(language === 'en' ? 'ar' : 'en');
+    const order = SUPPORTED_LANGUAGES;
+    setLanguage(order[(order.indexOf(language) + 1) % order.length]);
   }, [language, setLanguage]);
 
   return (

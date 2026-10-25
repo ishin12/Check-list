@@ -1,6 +1,7 @@
-export type Language = 'en' | 'ar';
+export type Language = 'en' | 'ar' | 'ur';
 
-export type LocalizedText = Record<Language, string>;
+/** en and ar are required; ur is optional (older templates have none). */
+export type LocalizedText = Record<'en' | 'ar', string> & { ur?: string };
 
 export interface Task {
   id: string;

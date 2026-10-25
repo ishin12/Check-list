@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useLanguage } from '@/app/providers/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { getSupabase } from '@/services/supabase/client';
 import type { ExtraWorkEntry } from '@/domain/models/ops';
+import { formatDateAndTime } from '@/lib/datetime';
 
 interface Props {
   taskId: string;
@@ -18,6 +20,7 @@ export function ExtraWorkLog({
   taskId, entries, canEdit, currentUserId, currentUserName, lockedHint, onChange,
 }: Props) {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const [body, setBody] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +75,7 @@ export function ExtraWorkLog({
                 <div style={{ flex: 1 }}>
                   <div>{e.body}</div>
                   <div className="card__meta" style={{ marginTop: 2 }}>
-                    {(e.addedByName ?? e.addedBy)} · {new Date(e.addedAt).toLocaleString(undefined, {
+                    {(e.addedByName ?? e.addedBy)} · {formatDateAndTime(e.addedAt, language, {
                       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                     })}
                   </div>

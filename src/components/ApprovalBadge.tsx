@@ -1,5 +1,7 @@
+import { useLanguage } from '@/app/providers/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import type { ApprovalMethod } from '@/domain/models/ops';
+import { formatDateAndTime } from '@/lib/datetime';
 
 interface Props {
   approvalMethod?: ApprovalMethod;
@@ -16,6 +18,7 @@ interface Props {
  */
 export function ApprovalBadge({ approvalMethod, pill, decidedAt, note }: Props) {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const method = approvalMethod ?? 'manager';
 
   if (pill) {
@@ -34,7 +37,7 @@ export function ApprovalBadge({ approvalMethod, pill, decidedAt, note }: Props) 
   }
 
   // Full subtitle line for TaskDetail.
-  const when = decidedAt ? new Date(decidedAt).toLocaleString(undefined, {
+  const when = decidedAt ? formatDateAndTime(decidedAt, language, {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   }) : '';
 

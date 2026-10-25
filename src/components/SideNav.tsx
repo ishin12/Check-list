@@ -10,7 +10,7 @@ export function SideNav({ role }: { role: Role }) {
   const visible = tabsForRole(role);
 
   return (
-    <aside className="side-nav" aria-label="Primary">
+    <aside className="side-nav" aria-label={t('a11y.primaryNav', 'Primary')}>
       <div className="side-nav__brand">
         <span className="side-nav__brand-mark" aria-hidden>
           <svg viewBox="0 0 64 64" width="36" height="36">

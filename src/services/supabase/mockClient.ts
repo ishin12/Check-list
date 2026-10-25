@@ -828,9 +828,9 @@ async function seedDemo(): Promise<void> {
   ];
 
   state.templates = [
-    { id: 't-ac', title: { en: 'AC Maintenance', ar: 'صيانة المكيف' }, tasks: [
-      { id: crypto.randomUUID(), order: 0, required: true,  label: { en: 'Inspect outdoor unit', ar: 'فحص الوحدة الخارجية' } },
-      { id: crypto.randomUUID(), order: 1, required: true,  label: { en: 'Clean filters',        ar: 'تنظيف الفلاتر' } },
+    { id: 't-ac', title: { en: 'AC Maintenance', ar: 'صيانة المكيف', ur: 'اے سی کی دیکھ بھال' }, tasks: [
+      { id: crypto.randomUUID(), order: 0, required: true,  label: { en: 'Inspect outdoor unit', ar: 'فحص الوحدة الخارجية', ur: 'باہر والے یونٹ کی جانچ' } },
+      { id: crypto.randomUUID(), order: 1, required: true,  label: { en: 'Clean filters',        ar: 'تنظيف الفلاتر', ur: 'فلٹر صاف کریں' } },
       { id: crypto.randomUUID(), order: 2, required: false, label: { en: 'Check gas pressure',    ar: 'فحص ضغط الغاز' } },
     ], version: 1, created_by: 'u-mgr', created_at: day(-30, 9), updated_at: day(-30, 9) },
   ];

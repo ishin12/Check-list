@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/app/providers/LanguageContext';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
@@ -6,9 +8,11 @@ import { useAuth } from '@/app/providers/AuthContext';
 import { getSupabase } from '@/services/supabase/client';
 import { useDirectory } from '@/app/providers/DirectoryContext';
 import type { AppNotification } from '@/domain/models/ops';
+import { formatDateAndTime } from '@/lib/datetime';
 
 export function NotificationsScreen() {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const { user } = useAuth();
   const { workers } = useDirectory();
   const [items, setItems] = useState<AppNotification[]>([]);
@@ -51,7 +55,7 @@ export function NotificationsScreen() {
   return (
     <AppShell>
       <AppHeader title={t('notifications.title', 'Inbox')}>
-        <button className="icon-btn" onClick={markAllRead} aria-label="Mark all read">✓</button>
+        <button className="icon-btn" onClick={markAllRead} aria-label={t('notifications.markAllRead', 'Mark all read')}>✓</button>
       </AppHeader>
       <main className="app-main">
         {items.length === 0 ? (
@@ -70,8 +74,8 @@ export function NotificationsScreen() {
                 .join(', ');
               return (
                 <div key={n.id} className={`card ${n.readAt ? '' : 'card--unread'}`}>
-                  <div className="card__title">{renderKind(n.kind)}</div>
-                  <div className="card__meta">{new Date(n.createdAt).toLocaleString()}</div>
+                  <div className="card__title">{renderKind(n.kind, t)}</div>
+                  <div className="card__meta">{formatDateAndTime(n.createdAt, language)}</div>
                   {payload.title ? (
                     <div className="card__meta">
                       {payload.title}{workerName ? ` · ${workerName}` : ''}
@@ -87,12 +91,12 @@ export function NotificationsScreen() {
   );
 }
 
-function renderKind(kind: string): string {
+function renderKind(kind: string, t: TFunction): string {
   switch (kind) {
-    case 'task.assigned':   return 'New task assigned to you';
-    case 'task.submitted':  return 'Task submitted for approval';
-    case 'task.approved':   return 'Your task was approved';
-    case 'task.rejected':   return 'Your task was rejected';
+    case 'task.assigned':   return t('notifications.kind.assigned', 'New task assigned to you');
+    case 'task.submitted':  return t('notifications.kind.submitted', 'Task submitted for approval');
+    case 'task.approved':   return t('notifications.kind.approved', 'Your task was approved');
+    case 'task.rejected':   return t('notifications.kind.rejected', 'Your task was rejected');
     default: return kind;
   }
 }

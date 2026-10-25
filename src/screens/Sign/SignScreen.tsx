@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useLanguage } from '@/app/providers/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { getSupabase } from '@/services/supabase/client';
 import { SignaturePadCanvas, type SignaturePadHandle } from '@/components/SignaturePadCanvas';
+import { formatDate, formatDateAndTime } from '@/lib/datetime';
 
 interface SigningTask {
   task_title: string;
@@ -26,6 +28,7 @@ type State =
 export function SignScreen() {
   const { token } = useParams<{ token: string }>();
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [submitting, setSubmitting] = useState(false);
   const [empty, setEmpty] = useState(true);
@@ -87,7 +90,7 @@ export function SignScreen() {
           <Row label={t('sign.visit', 'Visit')} value={task.task_title} />
           <Row label={t('sign.client', 'Client')} value={task.client_name} />
           {task.worker_name ? <Row label={t('sign.worker', 'Technician')} value={task.worker_name} /> : null}
-          <Row label={t('sign.date', 'Date')} value={new Date(task.scheduled_at).toLocaleString()} />
+          <Row label={t('sign.date', 'Date')} value={formatDateAndTime(task.scheduled_at, language)} />
         </div>
 
         <label className="field__label" style={{ marginTop: 12 }}>{t('sign.signHere', 'Sign below')}</label>
@@ -103,7 +106,7 @@ export function SignScreen() {
           </button>
         </div>
         <p className="hint" style={{ marginTop: 10, textAlign: 'center' }}>
-          {t('sign.expiresOn', 'This link expires on {{date}}', { date: new Date(task.expires_at).toLocaleDateString() })}
+          {t('sign.expiresOn', 'This link expires on {{date}}', { date: formatDate(task.expires_at, language) })}
         </p>
       </div>
     </div>
