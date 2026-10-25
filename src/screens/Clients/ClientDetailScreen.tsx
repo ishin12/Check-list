@@ -71,7 +71,7 @@ export function ClientDetailScreen() {
         </div>
 
         <section>
-          <div className="section-title">📎 {t('notes.open', 'Open notes')}</div>
+          <div className="section-title">{t('notes.open', 'Open notes')}</div>
           {openNotes.length === 0 ? (
             <p className="hint">{t('notes.none', 'No open notes.')}</p>
           ) : (

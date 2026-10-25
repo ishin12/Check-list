@@ -12,6 +12,7 @@ import {
   setTaskNote,
 } from '@/domain/job/job';
 import { taskLabel, templateTitle } from '@/domain/template/template';
+import { Icon } from '@/components/Icon';
 
 export function JobRunnerScreen() {
   const { t } = useTranslation();
@@ -87,7 +88,7 @@ export function JobRunnerScreen() {
                   onClick={() => setJob(setTaskChecked(job, task.id, !checked))}
                 >
                   <span className={`checkbox ${checked ? 'checkbox--checked' : ''}`}>
-                    ✓
+                    <Icon name="check" />
                   </span>
                   <span className="check-item__label">
                     {taskLabel(task, language)}
@@ -116,7 +117,7 @@ export function JobRunnerScreen() {
                     }}
                     onClick={() => setOpenNote(task.id)}
                   >
-                    ＋ {t('job.addNote')}
+                    <Icon name="plus" />{t('job.addNote')}
                   </button>
                 )}
               </div>

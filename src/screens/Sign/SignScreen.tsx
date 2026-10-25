@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { getSupabase } from '@/services/supabase/client';
 import { SignaturePadCanvas, type SignaturePadHandle } from '@/components/SignaturePadCanvas';
 import { formatDate, formatDateAndTime } from '@/lib/datetime';
+import { Icon } from '@/components/Icon';
 
 interface SigningTask {
   task_title: string;
@@ -73,7 +74,7 @@ export function SignScreen() {
     return (
       <Centered>
         <div className="sign-brand"><Sprout /><span>{t('app.name', 'Ghsoon Najd')}</span></div>
-        <div className="sign-check" aria-hidden>✓</div>
+        <div className="sign-check"><Icon name="check" /></div>
         <h1 className="sign-title">{t('sign.thanksTitle', 'Thank you!')}</h1>
         <p className="hint">{t('sign.thanksBody', 'Your signature has been recorded.')}</p>
       </Centered>

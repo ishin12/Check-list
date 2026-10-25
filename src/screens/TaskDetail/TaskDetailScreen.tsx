@@ -31,6 +31,7 @@ import {
 } from '@/domain/location';
 import type { WorkerOption } from '@/domain/workerSelect';
 import { formatDate, formatDateAndTime, formatTime } from '@/lib/datetime';
+import { Icon } from '@/components/Icon';
 
 export function TaskDetailScreen() {
   const { t } = useTranslation();
@@ -190,7 +191,7 @@ export function TaskDetailScreen() {
           <div className="row" style={{ gap: 6 }}>
             {task.recurrence !== 'none' ? (() => {
               const lbl = recurrenceLabel(task.recurrence);
-              return <span className="repeat-pill">↻ {t(lbl.i18n, lbl.fallback)}</span>;
+              return <span className="repeat-pill"><Icon name="refresh" />{t(lbl.i18n, lbl.fallback)}</span>;
             })() : null}
             {task.status === 'approved'
               ? <ApprovalBadge approvalMethod={task.approvalMethod} pill />
@@ -226,7 +227,7 @@ export function TaskDetailScreen() {
 
         {openNotes.length > 0 ? (
           <section>
-            <div className="section-title">📎 {t('notes.openFromBefore', 'Notes left for this visit')}</div>
+            <div className="section-title">{t('notes.openFromBefore', 'Notes left for this visit')}</div>
             <div className="stack">
               {openNotes.map((n) => (
                 <div key={n.id} className="note-card">
@@ -482,7 +483,7 @@ function LocationCard({ task, canEdit, onSaved }: { task: FieldTask; canEdit: bo
         <>
           <div className="location-card__actions">
             <a className="btn btn--primary" href={mapsLink} target="_blank" rel="noopener noreferrer">
-              📍 {t('location.open')}
+              <Icon name="pin" />{t('location.open')}
             </a>
             {directions ? (
               <a className="btn btn--ghost" href={directions} target="_blank" rel="noopener noreferrer">
@@ -544,7 +545,7 @@ function ProofRow({ kind, proofs, taskId, canEdit, queued, onOpen }: {
         </span>
         {canEdit && found ? (
           <button type="button" className="btn btn--ghost btn--icon" onClick={() => navigate(retakeUrl)} aria-label={t('photo.retake', 'Retake')}>
-            ↻
+            <Icon name="refresh" />
           </button>
         ) : null}
         {canEdit && !found ? (

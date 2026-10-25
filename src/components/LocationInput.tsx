@@ -4,6 +4,7 @@ import {
   formatCoords, parseMapsInput, toTaskLocation,
   type LocationParseError, type TaskLocation,
 } from '@/domain/location';
+import { Icon } from './Icon';
 
 export type LocationInputState = 'empty' | 'valid' | 'invalid';
 
@@ -101,7 +102,7 @@ export function LocationInput({ initial, onChange, disabled }: Props) {
           disabled={disabled || locating}
           onClick={useMyLocation}
         >
-          {locating ? t('location.locating') : `📍 ${t('location.useMine')}`}
+          {locating ? t('location.locating') : <><Icon name="pin" /> {t('location.useMine')}</>}
         </button>
         {text ? (
           <button type="button" className="btn btn--ghost" disabled={disabled} onClick={() => apply('')}>

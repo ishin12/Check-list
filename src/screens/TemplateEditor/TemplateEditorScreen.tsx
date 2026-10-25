@@ -11,6 +11,7 @@ import {
   touchTemplate,
 } from '@/domain/template/template';
 import type { Task, Template } from '@/domain/models/types';
+import { Icon } from '@/components/Icon';
 
 export function TemplateEditorScreen() {
   const { t } = useTranslation();
@@ -138,7 +139,7 @@ export function TemplateEditorScreen() {
                     disabled={index === 0}
                     onClick={() => reorder(index, index - 1)}
                   >
-                    ↑
+                    <Icon name="up" />
                   </button>
                   <button
                     type="button"
@@ -147,7 +148,7 @@ export function TemplateEditorScreen() {
                     disabled={index === tasks.length - 1}
                     onClick={() => reorder(index, index + 1)}
                   >
-                    ↓
+                    <Icon name="down" />
                   </button>
                   <button
                     type="button"
@@ -156,7 +157,7 @@ export function TemplateEditorScreen() {
                     onClick={() => removeTask(task.id)}
                     style={{ color: 'var(--color-danger)' }}
                   >
-                    ✕
+                    <Icon name="close" />
                   </button>
                 </div>
                 <input
@@ -213,7 +214,7 @@ export function TemplateEditorScreen() {
           className="btn btn--ghost btn--block"
           onClick={addTask}
         >
-          ＋ {t('editor.addTask')}
+          <Icon name="plus" />{t('editor.addTask')}
         </button>
 
         {error ? <div className="error-text">{error}</div> : null}

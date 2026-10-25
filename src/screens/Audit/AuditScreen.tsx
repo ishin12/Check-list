@@ -5,6 +5,7 @@ import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
 import { formatDateAndTime } from '@/lib/datetime';
+import { Icon } from '@/components/Icon';
 
 interface Row {
   id: string;
@@ -106,7 +107,7 @@ export function AuditScreen() {
         </section>
 
         {rows.length === 0 ? (
-          <div className="empty"><div className="empty__icon">◷</div><p>{t('audit.empty', 'Nothing logged yet.')}</p></div>
+          <div className="empty"><div className="empty__icon"><Icon name="clock" /></div><p>{t('audit.empty', 'Nothing logged yet.')}</p></div>
         ) : (
           <div className="stack">
             {rows.map((r) => (

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { Role } from '@/domain/models/ops';
 import { useAuth } from '@/app/providers/AuthContext';
 import { tabsForRole } from './navTabs';
+import { Icon } from './Icon';
 
 export function SideNav({ role }: { role: Role }) {
   const { t } = useTranslation();
@@ -28,7 +29,7 @@ export function SideNav({ role }: { role: Role }) {
 
       {role === 'manager' ? (
         <Link to="/tasks/new" className="btn btn--primary side-nav__cta">
-          <span aria-hidden>+</span>
+          <Icon name="plus" />
           <span>{t('calendar.add', 'Add task')}</span>
         </Link>
       ) : null}
@@ -40,7 +41,7 @@ export function SideNav({ role }: { role: Role }) {
             to={tab.to}
             className={({ isActive }) => `side-nav__item${isActive ? ' side-nav__item--active' : ''}`}
           >
-            <span className="side-nav__icon" aria-hidden>{tab.icon}</span>
+            <span className="side-nav__icon"><Icon name={tab.icon} /></span>
             <span className="side-nav__label">{t(tab.i18n, tab.fallback)}</span>
           </NavLink>
         ))}
@@ -53,7 +54,7 @@ export function SideNav({ role }: { role: Role }) {
             <div className="side-nav__role">{user.role}</div>
           </div>
           <button type="button" className="icon-btn" onClick={signOut} aria-label={t('auth.signOut', 'Sign out')}>
-            ↩
+            <Icon name="sign-out" />
           </button>
         </div>
       ) : null}

@@ -10,6 +10,7 @@ import { ACCEPT_ATTR, prepareMedia, validateMedia, type PreparedMedia } from '@/
 import { MEDIA_ERROR_TEXT, MediaError, type MediaErrorCode } from '@/services/media/mediaErrors';
 import { saveProofOnline } from '@/services/media/saveProof';
 import { uploadProof } from '@/services/media/upload';
+import { Icon } from '@/components/Icon';
 
 type Kind = 'start' | 'finish';
 
@@ -143,14 +144,14 @@ export function MediaCaptureScreen() {
     <AppShell bare>
       <div className="capture">
         <div className="capture__chrome">
-          <button type="button" className="icon-btn" onClick={() => navigate(-1)} aria-label={t('photo.close', 'Close') ?? 'Close'}>✕</button>
+          <button type="button" className="icon-btn" onClick={() => navigate(-1)} aria-label={t('photo.close', 'Close') ?? 'Close'}><Icon name="close" /></button>
           <span className="capture__label">{kind === 'start' ? t('proof.start', 'Start proof') : t('proof.finish', 'Finish proof')}</span>
           <span className="capture__spacer" />
         </div>
         <div className="capture__stage">
           {savedOffline ? (
             <div className="capture__placeholder" role="status">
-              <div className="capture__big-icon" aria-hidden>✓</div>
+              <div className="capture__big-icon"><Icon name="check-circle" /></div>
               <p>{t('photo.savedOffline', 'Saved on this phone. It will upload automatically when you are back online.')}</p>
             </div>
           ) : preview ? (
@@ -161,7 +162,7 @@ export function MediaCaptureScreen() {
             )
           ) : (
             <div className="capture__placeholder">
-              <div className="capture__big-icon" aria-hidden>◉</div>
+              <div className="capture__big-icon"><Icon name="camera" /></div>
               <p>{t('proof.tapToCapture', 'Tap the shutter to take a photo or video.')}</p>
             </div>
           )}

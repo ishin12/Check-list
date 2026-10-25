@@ -9,6 +9,7 @@ import { getSupabase } from '@/services/supabase/client';
 import { useDirectory } from '@/app/providers/DirectoryContext';
 import type { AppNotification } from '@/domain/models/ops';
 import { formatDateAndTime } from '@/lib/datetime';
+import { Icon } from '@/components/Icon';
 
 export function NotificationsScreen() {
   const { t } = useTranslation();
@@ -55,12 +56,12 @@ export function NotificationsScreen() {
   return (
     <AppShell>
       <AppHeader title={t('notifications.title', 'Inbox')}>
-        <button className="icon-btn" onClick={markAllRead} aria-label={t('notifications.markAllRead', 'Mark all read')}>✓</button>
+        <button className="icon-btn" onClick={markAllRead} aria-label={t('notifications.markAllRead', 'Mark all read')}><Icon name="check" /></button>
       </AppHeader>
       <main className="app-main">
         {items.length === 0 ? (
           <div className="empty">
-            <div className="empty__icon">◉</div>
+            <div className="empty__icon"><Icon name="inbox" /></div>
             <p>{t('notifications.empty', 'No notifications yet.')}</p>
           </div>
         ) : (

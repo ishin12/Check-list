@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getSupabase } from '@/services/supabase/client';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import type { Task as ChecklistItem, Template, TaskResult } from '@/domain/models/types';
+import { Icon } from './Icon';
 
 interface Props {
   templateId: string;
@@ -74,7 +75,7 @@ export function TemplateRunner({ templateId, taskId, initialResults, readOnly, o
               style={{ textAlign: 'start' }}
             >
               <div className="check-item__main">
-                <span className={`checkbox ${checked ? 'checkbox--checked' : ''}`} aria-hidden>✓</span>
+                <span className={`checkbox ${checked ? 'checkbox--checked' : ''}`} aria-hidden><Icon name="check" /></span>
                 <span className="check-item__label">{label}</span>
                 {item.required ? <span className="badge">{t('job.requiredBadge', 'Required')}</span> : null}
               </div>

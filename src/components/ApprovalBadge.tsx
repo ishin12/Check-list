@@ -2,6 +2,7 @@ import { useLanguage } from '@/app/providers/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import type { ApprovalMethod } from '@/domain/models/ops';
 import { formatDateAndTime } from '@/lib/datetime';
+import { Icon } from './Icon';
 
 interface Props {
   approvalMethod?: ApprovalMethod;
@@ -44,7 +45,7 @@ export function ApprovalBadge({ approvalMethod, pill, decidedAt, note }: Props) 
   if (method === 'auto_no_response') {
     return (
       <div className="approval-line approval-line--auto">
-        <span className="approval-line__icon" aria-hidden>●</span>
+        <span className="approval-line__icon"><Icon name="clock" /></span>
         <span>{t('approval.autoLine', 'Auto-approved on {{when}} — client did not respond in time. No signature provided.', { when })}</span>
       </div>
     );
@@ -52,14 +53,14 @@ export function ApprovalBadge({ approvalMethod, pill, decidedAt, note }: Props) 
   if (method === 'client_signature') {
     return (
       <div className="approval-line approval-line--signed">
-        <span className="approval-line__icon" aria-hidden>✓</span>
+        <span className="approval-line__icon"><Icon name="check" /></span>
         <span>{t('approval.signedLine', 'Signed by client on {{when}}', { when })}</span>
       </div>
     );
   }
   return (
     <div className="approval-line approval-line--manager">
-      <span className="approval-line__icon" aria-hidden>✓</span>
+      <span className="approval-line__icon"><Icon name="check" /></span>
       <span>{t('approval.managerLine', 'Approved by manager on {{when}}', { when })}{note ? ` — ${note}` : ''}</span>
     </div>
   );

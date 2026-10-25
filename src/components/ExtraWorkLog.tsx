@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getSupabase } from '@/services/supabase/client';
 import type { ExtraWorkEntry } from '@/domain/models/ops';
 import { formatDateAndTime } from '@/lib/datetime';
+import { Icon } from './Icon';
 
 interface Props {
   taskId: string;
@@ -88,7 +89,7 @@ export function ExtraWorkLog({
                     onClick={() => remove(e.id)}
                     disabled={saving}
                   >
-                    ×
+                    <Icon name="close" />
                   </button>
                 ) : null}
               </div>

@@ -9,6 +9,7 @@ import { HtmlRasterPdfGenerator } from '@/services/pdf/HtmlRasterPdfGenerator';
 import { shareFile, type ShareOutcome } from '@/services/share/ShareService';
 import { completeJob } from '@/domain/job/job';
 import { templateTitle } from '@/domain/template/template';
+import { Icon } from '@/components/Icon';
 
 const REPORT_WIDTH = 794;
 const pdfGenerator = new HtmlRasterPdfGenerator();
@@ -155,7 +156,7 @@ export function ReportPreviewScreen() {
           disabled={building || !pdf}
           onClick={onShare}
         >
-          {building ? t('report.generating') : `📤 ${t('report.share')}`}
+          {building ? t('report.generating') : <><Icon name="share" />{t('report.share')}</>}
         </button>
       </div>
     </div>
