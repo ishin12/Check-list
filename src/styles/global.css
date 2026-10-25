@@ -590,6 +590,13 @@ textarea {
   padding-bottom: calc(var(--space-6) + 72px + env(safe-area-inset-bottom));
 }
 
+/* Keep the sticky action bar above the fixed tab bar (60px items + 1px border;
+   the tab bar already pads for the safe area). */
+.app-shell--with-nav .action-bar {
+  bottom: calc(61px + env(safe-area-inset-bottom));
+  padding-bottom: var(--space-3);
+}
+
 .tab-bar {
   position: fixed;
   inset-inline: 0;
@@ -1439,6 +1446,7 @@ html[lang='ur'] .tab-bar__item {
 }
 html[lang='ur'] .tab-bar__label { line-height: 2; }
 html[lang='ur'] .tab-bar { padding-block-end: env(safe-area-inset-bottom); }
+html[lang='ur'] .app-shell--with-nav .action-bar { bottom: calc(69px + env(safe-area-inset-bottom)); }
 html[lang='ur'] .lang-toggle button { line-height: 1.9; min-block-size: 40px; padding-block: 6px 2px; }
 html[lang='ur'] .banner { line-height: 2; }
 html[lang='ur'] .check-item__label { line-height: 2; }
