@@ -197,7 +197,9 @@
     "templateHint": "The worker sees this checklist on the task and ticks items off as they go.",
     "create": "Create task"
   },
-  "runner": { "title": "Checklist" },
+  "runner": {
+    "title": "Checklist"
+  },
   "extras": {
     "title": "Extra work done",
     "placeholder": "Add something you did off the list…",
@@ -322,5 +324,33 @@
     "no": "No",
     "saving": "Saving…",
     "loading": "Loading…"
+  },
+  "photo": {
+    "close": "Close",
+    "capture": "Capture",
+    "retake": "Retake",
+    "retry": "Retry",
+    "continue": "Continue",
+    "chooseAnother": "Take another",
+    "uploading": "Uploading…",
+    "uploadingNow": "Uploading…",
+    "savedOffline": "Saved on this phone. It will upload automatically when you are back online.",
+    "offlineHint": "You are offline. The photo will be saved on this phone and uploaded when you are back online.",
+    "queued": "{{count}} waiting",
+    "waiting": "Waiting to upload",
+    "uploadFailed": "Upload failed",
+    "discard": "Discard",
+    "replace": "Replace",
+    "open": "Open full screen",
+    "viewFailed": "This file could not be loaded.",
+    "error": {
+      "tooLarge": "This file is too large. Photos can be up to 25 MB and videos up to 50 MB.",
+      "wrongType": "This file type is not supported. Use a photo (JPEG, PNG, WebP, HEIC) or a video (MP4, MOV, WebM).",
+      "decode": "We could not read this photo. Please retake it with the camera.",
+      "offline": "No connection. Check your internet and try again.",
+      "permission": "You do not have permission to upload this. Ask your manager.",
+      "exists": "This file was already uploaded.",
+      "other": "The upload failed. Please try again."
+    }
   }
 }

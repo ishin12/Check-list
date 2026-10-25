@@ -151,6 +151,34 @@ export async function deleteProofsOfKind(taskId: string, kind: 'start' | 'finish
   }
 }
 
+/** Records an already-uploaded proof file against a task. */
+export async function insertProofRow(input: {
+  taskId: string; kind: 'start' | 'finish'; path: string; mime: string; capturedAt: string;
+}): Promise<void> {
+  const { error } = await getSupabase().from('task_proofs').insert({
+    task_id: input.taskId,
+    kind: input.kind,
+    storage_path: input.path,
+    mime: input.mime,
+    captured_at: input.capturedAt,
+  });
+  if (error) throw error;
+}
+
+/**
+ * After a successful retake: remove the older proofs of this kind (rows and
+ * files), keeping the one stored at `keepPath`. Called only once the new proof
+ * is safely saved, so a failed upload never leaves the task without a proof.
+ */
+export async function deleteOtherProofsOfKind(taskId: string, kind: 'start' | 'finish', keepPath: string): Promise<void> {
+  const sb = getSupabase();
+  const { data } = await sb.from('task_proofs').select('id, storage_path').eq('task_id', taskId).eq('kind', kind);
+  const old = ((data ?? []) as Array<{ id: string; storage_path: string }>).filter((r) => r.storage_path !== keepPath);
+  if (!old.length) return;
+  for (const r of old) await sb.from('task_proofs').delete().eq('id', r.id);
+  await sb.storage.from('proofs').remove(old.map((r) => r.storage_path));
+}
+
 /**
  * Auto-creates the next occurrence in a recurring series. Returns the new
  * task, or null if the source task does not recur or the next visit is
