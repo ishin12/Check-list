@@ -1630,6 +1630,8 @@ html[lang='ur'] .textarea {
   padding-block: 10px 6px;
   min-block-size: 52px;
 }
+/* Number fields hold only Latin digits; Nastaliq line-height would scroll them. */
+html[lang='ur'] input.input[type='number'] { line-height: 1.5; padding-block: 12px; }
 html[lang='ur'] .app-header { padding-block: 10px; }
 html[lang='ur'] .app-header__title {
   line-height: 2.2;
