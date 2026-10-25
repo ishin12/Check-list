@@ -62,9 +62,12 @@ export function NotificationsScreen() {
         ) : (
           <div className="stack">
             {items.map((n) => {
-              const payload = n.payload as { title?: string; worker_id?: string };
-              const workerId = payload.worker_id;
-              const workerName = workerId ? (workers.get(workerId)?.fullName ?? workers.get(workerId)?.email) : null;
+              const payload = n.payload as { title?: string; worker_id?: string; worker_ids?: string[] };
+              const ids = payload.worker_ids?.length ? payload.worker_ids : payload.worker_id ? [payload.worker_id] : [];
+              const workerName = ids
+                .map((id) => workers.get(id)?.fullName ?? workers.get(id)?.email)
+                .filter(Boolean)
+                .join(', ');
               return (
                 <div key={n.id} className={`card ${n.readAt ? '' : 'card--unread'}`}>
                   <div className="card__title">{renderKind(n.kind)}</div>

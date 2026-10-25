@@ -352,5 +352,20 @@
       "exists": "This file was already uploaded.",
       "other": "The upload failed. Please try again."
     }
+  },
+  "workers": {
+    "title": "Workers",
+    "assignTo": "Assign to",
+    "search": "Search workers",
+    "selectAll": "Select all",
+    "clear": "Clear",
+    "selectedCount": "{{count}} selected",
+    "noMatches": "No workers match.",
+    "atLeastOne": "Select at least one worker.",
+    "edit": "Edit workers",
+    "editTitle": "Edit workers",
+    "save": "Save workers",
+    "cancel": "Cancel",
+    "more": "+{{count}}"
   }
 }

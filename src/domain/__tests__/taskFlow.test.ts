@@ -14,6 +14,7 @@ function task(partial: Partial<FieldTask>): FieldTask {
     title: 'Visit',
     clientId: 'c',
     assignedWorkerId: 'w',
+    workerIds: ['w'],
     scheduledAt: '2026-06-19T08:00:00Z',
     status: 'not_started',
     createdAt: '2026-06-18T00:00:00Z',
@@ -84,11 +85,12 @@ describe('dailySummary', () => {
       task({ id: '1', status: 'approved', startedAt: '2026-06-19T08:00:00Z', finishedAt: '2026-06-19T09:00:00Z' }),
       task({ id: '2', status: 'in_progress', startedAt: '2026-06-19T10:00:00Z' }),
       task({ id: '3', scheduledAt: '2026-06-20T08:00:00Z' }), // other day, excluded
-      task({ id: '4', assignedWorkerId: 'other' }),           // other worker, excluded
+      task({ id: '4', assignedWorkerId: 'other', workerIds: ['other'] }), // other worker, excluded
+      task({ id: '5', assignedWorkerId: 'other', workerIds: ['other', 'w'], status: 'submitted' }), // co-worker, included
     ];
     const summary = dailySummary('w', '2026-06-19', tasks);
-    expect(summary.taskCount).toBe(2);
-    expect(summary.completedCount).toBe(1);
+    expect(summary.taskCount).toBe(3);
+    expect(summary.completedCount).toBe(2);
     expect(summary.totalMinutes).toBeGreaterThanOrEqual(60);
   });
 });
