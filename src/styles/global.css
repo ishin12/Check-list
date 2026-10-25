@@ -838,6 +838,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
 }
 
+
 .tab-bar {
   position: fixed;
   inset-inline: 0;
