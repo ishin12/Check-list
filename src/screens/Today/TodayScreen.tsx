@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/app/providers/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
@@ -9,6 +10,7 @@ import { listTasks } from '@/services/data/tasks';
 import { dailySummary, timeOnTaskMinutes } from '@/domain/job/taskFlow';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
+import { formatTime } from '@/lib/datetime';
 
 function startOfDay(d = new Date()): string {
   const x = new Date(d);
@@ -23,6 +25,7 @@ function endOfDay(d = new Date()): string {
 
 export function TodayScreen() {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const { user } = useAuth();
   const [tasks, setTasks] = useState<FieldTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +57,7 @@ export function TodayScreen() {
     <AppShell>
       <AppHeader title={t('today.title', 'Today')} />
       <main className="app-main">
-        {loading ? <p className="hint">Loading…</p> : null}
+        {loading ? <p className="hint">{t('common.loading', 'Loading…')}</p> : null}
         {error ? <div className="banner banner--error">{error}</div> : null}
 
         {summary ? (
@@ -84,8 +87,8 @@ export function TodayScreen() {
               <div className="card__title">{next.title}</div>
               <TaskWhoLine task={next} hideWorker={user?.role === 'worker'} />
               <div className="card__meta">
-                {new Date(next.scheduledAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                {next.startedAt ? ` · ${timeOnTaskMinutes(next)} min` : null}
+                {formatTime(next.scheduledAt, language, { hour: '2-digit', minute: '2-digit' })}
+                {next.startedAt ? ` · ${t('common.minutesShort', { count: timeOnTaskMinutes(next) })}` : null}
               </div>
             </div>
           </Link>
@@ -101,7 +104,7 @@ export function TodayScreen() {
                     <div className="card__title">{x.title}</div>
                     <TaskWhoLine task={x} hideWorker={user?.role === 'worker'} />
                     <div className="card__meta">
-                      {new Date(x.scheduledAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                      {formatTime(x.scheduledAt, language, { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
                   <StatusPill status={x.status} approvalMethod={x.approvalMethod} />

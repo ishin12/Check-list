@@ -42,7 +42,7 @@ export function ClientsScreen() {
               <Link key={c.id} to={`/clients/${c.id}`} className="card card--tap">
                 <div style={{ flex: 1 }}>
                   <div className="card__title">{c.name}</div>
-                  <div className="card__meta">{c.phone ?? c.email ?? '—'}</div>
+                  <div className="card__meta"><bdi>{c.phone ?? c.email ?? '—'}</bdi></div>
                 </div>
               </Link>
             ))}

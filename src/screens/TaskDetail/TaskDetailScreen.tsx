@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useLanguage } from '@/app/providers/LanguageContext';
+import { localizedText } from '@/domain/template/template';
+import type { LocalizedText } from '@/domain/models/types';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
 import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/app/providers/AuthContext';
-import { createNextOccurrence, getTask, updateTaskStatus } from '@/services/data/tasks';
+import { createNextOccurrence, getTask, setTaskWorkers, updateTaskLocation, updateTaskStatus } from '@/services/data/tasks';
 import { invokeFunction } from '@/services/data/functions';
 import { getSupabase } from '@/services/supabase/client';
 import { availableActions, canTransition, proofRequirements, timeOnTaskMinutes } from '@/domain/job/taskFlow';
@@ -13,13 +16,25 @@ import { recurrenceLabel } from '@/domain/job/recurrence';
 import type { ClientNote, FieldTask, TaskProof } from '@/domain/models/ops';
 import { NoteComposer, resolveNote } from '@/components/NoteComposer';
 import { ProofMedia } from '@/components/ProofMedia';
+import { ProofViewer } from '@/components/ProofViewer';
+import { useQueuedProofs } from '@/services/media/useQueuedProofs';
+import { discardQueued, flushQueue, type QueuedSummary } from '@/services/media/mediaQueue';
+import { MEDIA_ERROR_TEXT } from '@/services/media/mediaErrors';
 import { TemplateRunner } from '@/components/TemplateRunner';
 import { ExtraWorkLog } from '@/components/ExtraWorkLog';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import { ApprovalBadge } from '@/components/ApprovalBadge';
+import { WorkerMultiSelect } from '@/components/WorkerMultiSelect';
+import { LocationInput, type LocationInputState } from '@/components/LocationInput';
+import {
+  directionsLinkFor, formatCoords, mapsLinkFor, type TaskLocation,
+} from '@/domain/location';
+import type { WorkerOption } from '@/domain/workerSelect';
+import { formatDate, formatDateAndTime, formatTime } from '@/lib/datetime';
 
 export function TaskDetailScreen() {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -31,6 +46,8 @@ export function TaskDetailScreen() {
   const [requiredItems, setRequiredItems] = useState<{ id: string; label: string }[]>([]);
   const [sendingLink, setSendingLink] = useState(false);
   const [linkResult, setLinkResult] = useState<{ ok: boolean; message: string; url?: string } | null>(null);
+  const [viewing, setViewing] = useState<TaskProof | null>(null);
+  const queued = useQueuedProofs(id);
 
   async function load() {
     if (!id) return;
@@ -51,9 +68,9 @@ export function TaskDetailScreen() {
       // Load the template's required items so we can gate Submit.
       if (t.templateId) {
         const { data: tpl } = await sb.from('templates').select('tasks, title').eq('id', t.templateId).maybeSingle();
-        const items = ((tpl?.tasks ?? []) as Array<{ id: string; required?: boolean; label: { en: string; ar: string } }>)
+        const items = ((tpl?.tasks ?? []) as Array<{ id: string; required?: boolean; label: LocalizedText }>)
           .filter((it) => it.required)
-          .map((it) => ({ id: it.id, label: it.label?.en ?? it.label?.ar ?? '—' }));
+          .map((it) => ({ id: it.id, label: localizedText(it.label, language) || '—' }));
         setRequiredItems(items);
       } else {
         setRequiredItems([]);
@@ -65,12 +82,20 @@ export function TaskDetailScreen() {
 
   useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
 
+  // When a queued proof finishes uploading it leaves the queue: refresh the proofs.
+  const prevQueued = useRef(queued.length);
+  useEffect(() => {
+    if (queued.length < prevQueued.current) void load();
+    prevQueued.current = queued.length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queued.length]);
+
   if (!task) {
     return (
       <AppShell>
         <AppHeader title={t('task.title', 'Task')} showBack />
         <main className="app-main">
-          {error ? <div className="banner banner--error">{error}</div> : <p className="hint">Loading…</p>}
+          {error ? <div className="banner banner--error">{error}</div> : <p className="hint">{t('common.loading', 'Loading…')}</p>}
         </main>
       </AppShell>
     );
@@ -81,7 +106,7 @@ export function TaskDetailScreen() {
   const { needsStartProof, needsFinishProof } = proofRequirements(task.status, proofs);
   // Worker can retake on their own task at any stage; manager can always retake.
   const canEditProofs =
-    (role === 'worker' && task.assignedWorkerId === user?.id) ||
+    (role === 'worker' && isOnTask(task, user?.id)) ||
     role === 'manager';
   // Missing required checklist items block Submit.
   const missingRequired = requiredItems.filter(
@@ -158,7 +183,7 @@ export function TaskDetailScreen() {
 
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <span className="card__meta">
-            {new Date(task.scheduledAt).toLocaleString(undefined, {
+            {formatDateAndTime(task.scheduledAt, language, {
               weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
             })}
           </span>
@@ -173,6 +198,8 @@ export function TaskDetailScreen() {
           </div>
         </div>
         <TaskWhoLine task={task} linkClient />
+        {role === 'manager' ? <EditWorkers task={task} onSaved={load} /> : null}
+        <LocationCard task={task} canEdit={role === 'manager'} onSaved={load} />
 
         {task.status === 'approved'
           ? <ApprovalBadge approvalMethod={task.approvalMethod} decidedAt={task.decisionAt} note={task.decisionNote} />
@@ -203,9 +230,9 @@ export function TaskDetailScreen() {
             <div className="stack">
               {openNotes.map((n) => (
                 <div key={n.id} className="note-card">
-                  <div>{n.body}</div>
+                  <div dir="auto">{n.body}</div>
                   <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
-                    <span className="card__meta">{new Date(n.createdAt).toLocaleDateString()}</span>
+                    <span className="card__meta">{formatDate(n.createdAt, language)}</span>
                     <button
                       className="btn btn--ghost"
                       onClick={async () => { await resolveNote(n.id, task!.id); await load(); }}
@@ -258,7 +285,7 @@ export function TaskDetailScreen() {
           entries={task.extraWork}
           canEdit={
             task.status !== 'approved' &&
-            ((role === 'worker' && task.assignedWorkerId === user?.id) || role === 'manager')
+            ((role === 'worker' && isOnTask(task, user?.id)) || role === 'manager')
           }
           currentUserId={user?.id}
           currentUserName={user?.fullName ?? user?.email}
@@ -270,14 +297,23 @@ export function TaskDetailScreen() {
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <span className="section-title">{t('proof.title', 'Proof')}</span>
             <span className="card__meta">
-              {task.startedAt ? `${timeOnTaskMinutes(task)} min` : '—'}
+              {task.startedAt ? t('common.minutesShort', { count: timeOnTaskMinutes(task) }) : '—'}
             </span>
           </div>
           <div className="stack" style={{ marginTop: 8 }}>
-            <ProofRow kind="start"  proofs={proofs} taskId={task.id} canEdit={canEditProofs} />
-            <ProofRow kind="finish" proofs={proofs} taskId={task.id} canEdit={canEditProofs} />
+            <ProofRow kind="start"  proofs={proofs} taskId={task.id} canEdit={canEditProofs} queued={queued} onOpen={setViewing} />
+            <ProofRow kind="finish" proofs={proofs} taskId={task.id} canEdit={canEditProofs} queued={queued} onOpen={setViewing} />
           </div>
         </section>
+
+        {viewing ? (
+          <ProofViewer
+            proof={viewing}
+            title={viewing.kind === 'start' ? t('proof.start', 'Start proof') : t('proof.finish', 'Finish proof')}
+            replaceTo={canEditProofs ? `/tasks/${task.id}/capture/${viewing.kind}?replace=1` : undefined}
+            onClose={() => setViewing(null)}
+          />
+        ) : null}
 
         {role === 'manager' && task.status === 'submitted' ? (
           <div className="field">
@@ -324,12 +360,170 @@ export function TaskDetailScreen() {
   );
 }
 
+/** True when the user is the lead or any assigned worker of the task. */
+function isOnTask(task: FieldTask, userId: string | undefined): boolean {
+  return !!userId && (task.assignedWorkerId === userId || task.workerIds.includes(userId));
+}
+
+/** Manager-only: change the set of workers on a task. */
+function EditWorkers({ task, onSaved }: { task: FieldTask; onSaved: () => Promise<void> | void }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [options, setOptions] = useState<WorkerOption[]>([]);
+  const [value, setValue] = useState<string[]>(task.workerIds);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function begin() {
+    setErr(null);
+    setValue(task.workerIds);
+    setOpen(true);
+    const { data } = await getSupabase()
+      .from('profiles').select('id, full_name, email').eq('role', 'worker').eq('active', true);
+    setOptions((data ?? []).map((w: { id: string; full_name: string | null; email: string | null }) => ({
+      id: w.id, label: w.full_name ?? w.email ?? w.id,
+    })));
+  }
+
+  async function save() {
+    if (value.length === 0) { setErr(t('workers.atLeastOne', 'Select at least one worker.')); return; }
+    setSaving(true);
+    setErr(null);
+    try {
+      await setTaskWorkers(task.id, value);
+      setOpen(false);
+      await onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String((e as { message?: string })?.message ?? e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <div>
+        <button type="button" className="btn btn--ghost" onClick={() => void begin()}>
+          {t('workers.edit', 'Edit workers')}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <section className="card worker-edit">
+      <div className="section-title">{t('workers.editTitle', 'Edit workers')}</div>
+      {err ? <div className="banner banner--error">{err}</div> : null}
+      <WorkerMultiSelect options={options} value={value} onChange={setValue} />
+      <div className="row" style={{ gap: 8 }}>
+        <button type="button" className="btn btn--primary" disabled={saving || value.length === 0} onClick={() => void save()}>
+          {saving ? t('common.saving', 'Saving…') : t('workers.save', 'Save workers')}
+        </button>
+        <button type="button" className="btn btn--ghost" disabled={saving} onClick={() => setOpen(false)}>
+          {t('workers.cancel', 'Cancel')}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+/** Maps buttons for everyone (when a location exists); manager-only add/edit. */
+function LocationCard({ task, canEdit, onSaved }: { task: FieldTask; canEdit: boolean; onSaved: () => Promise<void> | void }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<TaskLocation | null>(null);
+  const [state, setState] = useState<LocationInputState>('empty');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const mapsLink = mapsLinkFor(task);
+  const directions = directionsLinkFor(task);
+  const hasCoords = typeof task.locationLat === 'number' && typeof task.locationLng === 'number';
+
+  async function save() {
+    setSaving(true);
+    setErr(null);
+    try {
+      await updateTaskLocation(task.id, draft);
+      setOpen(false);
+      await onSaved();
+    } catch (e) {
+      setErr(`${t('location.saveFailed')} ${e instanceof Error ? e.message : String((e as { message?: string })?.message ?? e)}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (open) {
+    return (
+      <section className="card location-card">
+        <div className="section-title">{t('location.editTitle')}</div>
+        {err ? <div className="banner banner--error">{err}</div> : null}
+        <LocationInput
+          initial={task}
+          disabled={saving}
+          onChange={(loc, s) => { setDraft(loc); setState(s); }}
+        />
+        <div className="row" style={{ gap: 8 }}>
+          <button type="button" className="btn btn--primary" disabled={saving || state === 'invalid'} onClick={() => void save()}>
+            {saving ? t('common.saving', 'Saving…') : t('location.save')}
+          </button>
+          <button type="button" className="btn btn--ghost" disabled={saving} onClick={() => setOpen(false)}>
+            {t('location.cancel')}
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (!mapsLink && !canEdit) return null;
+  return (
+    <section className={mapsLink ? 'card location-card' : undefined}>
+      {mapsLink ? (
+        <>
+          <div className="location-card__actions">
+            <a className="btn btn--primary" href={mapsLink} target="_blank" rel="noopener noreferrer">
+              📍 {t('location.open')}
+            </a>
+            {directions ? (
+              <a className="btn btn--ghost" href={directions} target="_blank" rel="noopener noreferrer">
+                {t('location.directions')}
+              </a>
+            ) : null}
+          </div>
+          {hasCoords ? (
+            <div className="location-card__coords" dir="ltr">
+              {formatCoords(task.locationLat as number, task.locationLng as number)}
+            </div>
+          ) : null}
+        </>
+      ) : null}
+      {canEdit ? (
+        <div>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => { setErr(null); setDraft(task); setState('valid'); setOpen(true); }}
+          >
+            {mapsLink ? t('location.edit') : t('location.add')}
+          </button>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function defaultActionLabel(a: string): string {
   return ({ start: 'Start', submit: 'Submit', approve: 'Approve', reject: 'Reject', reopen: 'Reopen' } as Record<string, string>)[a] ?? a;
 }
 
-function ProofRow({ kind, proofs, taskId, canEdit }: { kind: 'start' | 'finish'; proofs: TaskProof[]; taskId: string; canEdit: boolean }) {
+function ProofRow({ kind, proofs, taskId, canEdit, queued, onOpen }: {
+  kind: 'start' | 'finish'; proofs: TaskProof[]; taskId: string; canEdit: boolean;
+  queued: QueuedSummary[]; onOpen: (p: TaskProof) => void;
+}) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { language } = useLanguage();
+  const waiting = queued.filter((q) => q.kind === kind);
   // If the worker re-took a proof, the most recent one is what counts.
   const found = proofs
     .filter((p) => p.kind === kind)
@@ -341,29 +535,61 @@ function ProofRow({ kind, proofs, taskId, canEdit }: { kind: 'start' | 'finish';
       <div className="row" style={{ alignItems: 'center' }}>
         <span className={`proof-dot proof-dot--${found ? 'on' : 'off'}`} aria-hidden />
         <span style={{ flex: 1, fontWeight: 600 }}>
-          {kind === 'start' ? 'Start proof' : 'Finish proof'}
+          {kind === 'start' ? t('proof.start', 'Start proof') : t('proof.finish', 'Finish proof')}
         </span>
         <span className="card__meta">
           {found
-            ? new Date(found.capturedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-            : 'Missing'}
+            ? formatTime(found.capturedAt, language, { hour: '2-digit', minute: '2-digit' })
+            : t('proof.missing', 'Missing')}
         </span>
         {canEdit && found ? (
-          <button type="button" className="btn btn--ghost btn--icon" onClick={() => navigate(retakeUrl)} aria-label="Retake">
+          <button type="button" className="btn btn--ghost btn--icon" onClick={() => navigate(retakeUrl)} aria-label={t('photo.retake', 'Retake')}>
             ↻
           </button>
         ) : null}
         {canEdit && !found ? (
           <button type="button" className="btn btn--ghost" onClick={() => navigate(`/tasks/${taskId}/capture/${kind}`)}>
-            Capture
+            {t('photo.capture', 'Capture')}
           </button>
         ) : null}
       </div>
       {found ? (
-        <div className="proof-block__media">
-          <ProofMedia proof={found} />
-        </div>
+        <button
+          type="button"
+          className="proof-block__media proof-block__open"
+          onClick={() => onOpen(found)}
+          aria-label={t('photo.open', 'Open full screen') ?? 'Open full screen'}
+        >
+          <ProofMedia proof={found} thumb />
+        </button>
       ) : null}
+      {waiting.map((q) => (
+        <div
+          key={q.id}
+          className={`banner banner--${q.lastError ? 'error' : 'info'} upload-note`}
+          role={q.lastError ? 'alert' : 'status'}
+        >
+          <div>
+            {q.lastError
+              ? `${t('photo.uploadFailed', 'Upload failed')} — ${t(MEDIA_ERROR_TEXT[q.lastError].key, MEDIA_ERROR_TEXT[q.lastError].fallback)}`
+              : q.uploading
+                ? t('photo.uploadingNow', 'Uploading…')
+                : t('photo.waiting', 'Waiting to upload')}
+          </div>
+          {q.lastError ? (
+            <div className="row upload-note__actions">
+              <button type="button" className="btn btn--ghost" onClick={() => void flushQueue()}>
+                {t('photo.retry', 'Retry')}
+              </button>
+              {canEdit ? (
+                <button type="button" className="btn btn--ghost" onClick={() => void discardQueued(q.id)}>
+                  {t('photo.discard', 'Discard')}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ))}
     </div>
   );
 }

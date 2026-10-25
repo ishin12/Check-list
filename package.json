@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:db": "scripts/test-db.sh",
+    "check:locales": "node scripts/check-locales.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

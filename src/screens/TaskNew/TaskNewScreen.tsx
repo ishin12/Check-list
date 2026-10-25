@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/app/providers/LanguageContext';
+import { localizedText } from '@/domain/template/template';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
 import { createTask } from '@/services/data/tasks';
+import { WorkerMultiSelect } from '@/components/WorkerMultiSelect';
+import { LocationInput } from '@/components/LocationInput';
+import type { TaskLocation } from '@/domain/location';
 import { RECURRENCE_OPTIONS, recurrenceLabel, type Recurrence } from '@/domain/job/recurrence';
 
 interface Option { id: string; label: string }
@@ -12,17 +17,20 @@ interface TemplateOpt extends Option { /* same shape, kept distinct for readabil
 
 export function TaskNewScreen() {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const navigate = useNavigate();
   const [workers, setWorkers] = useState<Option[]>([]);
   const [clients, setClients] = useState<Option[]>([]);
   const [templates, setTemplates] = useState<TemplateOpt[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [workerId, setWorkerId] = useState('');
+  const [workerIds, setWorkerIds] = useState<string[]>([]);
   const [clientId, setClientId] = useState('');
   const [templateId, setTemplateId] = useState('');
   const [when, setWhen] = useState(defaultWhen());
   const [recurrence, setRecurrence] = useState<Recurrence>('none');
+  const [location, setLocation] = useState<TaskLocation | null>(null);
+  const [locationInvalid, setLocationInvalid] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +46,7 @@ export function TaskNewScreen() {
       setClients((cs ?? []).map((c) => ({ id: c.id, label: c.name })));
       setTemplates((ts ?? []).map((tpl) => ({
         id: tpl.id,
-        label: (tpl.title?.en ?? tpl.title?.ar ?? 'Untitled') as string,
+        label: localizedText(tpl.title, language) || 'Untitled',
       })));
     })();
   }, []);
@@ -50,10 +58,11 @@ export function TaskNewScreen() {
     try {
       const task = await createTask({
         title, description: description || undefined,
-        clientId, assignedWorkerId: workerId,
+        clientId, workerIds,
         scheduledAt: new Date(when).toISOString(),
         recurrence,
         templateId: templateId || undefined,
+        location,
       });
       navigate(`/tasks/${task.id}`, { replace: true });
     } catch (err) {
@@ -63,7 +72,7 @@ export function TaskNewScreen() {
     }
   }
 
-  const ready = title && clientId && workerId && when;
+  const ready = title && clientId && workerIds.length > 0 && when && !locationInvalid;
 
   return (
     <AppShell>
@@ -87,10 +96,10 @@ export function TaskNewScreen() {
         </div>
         <div className="field">
           <label className="field__label">{t('taskNew.worker', 'Assign to')}</label>
-          <select className="input" required value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
-            <option value="">—</option>
-            {workers.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
-          </select>
+          <WorkerMultiSelect options={workers} value={workerIds} onChange={setWorkerIds} />
+          {workerIds.length === 0 ? (
+            <div className="hint">{t('workers.atLeastOne', 'Select at least one worker.')}</div>
+          ) : null}
         </div>
         <div className="field">
           <label className="field__label">{t('taskNew.when', 'Scheduled at')}</label>
@@ -116,6 +125,12 @@ export function TaskNewScreen() {
               return <option key={opt} value={opt}>{t(lbl.i18n, lbl.fallback)}</option>;
             })}
           </select>
+        </div>
+        <div className="field">
+          <label className="field__label">
+            {t('location.label')} <span className="hint">({t('location.optional')})</span>
+          </label>
+          <LocationInput onChange={(loc, state) => { setLocation(loc); setLocationInvalid(state === 'invalid'); }} />
         </div>
         <button className="btn btn--primary btn--block btn--lg" disabled={!ready || saving} type="submit">
           {saving ? t('common.saving', 'Saving…') : t('taskNew.create', 'Create task')}

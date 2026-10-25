@@ -37,7 +37,10 @@ export interface FieldTask {
   description?: string;
   templateId?: string;
   clientId: string;
+  /** Lead worker (tasks.assigned_worker_id). Always a member of workerIds. */
   assignedWorkerId: string;
+  /** Every worker on the task, lead first. */
+  workerIds: string[];
   scheduledAt: string;
   scheduledEnd?: string;
   status: FieldTaskStatus;
@@ -55,6 +58,10 @@ export interface FieldTask {
   recurrence: Recurrence;
   seriesId?: string;
   extraWork: ExtraWorkEntry[];
+  /** Optional Google Maps location (migration 0007). */
+  locationUrl?: string;
+  locationLat?: number;
+  locationLng?: number;
 }
 
 export type ApprovalMethod = 'manager' | 'client_signature' | 'auto_no_response';

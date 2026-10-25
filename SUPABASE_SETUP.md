@@ -43,11 +43,23 @@ Open the **SQL Editor** and run each file's contents, in this order:
 3. `supabase/migrations/0003_extra_work.sql` — the worker "extra work done" log.
 4. `supabase/migrations/0004_signing.sql` — WhatsApp signing links, `app_settings`,
    `approval_method`, and the two public sign RPCs.
+5. `supabase/migrations/0005_storage.sql` — `proofs` storage bucket and policies (see §3).
+6. `supabase/migrations/0006_task_workers.sql` — several workers per task (`task_workers`).
+7. `supabase/migrations/0007_task_location.sql` — optional Google Maps location on tasks.
 
-## 3. Create the storage bucket
-1. **Storage → New bucket** → name `proofs`, **private** (uncheck "public bucket").
-2. Enable RLS; the default "auth.uid() is not null" insert/select policy is enough
-   — RLS on `task_proofs` already controls what shows in the UI.
+0005–0007 are additive and safe to re-run. Rollback statements are at the bottom
+of each file.
+
+## 3. Storage bucket and policies
+Run `supabase/migrations/0005_storage.sql` in the SQL Editor (after 0004). It is safe
+to re-run and creates:
+- the private `proofs` bucket (50 MB limit; JPEG/PNG/WebP/HEIC photos, MP4/MOV/WebM videos);
+- the `storage.objects` policies: managers can do everything, the assigned worker can
+  read/add/delete files in their task's folder (`<task id>/...`), and clients can read
+  only the `finish` proof of an approved task of their own client. Anonymous users get nothing.
+
+Supabase creates **no** default storage policy, so without this migration uploads fail
+with "bucket not found" or row-level-security errors. Do not create the bucket by hand.
 
 ## 4. Make yourself the first manager
 Email/password users are created by the `invite-user` function, but you need a

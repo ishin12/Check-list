@@ -1,3 +1,4 @@
+import { Chevron } from '@/components/Chevron';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -60,7 +61,7 @@ export function HomeScreen() {
                   </span>
                 </span>
                 <span style={{ color: 'var(--color-text-muted)' }}>
-                  {language === 'ar' ? '‹' : '›'}
+                  <Chevron kind="forward" />
                 </span>
               </button>
             ))}

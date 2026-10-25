@@ -24,7 +24,7 @@ export function TemplateListScreen() {
   }, [storage]);
 
   const onDuplicate = async (template: Template) => {
-    const suffix = { en: t('templates.copySuffix'), ar: t('templates.copySuffix') };
+    const suffix = { en: t('templates.copySuffix'), ar: t('templates.copySuffix'), ur: t('templates.copySuffix') };
     await storage.saveTemplate(duplicateTemplate(template, suffix));
     reload();
   };

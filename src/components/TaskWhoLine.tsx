@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
-import { useClientName, useWorkerName } from '@/app/providers/DirectoryContext';
+import { useTranslation } from 'react-i18next';
+import { useClientName, useDirectory } from '@/app/providers/DirectoryContext';
 import { useAuth } from '@/app/providers/AuthContext';
 import type { FieldTask } from '@/domain/models/ops';
+import { summarizeNames } from '@/domain/workerSelect';
 
 interface Props {
-  task: Pick<FieldTask, 'assignedWorkerId' | 'clientId'>;
+  task: Pick<FieldTask, 'assignedWorkerId' | 'workerIds' | 'clientId'>;
   /** When true, only the client name is shown (worker view). */
   hideWorker?: boolean;
   /** When true, only the worker name is shown (client portal). */
@@ -15,12 +17,25 @@ interface Props {
 
 /** Compact "Worker · Client" line shown beneath a task title. */
 export function TaskWhoLine({ task, hideWorker, hideClient, linkClient }: Props) {
-  const workerName = useWorkerName(task.assignedWorkerId);
+  const { t } = useTranslation();
+  const { workers } = useDirectory();
+  const ids = task.workerIds?.length ? task.workerIds : [task.assignedWorkerId];
+  const names = ids.map((id) => {
+    const w = workers.get(id);
+    return w?.fullName ?? w?.email ?? '—';
+  });
+  const { shown, extra } = summarizeNames(names);
+  const workerName = shown.join(', ');
+  const fullList = names.join(', ');
   const clientName = useClientName(task.clientId);
   const { user } = useAuth();
 
   const parts: React.ReactNode[] = [];
-  if (!hideWorker) parts.push(<span key="w">{workerName}</span>);
+  if (!hideWorker) parts.push(
+      <span key="w" title={extra > 0 ? fullList : undefined}>
+        {workerName}{extra > 0 ? ` ${t('workers.more', { count: extra, defaultValue: '+{{count}}' })}` : ''}
+      </span>,
+    );
   if (!hideClient) {
     parts.push(
       linkClient && user?.role === 'manager' ? (

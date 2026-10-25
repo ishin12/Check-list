@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/app/providers/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
@@ -9,9 +10,11 @@ import { listTasks } from '@/services/data/tasks';
 import type { Client, ClientNote, FieldTask } from '@/domain/models/ops';
 import { NoteComposer, resolveNote } from '@/components/NoteComposer';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
+import { formatDate, formatDateAndTime } from '@/lib/datetime';
 
 export function ClientDetailScreen() {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const { id } = useParams();
   const [client, setClient] = useState<Client | null>(null);
   const [tasks, setTasks] = useState<FieldTask[]>([]);
@@ -48,7 +51,7 @@ export function ClientDetailScreen() {
     return (
       <AppShell>
         <AppHeader title={t('clients.title', 'Client')} showBack />
-        <main className="app-main"><p className="hint">Loading…</p></main>
+        <main className="app-main"><p className="hint">{t('common.loading', 'Loading…')}</p></main>
       </AppShell>
     );
   }
@@ -57,13 +60,14 @@ export function ClientDetailScreen() {
   const history  = tasks.filter((x) => x.status !== 'not_started');
   const openNotes = notes.filter((n) => n.status === 'open');
 
+  const contactBits = [client.phone, client.email, client.address].filter(Boolean) as string[];
   return (
     <AppShell>
       <AppHeader title={client.name} showBack />
       <main className="app-main">
         <div className="card">
           <div className="card__title">{client.name}</div>
-          <div className="card__meta">{[client.phone, client.email, client.address].filter(Boolean).join(' · ') || '—'}</div>
+          <div className="card__meta">{contactBits.length ? contactBits.map((v, i) => <span key={i}>{i > 0 ? ' · ' : ''}<bdi>{v}</bdi></span>) : '—'}</div>
         </div>
 
         <section>
@@ -74,9 +78,9 @@ export function ClientDetailScreen() {
             <div className="stack">
               {openNotes.map((n) => (
                 <div key={n.id} className="note-card">
-                  <div>{n.body}</div>
+                  <div dir="auto">{n.body}</div>
                   <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
-                    <span className="card__meta">{new Date(n.createdAt).toLocaleDateString()}</span>
+                    <span className="card__meta">{formatDate(n.createdAt, language)}</span>
                     <button className="btn btn--ghost" onClick={async () => { await resolveNote(n.id); await load(); }}>
                       {t('notes.resolve', 'Mark resolved')}
                     </button>
@@ -101,7 +105,7 @@ export function ClientDetailScreen() {
                   <div style={{ flex: 1 }}>
                     <div className="card__title">{x.title}</div>
                     <TaskWhoLine task={x} hideClient />
-                    <div className="card__meta">{new Date(x.scheduledAt).toLocaleString()}</div>
+                    <div className="card__meta">{formatDateAndTime(x.scheduledAt, language)}</div>
                   </div>
                   <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
                 </Link>
@@ -122,7 +126,7 @@ export function ClientDetailScreen() {
                   <div style={{ flex: 1 }}>
                     <div className="card__title">{x.title}</div>
                     <TaskWhoLine task={x} hideClient />
-                    <div className="card__meta">{new Date(x.scheduledAt).toLocaleDateString()}</div>
+                    <div className="card__meta">{formatDate(x.scheduledAt, language)}</div>
                   </div>
                   <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
                 </Link>

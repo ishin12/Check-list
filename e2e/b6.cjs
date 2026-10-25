@@ -1,0 +1,25 @@
+const L = require('./lib.cjs');
+const log = (...a) => console.log(...a);
+const txt = async (page, sel = 'body') => (await page.locator(sel).innerText()).replace(/\n+/g, ' | ');
+(async () => {
+  const { browser, page } = await L.open();
+  await L.as(page, 'u-mgr');
+  await L.lang(page, 'ar');
+  await L.nav(page, '/tasks/new');
+  await L.shot(page, 'B6-1-ar-new');
+  await page.locator('.worker-select input[type=search]').fill('س'); await page.waitForTimeout(200);
+  log('ar search "س":', await txt(page, '.worker-select__list'));
+  await page.locator('.worker-select input[type=search]').fill('');
+  await page.locator('.worker-select label').nth(0).click(); await page.locator('.worker-select label').nth(1).click();
+  await L.shot(page, 'B6-2-ar-two-selected');
+  log('ar bar:', await txt(page, '.worker-select__bar'));
+  await L.nav(page, '/today'); await L.shot(page, 'B6-3-ar-today'); log('ar today:', (await txt(page)).slice(0, 400));
+  await L.nav(page, '/tasks/k-2'); await L.shot(page, 'B6-4-ar-detail');
+  await page.getByRole('button').filter({ hasText: /تعديل/ }).first().click().catch(() => log('no AR edit button found'));
+  await page.waitForTimeout(400); await L.shot(page, 'B6-5-ar-edit-workers');
+  await L.nav(page, '/calendar'); await L.shot(page, 'B6-6-ar-calendar');
+  const o = await page.evaluate(() => document.documentElement.scrollWidth);
+  log('calendar scrollWidth', o);
+  await L.nav(page, '/notifications'); await L.shot(page, 'B6-7-ar-notifications');
+  await browser.close();
+})().catch((e) => { console.log('FATAL', e); process.exit(1); });

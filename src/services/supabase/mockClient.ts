@@ -17,13 +17,14 @@
 import { openDB, type IDBPDatabase } from 'idb';
 
 const DB_NAME = 'checklist-demo';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // v2 adds the task_workers store
 
 const TABLES = [
   'profiles',
   'clients',
   'templates',
   'tasks',
+  'task_workers',
   'task_proofs',
   'client_notes',
   'notifications',
@@ -44,6 +45,7 @@ const state: Record<Table, Row[]> = {
   clients: [],
   templates: [],
   tasks: [],
+  task_workers: [],
   task_proofs: [],
   client_notes: [],
   notifications: [],
@@ -83,6 +85,11 @@ async function loadAll(): Promise<void> {
   }
   const seeded = await conn.get('meta', 'seeded');
   if (seeded !== 'v5') await seedDemo();
+  else if (state.task_workers.length === 0 && state.tasks.length > 0) {
+    // Demo data created before multi-worker tasks: mirror migration 0006's backfill.
+    for (const t of state.tasks) addTaskWorker(t.id, t.assigned_worker_id, false);
+    await persist('task_workers');
+  }
   const u = await conn.get('meta', 'activeUserId');
   if (typeof u === 'string') activeUserId = u;
 }
@@ -176,20 +183,53 @@ function notify(userId: string, kind: string, payload: Record<string, unknown>):
   fireChange('notifications', 'INSERT', row);
 }
 
+/**
+ * task_workers row insert (mirrors 0006): notifies the added worker unless
+ * they are the task's lead (the tasks insert trigger already notified them).
+ */
+function addTaskWorker(taskId: string, workerId: string, withNotify = true): void {
+  const id = `${taskId}:${workerId}`;
+  if (state.task_workers.some((r) => r.id === id)) return;
+  state.task_workers.push({
+    id, task_id: taskId, worker_id: workerId, created_at: new Date().toISOString(),
+  });
+  void persist('task_workers');
+  const task = state.tasks.find((t) => t.id === taskId);
+  if (withNotify && task && task.assigned_worker_id !== workerId) {
+    notify(workerId, 'task.assigned', {
+      task_id: task.id, title: task.title, scheduled_at: task.scheduled_at,
+    });
+  }
+}
+
+/** Workers on a task, oldest first; falls back to the lead (mirrors 0006). */
+function workerIdsFor(task: Row): string[] {
+  const ids = state.task_workers
+    .filter((r) => r.task_id === task.id)
+    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
+    .map((r) => r.worker_id as string);
+  return ids.length ? ids : [task.assigned_worker_id];
+}
+
 function onTaskInsert(task: Row): void {
   notify(task.assigned_worker_id, 'task.assigned', {
     task_id: task.id, title: task.title, scheduled_at: task.scheduled_at,
   });
   audit('task.created', 'task', task.id, { status: task.status });
+  addTaskWorker(task.id, task.assigned_worker_id); // mirror trigger
 }
 
 function onTaskUpdate(prev: Row, next: Row): void {
+  if (prev.assigned_worker_id !== next.assigned_worker_id) {
+    addTaskWorker(next.id, next.assigned_worker_id); // mirror trigger
+  }
   if (prev.status !== next.status) {
     audit(`task.${next.status}`, 'task', next.id, { status: next.status });
     if (next.status === 'submitted') {
       for (const m of state.profiles.filter((p) => p.role === 'manager' && p.active)) {
         notify(m.id, 'task.submitted', {
           task_id: next.id, title: next.title, worker_id: next.assigned_worker_id,
+          worker_ids: workerIdsFor(next),
         });
       }
     } else if (next.status === 'approved' || next.status === 'rejected') {
@@ -207,7 +247,7 @@ function onTaskUpdate(prev: Row, next: Row): void {
 // ---------------------------------------------------------------------------
 
 type Op = 'select' | 'insert' | 'update' | 'upsert' | 'delete';
-interface SelectEmbed { alias: string; table: Table; cols: string[] }
+interface SelectEmbed { alias: string; table: Table; cols: string[]; many: boolean }
 
 class Query<T = any> implements PromiseLike<{ data: T; error: { message: string } | null }> {
   private op: Op = 'select';
@@ -240,6 +280,11 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
   }
   lte(col: string, val: unknown): this {
     this.filters.push((r) => (r[col] ?? '') <= (val as any));
+    return this;
+  }
+  in(col: string, vals: unknown[]): this {
+    const set = new Set(vals.map((v) => String(v)));
+    this.filters.push((r) => set.has(String(r[col] ?? '')));
     return this;
   }
   is(col: string, val: null | boolean): this {
@@ -280,6 +325,14 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
   private project(row: Row): Row {
     const projected: Row = { ...row };
     for (const emb of this.embeds) {
+      if (emb.many) {
+        // One-to-many child embed (e.g. tasks -> task_workers via task_id).
+        projected[emb.alias] = state[emb.table]
+          .filter((r) => r.task_id === row.id)
+          .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
+          .map((r) => pick(r, emb.cols));
+        continue;
+      }
       const fkCol = guessFkCol(this.table, emb.table, emb.alias);
       const target = state[emb.table].find((r) => r.id === row[fkCol]);
       projected[emb.alias] = target ? [pick(target, emb.cols)] : [];
@@ -311,6 +364,13 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
           const updated: Row[] = [];
           for (const row of target) {
             const prev = { ...row };
+            if (
+              this.table === 'tasks' && 'assigned_worker_id' in (this.payload as Row) &&
+              (this.payload as Row).assigned_worker_id !== row.assigned_worker_id &&
+              !isManagerUser()
+            ) {
+              throw new Error('only managers can reassign a task'); // guard trigger
+            }
             Object.assign(row, this.payload as Row, { updated_at: new Date().toISOString() });
             updated.push(row);
             if (this.table === 'tasks') onTaskUpdate(prev, row);
@@ -368,13 +428,13 @@ function pick(row: Row, cols: string[]): Row {
 
 /** Parse `actor:profiles!audit_log_actor_id_fkey(full_name, email)` embeds out of a select string. */
 function parseEmbeds(sel: string): SelectEmbed[] {
-  if (!sel.includes(':')) return [];
+  if (!sel.includes('(')) return [];
   const out: SelectEmbed[] = [];
-  const rx = /(\w+):(\w+)!?[\w_]*\(([^)]+)\)/g;
+  const rx = /(?:(\w+):)?(\w+)(?:![\w_]+)?\(([^)]+)\)/g;
   let m: RegExpExecArray | null;
   while ((m = rx.exec(sel))) {
     const cols = m[3].split(',').map((s) => s.trim());
-    out.push({ alias: m[1], table: m[2] as Table, cols });
+    out.push({ alias: m[1] ?? m[2], table: m[2] as Table, cols, many: !m[1] && m[2] === 'task_workers' });
   }
   return out;
 }
@@ -553,6 +613,10 @@ export function getMockClient(): MockClient {
   return mock;
 }
 
+function isManagerUser(): boolean {
+  return state.profiles.some((p) => p.id === activeUserId && p.role === 'manager' && p.active);
+}
+
 function parseFilterString(s: string | undefined): Subscription['filter'] {
   if (!s) return undefined;
   // Format: `user_id=eq.${uid}`
@@ -575,17 +639,48 @@ function runRpc(fn: string, args: Record<string, unknown>): { data: any; error: 
     const task = state.tasks.find((t) => t.id === link.task_id);
     if (!task) return { data: [], error: null };
     const client = state.clients.find((c) => c.id === task.client_id);
-    const worker = state.profiles.find((p) => p.id === task.assigned_worker_id);
+    const names = state.task_workers
+      .filter((r) => r.task_id === task.id)
+      .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
+      .map((r) => state.profiles.find((p) => p.id === r.worker_id)?.full_name)
+      .filter((n): n is string => !!n);
+    const lead = state.profiles.find((p) => p.id === task.assigned_worker_id);
+    const workerName = names.length ? names.join(', ') : (lead?.full_name ?? '');
     return {
       data: [{
         task_title: task.title,
         client_name: client?.name ?? '',
-        worker_name: worker?.full_name ?? '',
+        worker_name: workerName,
         scheduled_at: task.scheduled_at,
         expires_at: link.expires_at,
       }],
       error: null,
     };
+  }
+  if (fn === 'set_task_workers') {
+    if (!isManagerUser()) return { data: null, error: { message: 'only managers can change task workers' } };
+    const taskId = String(args.p_task ?? '');
+    const raw = Array.isArray(args.p_workers) ? (args.p_workers as unknown[]).map(String) : [];
+    const ids = [...new Set(raw)];
+    if (ids.length === 0) return { data: null, error: { message: 'at least one worker is required' } };
+    const okWorker = (id: string) =>
+      state.profiles.some((p) => p.id === id && p.role === 'worker' && p.active);
+    if (!ids.every(okWorker)) {
+      return { data: null, error: { message: 'every worker must be an active worker profile' } };
+    }
+    const task = state.tasks.find((t) => t.id === taskId);
+    if (!task) return { data: null, error: { message: 'task not found' } };
+    for (const id of ids) addTaskWorker(taskId, id); // notifies new non-lead workers
+    if (!ids.includes(task.assigned_worker_id)) {
+      const prev = { ...task };
+      task.assigned_worker_id = ids[0];
+      task.updated_at = new Date().toISOString();
+      onTaskUpdate(prev, task);
+      void persist('tasks');
+    }
+    state.task_workers = state.task_workers.filter((r) => r.task_id !== taskId || ids.includes(r.worker_id));
+    void persist('task_workers');
+    return { data: null, error: null };
   }
   if (fn === 'complete_signing') {
     const token = String(args.p_token ?? '');
@@ -733,17 +828,17 @@ async function seedDemo(): Promise<void> {
   ];
 
   state.templates = [
-    { id: 't-ac', title: { en: 'AC Maintenance', ar: 'صيانة المكيف' }, tasks: [
-      { id: crypto.randomUUID(), order: 0, required: true,  label: { en: 'Inspect outdoor unit', ar: 'فحص الوحدة الخارجية' } },
-      { id: crypto.randomUUID(), order: 1, required: true,  label: { en: 'Clean filters',        ar: 'تنظيف الفلاتر' } },
+    { id: 't-ac', title: { en: 'AC Maintenance', ar: 'صيانة المكيف', ur: 'اے سی کی دیکھ بھال' }, tasks: [
+      { id: crypto.randomUUID(), order: 0, required: true,  label: { en: 'Inspect outdoor unit', ar: 'فحص الوحدة الخارجية', ur: 'باہر والے یونٹ کی جانچ' } },
+      { id: crypto.randomUUID(), order: 1, required: true,  label: { en: 'Clean filters',        ar: 'تنظيف الفلاتر', ur: 'فلٹر صاف کریں' } },
       { id: crypto.randomUUID(), order: 2, required: false, label: { en: 'Check gas pressure',    ar: 'فحص ضغط الغاز' } },
     ], version: 1, created_by: 'u-mgr', created_at: day(-30, 9), updated_at: day(-30, 9) },
   ];
 
   state.tasks = [
-    mkTask('k-1', 'AC maintenance — Living room', 'u-wa', 'c-1', day(0, 9),  'not_started', { template_id: 't-ac' }),
+    mkTask('k-1', 'AC maintenance — Living room', 'u-wa', 'c-1', day(0, 9),  'not_started', { template_id: 't-ac', location_lat: 24.7136, location_lng: 46.6753, location_url: 'https://www.google.com/maps/search/?api=1&query=24.7136,46.6753' }),
     mkTask('k-2', 'Quarterly inspection',          'u-wa', 'c-2', day(0, 11), 'in_progress', { started_at: day(0, 10, 0), recurrence: 'quarterly', series_id: 's-2' }),
-    mkTask('k-3', 'Pool service',                  'u-wb', 'c-3', day(0, 14), 'not_started', { recurrence: 'weekly', series_id: 's-3' }),
+    mkTask('k-3', 'Pool service',                  'u-wb', 'c-3', day(0, 14), 'not_started', { recurrence: 'weekly', series_id: 's-3', location_url: 'https://maps.app.goo.gl/demoPoolVilla' }),
     mkTask('k-4', 'Filter change',                 'u-wa', 'c-2', day(-1, 10),'submitted',   { started_at: day(-1, 10, 5), finished_at: day(-1, 10, 55), extra_work: [
       { id: 'ew-1', body: 'Tightened a loose mounting bracket on the return duct.', addedAt: day(-1, 10, 40), addedBy: 'u-wa', addedByName: 'Ahmed' },
     ] }),
@@ -757,6 +852,11 @@ async function seedDemo(): Promise<void> {
     mkTask('k-9', 'Garden upkeep',                 'u-wb', 'c-2', day(-4, 10),'approved',    { started_at: day(-4, 10, 5), finished_at: day(-4, 11, 0), decision_at: day(-1, 3), decision_note: 'Auto-approved after 3 days — client did not respond', approval_method: 'auto_no_response' }),
   ];
 
+  // Mirrors the 0006 backfill (every lead), plus a second worker on k-2 for the demo.
+  state.task_workers = [];
+  for (const t of state.tasks) addTaskWorker(t.id, t.assigned_worker_id, false);
+  addTaskWorker('k-2', 'u-wb', false);
+
   state.client_notes = [
     { id: 'n-1', client_id: 'c-1', body: 'Replace return-air filter on next visit.',         status: 'open',     created_in_task_id: 'k-5', resolved_in_task_id: null, created_by: 'u-wb', created_at: day(-1, 16), resolved_at: null },
     { id: 'n-2', client_id: 'c-3', body: 'Customer requested earlier slot — try 8am next time.', status: 'open', created_in_task_id: 'k-6', resolved_in_task_id: null, created_by: 'u-wa', created_at: day(-2, 14), resolved_at: null },
@@ -765,7 +865,7 @@ async function seedDemo(): Promise<void> {
 
   // Pre-seeded notifications (recent inbox state).
   state.notifications = [
-    { id: 'no-1', user_id: 'u-mgr', kind: 'task.submitted', payload: { task_id: 'k-4', title: 'Filter change', worker_id: 'u-wa' }, read_at: null, email_sent_at: null, created_at: day(-1, 11) },
+    { id: 'no-1', user_id: 'u-mgr', kind: 'task.submitted', payload: { task_id: 'k-4', title: 'Filter change', worker_id: 'u-wa', worker_ids: ['u-wa'] }, read_at: null, email_sent_at: null, created_at: day(-1, 11) },
     { id: 'no-2', user_id: 'u-wa',  kind: 'task.assigned',  payload: { task_id: 'k-1', title: 'AC maintenance — Living room', scheduled_at: day(0, 9) }, read_at: day(-1, 8), email_sent_at: null, created_at: day(-1, 7) },
     { id: 'no-3', user_id: 'u-wa',  kind: 'task.rejected',  payload: { task_id: 'k-6', title: 'Leak inspection' }, read_at: null, email_sent_at: null, created_at: day(-2, 15, 5) },
     { id: 'no-4', user_id: 'u-wb',  kind: 'task.assigned',  payload: { task_id: 'k-3', title: 'Pool service', scheduled_at: day(0, 14) }, read_at: null, email_sent_at: null, created_at: day(-1, 7, 30) },
@@ -851,6 +951,7 @@ function mkTask(
     recurrence: 'none', series_id: id,
     extra_work: [],
     approval_method: null,
+    location_url: null, location_lat: null, location_lng: null,
     ...extra,
   };
 }

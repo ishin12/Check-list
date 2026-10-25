@@ -1,6 +1,6 @@
+import { Chevron } from '@/components/Chevron';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from '@/app/providers/LanguageContext';
 import { LanguageToggle } from './LanguageToggle';
 import { DemoSwitcher } from './DemoSwitcher';
 
@@ -15,9 +15,6 @@ interface Props {
 export function AppHeader({ title, showBack, showLanguage, action, children }: Props) {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { language } = useLanguage();
-  // In RTL the "back" chevron should point the other way.
-  const backIcon = language === 'ar' ? '›' : '‹';
 
   return (
     <header className="app-header">
@@ -29,7 +26,7 @@ export function AppHeader({ title, showBack, showLanguage, action, children }: P
           onClick={() => navigate(-1)}
           style={{ fontSize: '1.75rem', lineHeight: 1 }}
         >
-          {backIcon}
+          <Chevron kind="back" />
         </button>
       ) : null}
       <span className="app-header__title">{title}</span>

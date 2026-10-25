@@ -30,6 +30,7 @@
 
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-ar: 'Cairo', system-ui, sans-serif;
+  --font-ur: 'Noto Nastaliq Urdu', 'Noto Naskh Arabic', 'Cairo', system-ui, sans-serif;
 
   /* Ghsoon Najd brand — extracted from the company profile deck. */
   --color-ink: #003C1B;            /* deep forest */
@@ -166,6 +167,7 @@ textarea {
   background: var(--color-surface-2);
   color: var(--color-text);
   transition: transform 0.05s ease, background 0.15s ease, opacity 0.15s ease;
+  text-decoration: none;
 }
 
 .btn:active {
@@ -792,6 +794,19 @@ html[dir='rtl'] .demo-account__arrow { transform: scaleX(-1); }
 .who-line__link { color: var(--color-brand-strong); text-decoration: none; font-weight: 600; }
 .who-line__link:hover { text-decoration: underline; }
 
+/* Job location ------------------------------------------------------------- */
+.location-input { display: flex; flex-direction: column; gap: 8px; min-inline-size: 0; }
+.location-input__text { inline-size: 100%; text-align: start; }
+.location-input__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.location-input__feedback { font-size: 0.875rem; overflow-wrap: anywhere; }
+.location-input__feedback--ok { color: var(--color-brand-strong); }
+.location-input__feedback--info { color: var(--color-text-muted); }
+.location-input__feedback--error { color: var(--color-danger); }
+.location-card { display: flex; flex-direction: column; gap: 8px; }
+.location-card__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.location-card__actions .btn { flex: 1 1 auto; text-decoration: none; text-align: center; justify-content: center; }
+.location-card__coords { font-size: 0.75rem; color: var(--color-text-muted); unicode-bidi: isolate; }
+
 /* Extra-work entries ------------------------------------------------------- */
 .extra-entry {
   display: flex;
@@ -1023,6 +1038,98 @@ html[dir='rtl'] .demo-account__arrow { transform: scaleX(-1); }
   background: #fff;
 }
 
+/* Photo capture: upload progress, banners, viewer --------------------------- */
+.capture__spacer { inline-size: 40px; }
+.capture__input { display: none; }
+.capture__big-icon { font-size: 56px; opacity: 0.6; }
+.capture__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  inline-size: 100%;
+}
+.capture__retake { color: #fff; border-color: rgba(255,255,255,0.4); }
+.capture__banner {
+  margin: 0 16px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.capture__banner-btn { min-height: 40px; }
+.upload-progress {
+  position: relative;
+  inline-size: 100%;
+  block-size: 28px;
+  border-radius: var(--radius);
+  background: rgba(255,255,255,0.18);
+  overflow: hidden;
+}
+.upload-progress__bar {
+  block-size: 100%;
+  background: var(--color-primary);
+  transition: inline-size 0.15s linear;
+}
+.upload-progress__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.proof-block__open {
+  display: block;
+  inline-size: 100%;
+  padding: 0;
+  border: none;
+  cursor: zoom-in;
+}
+.upload-note { display: flex; flex-direction: column; gap: 8px; }
+.upload-note__actions { gap: 8px; flex-wrap: wrap; }
+
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  color: #fff;
+}
+.viewer__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  padding-block-start: max(8px, env(safe-area-inset-top));
+}
+.viewer__title { font-weight: 700; }
+.viewer__close { color: #fff; min-inline-size: 44px; min-block-size: 44px; }
+.viewer__stage {
+  flex: 1;
+  min-block-size: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+}
+.viewer__media {
+  max-inline-size: 100%;
+  max-block-size: 100%;
+  object-fit: contain;
+}
+.viewer__msg { color: rgba(255,255,255,0.8); }
+.viewer__actions {
+  padding: 16px;
+  padding-block-end: max(16px, env(safe-area-inset-bottom));
+}
+
 /* Demo switcher chip ------------------------------------------------------- */
 .demo-switcher { position: relative; }
 .demo-switcher__chip {
@@ -1245,3 +1352,102 @@ html[dir='rtl'] .demo-account__arrow { transform: scaleX(-1); }
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Worker multi-select -------------------------------------------------------- */
+.worker-select { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.worker-select__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.worker-select__actions { display: inline-flex; gap: 6px; }
+.worker-select__list {
+  list-style: none; margin: 0; padding: 0;
+  max-block-size: 220px; overflow-y: auto;
+  border: 1px solid var(--color-border); border-radius: 8px;
+}
+.worker-select__item {
+  display: flex; align-items: center; gap: 10px;
+  min-block-size: 44px; padding-block: 6px; padding-inline: 12px; cursor: pointer;
+}
+.worker-select__item input { inline-size: 20px; block-size: 20px; flex: none; }
+.worker-select__item span { min-width: 0; overflow-wrap: anywhere; }
+.worker-select__empty { padding: 12px; }
+.worker-edit { display: flex; flex-direction: column; gap: 10px; }
+
+/* Urdu (Nastaliq) ---------------------------------------------------------------
+   Nastaliq has tall ascenders and deep descenders and a diagonal baseline, so
+   everything that fixes a line box needs extra line-height / padding. These
+   rules are scoped to html[lang='ur'] only; English and Arabic are untouched. */
+html[lang='ur'] body {
+  font-family: var(--font-ur);
+  line-height: 2;
+}
+html[lang='ur'] button,
+html[lang='ur'] input,
+html[lang='ur'] textarea,
+html[lang='ur'] select {
+  font-family: var(--font-ur);
+  line-height: 1.9;
+}
+html[lang='ur'] .btn {
+  line-height: 1.9;
+  padding-block: 10px 6px;
+  min-block-size: 52px;
+}
+html[lang='ur'] .btn--icon { min-block-size: 44px; padding-block: 6px; }
+html[lang='ur'] .btn--lg { min-block-size: 60px; }
+html[lang='ur'] .icon-btn { line-height: 1.2; font-family: var(--font-sans); }
+html[lang='ur'] .input,
+html[lang='ur'] .textarea {
+  line-height: 2;
+  padding-block: 10px 6px;
+  min-block-size: 52px;
+}
+html[lang='ur'] .app-header { padding-block: 10px; }
+html[lang='ur'] .app-header__title {
+  line-height: 2.2;
+  padding-block: 6px 2px;
+}
+/* Linked cards render as <a>; browsers underline them in blue. Underlines cut through Nastaliq. */
+html[lang='ur'] a.card--tap { text-decoration: none; color: inherit; }
+html[lang='ur'] .tab-bar__item { font-size: 0.6875rem; }
+html[lang='ur'] .card__title { line-height: 2; }
+html[lang='ur'] .card__meta { line-height: 2; margin-top: 0; }
+html[lang='ur'] .card { padding-block: 14px 12px; }
+html[lang='ur'] .section-title,
+html[lang='ur'] .badge,
+html[lang='ur'] .status-pill {
+  letter-spacing: 0;
+  text-transform: none;
+}
+html[lang='ur'] .section-title { line-height: 2.2; }
+html[lang='ur'] .field__label,
+html[lang='ur'] .hint { line-height: 2; }
+html[lang='ur'] .badge {
+  line-height: 1.9;
+  padding-block: 4px 0;
+  font-size: 0.8125rem;
+}
+html[lang='ur'] .status-pill {
+  line-height: 1.9;
+  padding-block: 6px 2px;
+  font-size: 0.8125rem;
+  min-block-size: 30px;
+}
+html[lang='ur'] .tab-bar__item {
+  line-height: 1.9;
+  min-block-size: 68px;
+  font-size: 0.75rem;
+  padding-block: 8px 4px;
+}
+html[lang='ur'] .tab-bar__label { line-height: 2; }
+html[lang='ur'] .tab-bar { padding-block-end: env(safe-area-inset-bottom); }
+html[lang='ur'] .lang-toggle button { line-height: 1.9; min-block-size: 40px; padding-block: 6px 2px; }
+html[lang='ur'] .banner { line-height: 2; }
+html[lang='ur'] .check-item__label { line-height: 2; }
+html[lang='ur'] .agenda__date { line-height: 2.1; }
+html[lang='ur'] .demo-switcher__item,
+html[lang='ur'] .demo-switcher__chip { line-height: 1.9; }
+
+/* Direction-aware chevron (see components/Chevron.tsx). The path points left. */
+.chev { display: inline-block; vertical-align: middle; }
+.chev--forward { transform: scaleX(-1); }
+html[dir='rtl'] .chev--back { transform: scaleX(-1); }
+html[dir='rtl'] .chev--forward { transform: none; }

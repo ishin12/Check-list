@@ -48,7 +48,14 @@ Deno.serve(async (req: Request) => {
     const { data: callerProfile } = await admin
       .from('profiles').select('role').eq('id', callerUser.user.id).maybeSingle();
     const isManager = callerProfile?.role === 'manager';
-    if (!isManager && task.assigned_worker_id !== callerUser.user.id) {
+    let isTaskWorker = task.assigned_worker_id === callerUser.user.id;
+    if (!isManager && !isTaskWorker) {
+      const { data: membership } = await admin
+        .from('task_workers').select('worker_id')
+        .eq('task_id', task_id).eq('worker_id', callerUser.user.id).maybeSingle();
+      isTaskWorker = !!membership;
+    }
+    if (!isManager && !isTaskWorker) {
       return cors(new Response('Forbidden', { status: 403 }));
     }
 

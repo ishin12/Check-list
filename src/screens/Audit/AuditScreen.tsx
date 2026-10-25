@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useLanguage } from '@/app/providers/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
+import { formatDateAndTime } from '@/lib/datetime';
 
 interface Row {
   id: string;
@@ -24,6 +26,7 @@ function startOfDayInput(d: Date): string {
 
 export function AuditScreen() {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const [rows, setRows] = useState<Row[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,10 +113,10 @@ export function AuditScreen() {
               <div key={r.id} className="card">
                 <div className="row" style={{ justifyContent: 'space-between' }}>
                   <span className="card__title">{r.action}</span>
-                  <span className="card__meta">{new Date(r.at).toLocaleString()}</span>
+                  <span className="card__meta">{formatDateAndTime(r.at, language)}</span>
                 </div>
                 <div className="card__meta">
-                  {r.actor?.[0]?.full_name ?? r.actor?.[0]?.email ?? r.actor_id ?? 'system'} · {r.entity}
+                  {r.actor?.[0]?.full_name ?? r.actor?.[0]?.email ?? r.actor_id ?? t('audit.system', 'system')} · {r.entity}
                 </div>
               </div>
             ))}

@@ -1,5 +1,6 @@
 import { getSupabase } from '@/services/supabase/client';
 import type { ExtraWorkEntry, FieldTask } from '@/domain/models/ops';
+import type { TaskLocation } from '@/domain/location';
 import { nextOccurrenceDate, type Recurrence } from '@/domain/job/recurrence';
 
 interface TaskRow {
@@ -25,7 +26,21 @@ interface TaskRow {
   series_id: string | null;
   extra_work: ExtraWorkEntry[] | null;
   approval_method: FieldTask['approvalMethod'] | null;
+  location_url?: string | null;
+  location_lat?: number | null;
+  location_lng?: number | null;
+  /** Embedded task_workers(worker_id); absent on rows from inserts. */
+  task_workers?: Array<{ worker_id: string }> | null;
 }
+
+/** Lead first, then the other workers; always includes the lead. */
+function workerIdsOf(r: TaskRow): string[] {
+  const ids = [r.assigned_worker_id];
+  for (const w of r.task_workers ?? []) if (!ids.includes(w.worker_id)) ids.push(w.worker_id);
+  return ids;
+}
+
+const TASK_SELECT = '*, task_workers(worker_id)';
 
 function rowToTask(r: TaskRow): FieldTask {
   return {
@@ -35,6 +50,7 @@ function rowToTask(r: TaskRow): FieldTask {
     templateId: r.template_id ?? undefined,
     clientId: r.client_id,
     assignedWorkerId: r.assigned_worker_id,
+    workerIds: workerIdsOf(r),
     scheduledAt: r.scheduled_at,
     scheduledEnd: r.scheduled_end ?? undefined,
     status: r.status,
@@ -51,6 +67,9 @@ function rowToTask(r: TaskRow): FieldTask {
     seriesId: r.series_id ?? undefined,
     extraWork: r.extra_work ?? [],
     approvalMethod: r.approval_method ?? undefined,
+    locationUrl: r.location_url ?? undefined,
+    locationLat: r.location_lat ?? undefined,
+    locationLng: r.location_lng ?? undefined,
   };
 }
 
@@ -62,8 +81,18 @@ export async function listTasks(opts: {
   status?: FieldTask['status'];
   seriesId?: string;
 } = {}): Promise<FieldTask[]> {
-  let q = getSupabase().from('tasks').select('*').order('scheduled_at', { ascending: true });
-  if (opts.workerId)  q = q.eq('assigned_worker_id', opts.workerId);
+  const sb = getSupabase();
+  let q = sb.from('tasks').select(TASK_SELECT).order('scheduled_at', { ascending: true });
+  if (opts.workerId) {
+    // Every task the worker is on (not just as lead). Done in two steps so the
+    // embedded task_workers list on each task stays complete.
+    const { data: mine, error: mineErr } = await sb
+      .from('task_workers').select('task_id').eq('worker_id', opts.workerId);
+    if (mineErr) throw mineErr;
+    const ids = ((mine ?? []) as Array<{ task_id: string }>).map((r) => r.task_id);
+    if (ids.length === 0) return [];
+    q = q.in('id', ids);
+  }
   if (opts.clientId)  q = q.eq('client_id', opts.clientId);
   if (opts.status)    q = q.eq('status', opts.status);
   if (opts.seriesId)  q = q.eq('series_id', opts.seriesId);
@@ -76,7 +105,7 @@ export async function listTasks(opts: {
 
 export async function getTask(id: string): Promise<FieldTask | null> {
   const { data, error } = await getSupabase()
-    .from('tasks').select('*').eq('id', id).maybeSingle();
+    .from('tasks').select(TASK_SELECT).eq('id', id).maybeSingle();
   if (error) throw error;
   return data ? rowToTask(data as TaskRow) : null;
 }
@@ -112,14 +141,31 @@ export interface CreateTaskInput {
   title: string;
   description?: string;
   clientId: string;
-  assignedWorkerId: string;
+  /** One or more workers; the first is the lead. */
+  workerIds: string[];
   scheduledAt: string;
   scheduledEnd?: string;
   templateId?: string;
   recurrence?: Recurrence;
+  location?: TaskLocation | null;
+}
+
+function locationColumns(loc?: TaskLocation | null) {
+  return {
+    location_url: loc?.locationUrl ?? null,
+    location_lat: loc?.locationLat ?? null,
+    location_lng: loc?.locationLng ?? null,
+  };
+}
+
+/** Set or clear (null) the Google Maps location of a task. Manager only in the UI. */
+export async function updateTaskLocation(taskId: string, loc: TaskLocation | null): Promise<void> {
+  const { error } = await getSupabase().from('tasks').update(locationColumns(loc)).eq('id', taskId);
+  if (error) throw error;
 }
 
 export async function createTask(input: CreateTaskInput): Promise<FieldTask> {
+  if (input.workerIds.length === 0) throw new Error('At least one worker is required');
   const recurrence: Recurrence = input.recurrence ?? 'none';
   const seriesId = crypto.randomUUID();
   const { data, error } = await getSupabase()
@@ -128,16 +174,33 @@ export async function createTask(input: CreateTaskInput): Promise<FieldTask> {
       title: input.title,
       description: input.description ?? null,
       client_id: input.clientId,
-      assigned_worker_id: input.assignedWorkerId,
+      assigned_worker_id: input.workerIds[0],
       scheduled_at: input.scheduledAt,
       scheduled_end: input.scheduledEnd ?? null,
       template_id: input.templateId ?? null,
       recurrence,
       series_id: seriesId,
+      ...locationColumns(input.location),
     })
     .select('*').single();
   if (error) throw error;
-  return rowToTask(data as TaskRow);
+  const created = rowToTask(data as TaskRow);
+  return applyWorkers(created, input.workerIds);
+}
+
+/** Replace the full worker set of a task (manager only; atomic RPC). */
+export async function setTaskWorkers(taskId: string, workerIds: string[]): Promise<void> {
+  const { error } = await getSupabase().rpc('set_task_workers', {
+    p_task: taskId, p_workers: workerIds,
+  });
+  if (error) throw error;
+}
+
+/** After insert the lead is already in place; add the rest only when needed. */
+async function applyWorkers(task: FieldTask, workerIds: string[]): Promise<FieldTask> {
+  if (workerIds.length <= 1) return { ...task, workerIds: [...workerIds] };
+  await setTaskWorkers(task.id, workerIds);
+  return { ...task, workerIds: [...workerIds] };
 }
 
 /** Delete all proofs of a given kind on a task, plus the underlying files. */
@@ -149,6 +212,34 @@ export async function deleteProofsOfKind(taskId: string, kind: 'start' | 'finish
     await sb.storage.from('proofs').remove(paths);
     await sb.from('task_proofs').delete().eq('task_id', taskId).eq('kind', kind);
   }
+}
+
+/** Records an already-uploaded proof file against a task. */
+export async function insertProofRow(input: {
+  taskId: string; kind: 'start' | 'finish'; path: string; mime: string; capturedAt: string;
+}): Promise<void> {
+  const { error } = await getSupabase().from('task_proofs').insert({
+    task_id: input.taskId,
+    kind: input.kind,
+    storage_path: input.path,
+    mime: input.mime,
+    captured_at: input.capturedAt,
+  });
+  if (error) throw error;
+}
+
+/**
+ * After a successful retake: remove the older proofs of this kind (rows and
+ * files), keeping the one stored at `keepPath`. Called only once the new proof
+ * is safely saved, so a failed upload never leaves the task without a proof.
+ */
+export async function deleteOtherProofsOfKind(taskId: string, kind: 'start' | 'finish', keepPath: string): Promise<void> {
+  const sb = getSupabase();
+  const { data } = await sb.from('task_proofs').select('id, storage_path').eq('task_id', taskId).eq('kind', kind);
+  const old = ((data ?? []) as Array<{ id: string; storage_path: string }>).filter((r) => r.storage_path !== keepPath);
+  if (!old.length) return;
+  for (const r of old) await sb.from('task_proofs').delete().eq('id', r.id);
+  await sb.storage.from('proofs').remove(old.map((r) => r.storage_path));
 }
 
 /**
@@ -180,8 +271,10 @@ export async function createNextOccurrence(task: FieldTask): Promise<FieldTask |
       template_id: task.templateId ?? null,
       recurrence: task.recurrence,
       series_id: seriesId,
+      ...locationColumns(task),
     })
     .select('*').single();
   if (error) throw error;
-  return rowToTask(data as TaskRow);
+  // Copy the full worker list (the lead is already set by the insert).
+  return applyWorkers(rowToTask(data as TaskRow), task.workerIds.length ? task.workerIds : [task.assignedWorkerId]);
 }
