@@ -101,3 +101,22 @@ reset role;
 
 rollback;
 \echo storage tests ok
+
+-- A proof row whose path points into another task's folder must not let the
+-- planting task's client read that object.
+begin;
+insert into storage.objects (bucket_id, name) values
+  ('proofs', '30000000-0000-0000-0000-000000000002/finish-other.jpeg');
+update public.tasks set status = 'approved' where id = '30000000-0000-0000-0000-000000000003';
+insert into public.task_proofs (task_id, kind, storage_path, mime, captured_at)
+values ('30000000-0000-0000-0000-000000000003', 'finish',
+        '30000000-0000-0000-0000-000000000002/finish-other.jpeg', 'image/jpeg', now());
+set local role authenticated;
+set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000c1';
+do $$ begin
+  if exists (select 1 from storage.objects
+             where name = '30000000-0000-0000-0000-000000000002/finish-other.jpeg') then
+    raise exception 'FAIL: client read another task''s object via a planted proof row';
+  end if;
+end $$;
+rollback;

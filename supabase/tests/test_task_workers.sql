@@ -172,3 +172,23 @@ do $$ declare n int; w text; begin
 end $$;
 
 rollback;
+
+-- Workers cannot approve/reject a task or move it to another client; the lead
+-- can still run the job as before.
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000b2';
+do $$ begin
+  begin
+    update public.tasks set status = 'approved' where id = '30000000-0000-0000-0000-000000000002';
+    raise exception 'FAIL: worker approved a task';
+  exception when insufficient_privilege then null; end;
+  begin
+    update public.tasks set client_id = '10000000-0000-0000-0000-000000000001'
+      where id = '30000000-0000-0000-0000-000000000002';
+    raise exception 'FAIL: worker changed the client';
+  exception when insufficient_privilege then null; end;
+  update public.tasks set status = 'submitted' where id = '30000000-0000-0000-0000-000000000002';
+  if not found then raise exception 'FAIL: lead could not submit'; end if;
+end $$;
+rollback;

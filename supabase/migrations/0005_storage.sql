@@ -50,6 +50,7 @@ language sql stable security definer set search_path = public as $$
     from public.task_proofs tp
     join public.tasks t on t.id = tp.task_id
     where tp.storage_path = p_name
+      and public.proof_object_task_id(tp.storage_path) = tp.task_id
       and tp.kind = 'finish'
       and t.status = 'approved'
       and t.client_id = public.current_client_id()

@@ -172,6 +172,25 @@ begin
 end;
 $$;
 
+-- Workers (now possibly several per task) may run the job but not decide it or
+-- move it to another client. Approve/reject is done by managers, the client
+-- signing RPC and the expiry job (no JWT user), which this does not affect.
+create or replace function public.guard_task_worker_update() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null or public.is_manager() then
+    return new;
+  end if;
+  if new.client_id is distinct from old.client_id then
+    raise exception 'only managers can change the client of a task' using errcode = '42501';
+  end if;
+  if new.status is distinct from old.status and new.status in ('approved', 'rejected') then
+    raise exception 'only managers can approve or reject a task' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
 -- Triggers (created only if missing; never dropped).
 do $$ begin
   if not exists (select 1 from pg_trigger where tgname = 'trg_tasks_mirror_lead'
@@ -193,6 +212,12 @@ do $$ begin
       for each row
       when (old.assigned_worker_id is distinct from new.assigned_worker_id)
       execute function public.guard_task_lead_change();
+  end if;
+  if not exists (select 1 from pg_trigger where tgname = 'trg_tasks_guard_worker_update'
+                 and tgrelid = 'public.tasks'::regclass) then
+    create trigger trg_tasks_guard_worker_update
+      before update on public.tasks
+      for each row execute function public.guard_task_worker_update();
   end if;
 end $$;
 
@@ -299,10 +324,12 @@ $$;
 -- drop policy if exists "task_workers read" on public.task_workers;
 -- drop policy if exists "profiles coworker read" on public.profiles;
 -- drop trigger if exists trg_tasks_guard_lead on public.tasks;
+-- drop trigger if exists trg_tasks_guard_worker_update on public.tasks;
 -- drop trigger if exists trg_tasks_mirror_lead on public.tasks;
 -- drop trigger if exists trg_task_workers_notify on public.task_workers;
 -- drop function if exists public.set_task_workers(uuid, uuid[]);
 -- drop function if exists public.guard_task_lead_change();
+-- drop function if exists public.guard_task_worker_update();
 -- drop function if exists public.notify_task_worker_added();
 -- drop function if exists public.mirror_task_lead();
 -- drop function if exists public.shares_task_with_me(uuid);
