@@ -1,5 +1,5 @@
 const { chromium } = require('playwright');
-const URL = 'http://localhost:5599';
+const URL = 'http://localhost:5799';
 const rec = (ok, n, ev) => console.log((ok ? 'PASS ' : 'FAIL ') + n + (ev ? ' :: ' + ev : ''));
 async function open(browser, user, lng, opts) {
   const ctx = await browser.newContext(opts || { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });

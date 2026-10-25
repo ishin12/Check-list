@@ -1,6 +1,6 @@
-// Independent verification of the visual refinement (demo mode, port 5599).
+// Independent verification of the visual refinement (demo mode, port 5799).
 const { chromium } = require('playwright');
-const URL = 'http://localhost:5599';
+const URL = 'http://localhost:5799';
 const R = [];
 const rec = (ok, name, ev) => { R.push(ok); console.log((ok ? 'PASS ' : 'FAIL ') + name + (ev ? ' :: ' + ev : '')); };
 async function ctxFor(browser, user, lng) {
