@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { getSupabase, hasSupabaseConfig } from '@/services/supabase/client';
+import { flushQueue } from '@/services/media/mediaQueue';
 import type { AppUser, Role } from '@/domain/models/ops';
 
 interface AuthState {
@@ -80,6 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => sub.subscription.unsubscribe();
   }, [configured, loadProfile, refresh]);
+
+  // Once signed in, upload any proofs that were captured offline or whose
+  // earlier upload failed (the queue otherwise only retries on `online`).
+  const signedInId = user?.id;
+  useEffect(() => {
+    if (signedInId) void flushQueue();
+  }, [signedInId]);
 
   const signInWithEmail = useCallback(async (email: string) => {
     const sb = getSupabase();

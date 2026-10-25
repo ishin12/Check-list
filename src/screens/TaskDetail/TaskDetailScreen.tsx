@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
@@ -13,6 +13,10 @@ import { recurrenceLabel } from '@/domain/job/recurrence';
 import type { ClientNote, FieldTask, TaskProof } from '@/domain/models/ops';
 import { NoteComposer, resolveNote } from '@/components/NoteComposer';
 import { ProofMedia } from '@/components/ProofMedia';
+import { ProofViewer } from '@/components/ProofViewer';
+import { useQueuedProofs } from '@/services/media/useQueuedProofs';
+import { discardQueued, flushQueue, type QueuedSummary } from '@/services/media/mediaQueue';
+import { MEDIA_ERROR_TEXT } from '@/services/media/mediaErrors';
 import { TemplateRunner } from '@/components/TemplateRunner';
 import { ExtraWorkLog } from '@/components/ExtraWorkLog';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
@@ -31,6 +35,8 @@ export function TaskDetailScreen() {
   const [requiredItems, setRequiredItems] = useState<{ id: string; label: string }[]>([]);
   const [sendingLink, setSendingLink] = useState(false);
   const [linkResult, setLinkResult] = useState<{ ok: boolean; message: string; url?: string } | null>(null);
+  const [viewing, setViewing] = useState<TaskProof | null>(null);
+  const queued = useQueuedProofs(id);
 
   async function load() {
     if (!id) return;
@@ -64,6 +70,14 @@ export function TaskDetailScreen() {
   }
 
   useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
+
+  // When a queued proof finishes uploading it leaves the queue: refresh the proofs.
+  const prevQueued = useRef(queued.length);
+  useEffect(() => {
+    if (queued.length < prevQueued.current) void load();
+    prevQueued.current = queued.length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queued.length]);
 
   if (!task) {
     return (
@@ -274,10 +288,19 @@ export function TaskDetailScreen() {
             </span>
           </div>
           <div className="stack" style={{ marginTop: 8 }}>
-            <ProofRow kind="start"  proofs={proofs} taskId={task.id} canEdit={canEditProofs} />
-            <ProofRow kind="finish" proofs={proofs} taskId={task.id} canEdit={canEditProofs} />
+            <ProofRow kind="start"  proofs={proofs} taskId={task.id} canEdit={canEditProofs} queued={queued} onOpen={setViewing} />
+            <ProofRow kind="finish" proofs={proofs} taskId={task.id} canEdit={canEditProofs} queued={queued} onOpen={setViewing} />
           </div>
         </section>
+
+        {viewing ? (
+          <ProofViewer
+            proof={viewing}
+            title={viewing.kind === 'start' ? t('proof.start', 'Start proof') : t('proof.finish', 'Finish proof')}
+            replaceTo={canEditProofs ? `/tasks/${task.id}/capture/${viewing.kind}?replace=1` : undefined}
+            onClose={() => setViewing(null)}
+          />
+        ) : null}
 
         {role === 'manager' && task.status === 'submitted' ? (
           <div className="field">
@@ -328,8 +351,13 @@ function defaultActionLabel(a: string): string {
   return ({ start: 'Start', submit: 'Submit', approve: 'Approve', reject: 'Reject', reopen: 'Reopen' } as Record<string, string>)[a] ?? a;
 }
 
-function ProofRow({ kind, proofs, taskId, canEdit }: { kind: 'start' | 'finish'; proofs: TaskProof[]; taskId: string; canEdit: boolean }) {
+function ProofRow({ kind, proofs, taskId, canEdit, queued, onOpen }: {
+  kind: 'start' | 'finish'; proofs: TaskProof[]; taskId: string; canEdit: boolean;
+  queued: QueuedSummary[]; onOpen: (p: TaskProof) => void;
+}) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const waiting = queued.filter((q) => q.kind === kind);
   // If the worker re-took a proof, the most recent one is what counts.
   const found = proofs
     .filter((p) => p.kind === kind)
@@ -360,10 +388,42 @@ function ProofRow({ kind, proofs, taskId, canEdit }: { kind: 'start' | 'finish';
         ) : null}
       </div>
       {found ? (
-        <div className="proof-block__media">
-          <ProofMedia proof={found} />
-        </div>
+        <button
+          type="button"
+          className="proof-block__media proof-block__open"
+          onClick={() => onOpen(found)}
+          aria-label={t('photo.open', 'Open full screen') ?? 'Open full screen'}
+        >
+          <ProofMedia proof={found} thumb />
+        </button>
       ) : null}
+      {waiting.map((q) => (
+        <div
+          key={q.id}
+          className={`banner banner--${q.lastError ? 'error' : 'info'} upload-note`}
+          role={q.lastError ? 'alert' : 'status'}
+        >
+          <div>
+            {q.lastError
+              ? `${t('photo.uploadFailed', 'Upload failed')} — ${t(MEDIA_ERROR_TEXT[q.lastError].key, MEDIA_ERROR_TEXT[q.lastError].fallback)}`
+              : q.uploading
+                ? t('photo.uploadingNow', 'Uploading…')
+                : t('photo.waiting', 'Waiting to upload')}
+          </div>
+          {q.lastError ? (
+            <div className="row upload-note__actions">
+              <button type="button" className="btn btn--ghost" onClick={() => void flushQueue()}>
+                {t('photo.retry', 'Retry')}
+              </button>
+              {canEdit ? (
+                <button type="button" className="btn btn--ghost" onClick={() => void discardQueued(q.id)}>
+                  {t('photo.discard', 'Discard')}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ))}
     </div>
   );
 }

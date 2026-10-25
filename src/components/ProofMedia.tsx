@@ -6,9 +6,11 @@ interface Props {
   proof: TaskProof;
   /** Width in CSS pixels; defaults to fluid. */
   size?: number;
+  /** Thumbnail use: videos render without controls so a tap can open the viewer instead. */
+  thumb?: boolean;
 }
 
-export function ProofMedia({ proof, size }: Props) {
+export function ProofMedia({ proof, size, thumb }: Props) {
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
 
@@ -31,7 +33,7 @@ export function ProofMedia({ proof, size }: Props) {
     return <div className="proof-media proof-media--loading" style={style} />;
   }
   if (proof.mime.startsWith('video/')) {
-    return <video src={url} controls className="proof-media" style={style} />;
+    return <video src={url} controls={!thumb} muted={thumb} playsInline preload="metadata" className="proof-media" style={style} />;
   }
   return <img src={url} alt={`${proof.kind} proof`} className="proof-media" style={style} />;
 }
