@@ -148,6 +148,17 @@ do $$ declare n int; begin
 end $$;
 reset role;
 
+-- Submitting a multi-worker task: manager notification carries every worker id.
+reset role;
+update public.tasks set status = 'submitted' where id = '30000000-0000-0000-0000-000000000002';
+select public.set_task_workers('30000000-0000-0000-0000-000000000002', array['00000000-0000-0000-0000-0000000000b2']::uuid[]);
+do $$ declare n int; begin
+  select count(*) into n from public.notifications
+   where kind = 'task.submitted' and payload->>'task_id' = '30000000-0000-0000-0000-000000000002'
+     and jsonb_array_length(payload->'worker_ids') = 1;
+  if n < 1 then raise exception 'task.submitted payload missing worker_ids'; end if;
+end $$;
+
 -- Signing RPC still returns one row (as anon) and lists names.
 select public.set_task_workers('30000000-0000-0000-0000-000000000003',
   array['00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000b2']::uuid[]);

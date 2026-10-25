@@ -265,6 +265,28 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 -- ---------------------------------------------------------------------------
+-- 9b. notify_task_submitted: same notification, payload gains worker_ids (every
+--     assigned worker) next to the existing worker_id (lead). Trigger unchanged.
+-- ---------------------------------------------------------------------------
+create or replace function public.notify_task_submitted() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.status = 'submitted' and old.status is distinct from 'submitted' then
+    insert into public.notifications (user_id, kind, payload)
+    select p.id, 'task.submitted',
+           jsonb_build_object('task_id', new.id, 'title', new.title,
+                              'worker_id', new.assigned_worker_id,
+                              'worker_ids', coalesce(
+                                (select jsonb_agg(tw.worker_id order by tw.created_at)
+                                 from public.task_workers tw where tw.task_id = new.id),
+                                jsonb_build_array(new.assigned_worker_id)))
+    from public.profiles p where p.role = 'manager' and p.active;
+  end if;
+  return new;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
 -- 10. ROLLBACK (run manually, in this order; NOT part of the migration)
 -- ---------------------------------------------------------------------------
 -- drop policy if exists "tasks task-worker select" on public.tasks;
@@ -307,5 +329,19 @@ $$;
 --     and sl.signed_at is null
 --     and sl.auto_approved_at is null
 --     and sl.expires_at > now();
+-- $$;
+-- -- Original notify_task_submitted body (verbatim from 0001_init.sql):
+-- create or replace function public.notify_task_submitted() returns trigger
+-- language plpgsql security definer set search_path = public as $$
+-- begin
+--   if new.status = 'submitted' and old.status is distinct from 'submitted' then
+--     insert into public.notifications (user_id, kind, payload)
+--     select p.id, 'task.submitted',
+--            jsonb_build_object('task_id', new.id, 'title', new.title,
+--                               'worker_id', new.assigned_worker_id)
+--     from public.profiles p where p.role = 'manager' and p.active;
+--   end if;
+--   return new;
+-- end;
 -- $$;
 -- -- KEEP public.task_workers (data) until the owner approves: drop table public.task_workers;
