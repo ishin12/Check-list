@@ -197,7 +197,9 @@
     "templateHint": "The worker sees this checklist on the task and ticks items off as they go.",
     "create": "Create task"
   },
-  "runner": { "title": "Checklist" },
+  "runner": {
+    "title": "Checklist"
+  },
   "extras": {
     "title": "Extra work done",
     "placeholder": "Add something you did off the list…",
@@ -322,5 +324,20 @@
     "no": "No",
     "saving": "Saving…",
     "loading": "Loading…"
+  },
+  "workers": {
+    "title": "Workers",
+    "assignTo": "Assign to",
+    "search": "Search workers",
+    "selectAll": "Select all",
+    "clear": "Clear",
+    "selectedCount": "{{count}} selected",
+    "noMatches": "No workers match.",
+    "atLeastOne": "Select at least one worker.",
+    "edit": "Edit workers",
+    "editTitle": "Edit workers",
+    "save": "Save workers",
+    "cancel": "Cancel",
+    "more": "+{{count}}"
   }
 }

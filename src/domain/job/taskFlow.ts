@@ -56,7 +56,7 @@ export function dailySummary(
   tasks: FieldTask[],
 ): DailySummary {
   const day = tasks.filter((t) => {
-    if (t.assignedWorkerId !== workerId) return false;
+    if (t.assignedWorkerId !== workerId && !t.workerIds.includes(workerId)) return false;
     return t.scheduledAt.slice(0, 10) === date;
   });
   const completed = day.filter((t) => t.status === 'submitted' || t.status === 'approved');

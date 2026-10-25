@@ -5,7 +5,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
 import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/app/providers/AuthContext';
-import { createNextOccurrence, getTask, updateTaskStatus } from '@/services/data/tasks';
+import { createNextOccurrence, getTask, setTaskWorkers, updateTaskStatus } from '@/services/data/tasks';
 import { invokeFunction } from '@/services/data/functions';
 import { getSupabase } from '@/services/supabase/client';
 import { availableActions, canTransition, proofRequirements, timeOnTaskMinutes } from '@/domain/job/taskFlow';
@@ -17,6 +17,8 @@ import { TemplateRunner } from '@/components/TemplateRunner';
 import { ExtraWorkLog } from '@/components/ExtraWorkLog';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import { ApprovalBadge } from '@/components/ApprovalBadge';
+import { WorkerMultiSelect } from '@/components/WorkerMultiSelect';
+import type { WorkerOption } from '@/domain/workerSelect';
 
 export function TaskDetailScreen() {
   const { t } = useTranslation();
@@ -81,7 +83,7 @@ export function TaskDetailScreen() {
   const { needsStartProof, needsFinishProof } = proofRequirements(task.status, proofs);
   // Worker can retake on their own task at any stage; manager can always retake.
   const canEditProofs =
-    (role === 'worker' && task.assignedWorkerId === user?.id) ||
+    (role === 'worker' && isOnTask(task, user?.id)) ||
     role === 'manager';
   // Missing required checklist items block Submit.
   const missingRequired = requiredItems.filter(
@@ -173,6 +175,7 @@ export function TaskDetailScreen() {
           </div>
         </div>
         <TaskWhoLine task={task} linkClient />
+        {role === 'manager' ? <EditWorkers task={task} onSaved={load} /> : null}
 
         {task.status === 'approved'
           ? <ApprovalBadge approvalMethod={task.approvalMethod} decidedAt={task.decisionAt} note={task.decisionNote} />
@@ -258,7 +261,7 @@ export function TaskDetailScreen() {
           entries={task.extraWork}
           canEdit={
             task.status !== 'approved' &&
-            ((role === 'worker' && task.assignedWorkerId === user?.id) || role === 'manager')
+            ((role === 'worker' && isOnTask(task, user?.id)) || role === 'manager')
           }
           currentUserId={user?.id}
           currentUserName={user?.fullName ?? user?.email}
@@ -321,6 +324,72 @@ export function TaskDetailScreen() {
         </div>
       ) : null}
     </AppShell>
+  );
+}
+
+/** True when the user is the lead or any assigned worker of the task. */
+function isOnTask(task: FieldTask, userId: string | undefined): boolean {
+  return !!userId && (task.assignedWorkerId === userId || task.workerIds.includes(userId));
+}
+
+/** Manager-only: change the set of workers on a task. */
+function EditWorkers({ task, onSaved }: { task: FieldTask; onSaved: () => Promise<void> | void }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [options, setOptions] = useState<WorkerOption[]>([]);
+  const [value, setValue] = useState<string[]>(task.workerIds);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function begin() {
+    setErr(null);
+    setValue(task.workerIds);
+    setOpen(true);
+    const { data } = await getSupabase()
+      .from('profiles').select('id, full_name, email').eq('role', 'worker').eq('active', true);
+    setOptions((data ?? []).map((w: { id: string; full_name: string | null; email: string | null }) => ({
+      id: w.id, label: w.full_name ?? w.email ?? w.id,
+    })));
+  }
+
+  async function save() {
+    if (value.length === 0) { setErr(t('workers.atLeastOne', 'Select at least one worker.')); return; }
+    setSaving(true);
+    setErr(null);
+    try {
+      await setTaskWorkers(task.id, value);
+      setOpen(false);
+      await onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String((e as { message?: string })?.message ?? e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <div>
+        <button type="button" className="btn btn--ghost" onClick={() => void begin()}>
+          {t('workers.edit', 'Edit workers')}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <section className="card worker-edit">
+      <div className="section-title">{t('workers.editTitle', 'Edit workers')}</div>
+      {err ? <div className="banner banner--error">{err}</div> : null}
+      <WorkerMultiSelect options={options} value={value} onChange={setValue} />
+      <div className="row" style={{ gap: 8 }}>
+        <button type="button" className="btn btn--primary" disabled={saving || value.length === 0} onClick={() => void save()}>
+          {saving ? t('common.saving', 'Saving…') : t('workers.save', 'Save workers')}
+        </button>
+        <button type="button" className="btn btn--ghost" disabled={saving} onClick={() => setOpen(false)}>
+          {t('workers.cancel', 'Cancel')}
+        </button>
+      </div>
+    </section>
   );
 }
 

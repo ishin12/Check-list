@@ -37,7 +37,10 @@ export interface FieldTask {
   description?: string;
   templateId?: string;
   clientId: string;
+  /** Lead worker (tasks.assigned_worker_id). Always a member of workerIds. */
   assignedWorkerId: string;
+  /** Every worker on the task, lead first. */
+  workerIds: string[];
   scheduledAt: string;
   scheduledEnd?: string;
   status: FieldTaskStatus;

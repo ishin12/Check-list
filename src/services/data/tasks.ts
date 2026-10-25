@@ -25,7 +25,18 @@ interface TaskRow {
   series_id: string | null;
   extra_work: ExtraWorkEntry[] | null;
   approval_method: FieldTask['approvalMethod'] | null;
+  /** Embedded task_workers(worker_id); absent on rows from inserts. */
+  task_workers?: Array<{ worker_id: string }> | null;
 }
+
+/** Lead first, then the other workers; always includes the lead. */
+function workerIdsOf(r: TaskRow): string[] {
+  const ids = [r.assigned_worker_id];
+  for (const w of r.task_workers ?? []) if (!ids.includes(w.worker_id)) ids.push(w.worker_id);
+  return ids;
+}
+
+const TASK_SELECT = '*, task_workers(worker_id)';
 
 function rowToTask(r: TaskRow): FieldTask {
   return {
@@ -35,6 +46,7 @@ function rowToTask(r: TaskRow): FieldTask {
     templateId: r.template_id ?? undefined,
     clientId: r.client_id,
     assignedWorkerId: r.assigned_worker_id,
+    workerIds: workerIdsOf(r),
     scheduledAt: r.scheduled_at,
     scheduledEnd: r.scheduled_end ?? undefined,
     status: r.status,
@@ -62,8 +74,18 @@ export async function listTasks(opts: {
   status?: FieldTask['status'];
   seriesId?: string;
 } = {}): Promise<FieldTask[]> {
-  let q = getSupabase().from('tasks').select('*').order('scheduled_at', { ascending: true });
-  if (opts.workerId)  q = q.eq('assigned_worker_id', opts.workerId);
+  const sb = getSupabase();
+  let q = sb.from('tasks').select(TASK_SELECT).order('scheduled_at', { ascending: true });
+  if (opts.workerId) {
+    // Every task the worker is on (not just as lead). Done in two steps so the
+    // embedded task_workers list on each task stays complete.
+    const { data: mine, error: mineErr } = await sb
+      .from('task_workers').select('task_id').eq('worker_id', opts.workerId);
+    if (mineErr) throw mineErr;
+    const ids = ((mine ?? []) as Array<{ task_id: string }>).map((r) => r.task_id);
+    if (ids.length === 0) return [];
+    q = q.in('id', ids);
+  }
   if (opts.clientId)  q = q.eq('client_id', opts.clientId);
   if (opts.status)    q = q.eq('status', opts.status);
   if (opts.seriesId)  q = q.eq('series_id', opts.seriesId);
@@ -76,7 +98,7 @@ export async function listTasks(opts: {
 
 export async function getTask(id: string): Promise<FieldTask | null> {
   const { data, error } = await getSupabase()
-    .from('tasks').select('*').eq('id', id).maybeSingle();
+    .from('tasks').select(TASK_SELECT).eq('id', id).maybeSingle();
   if (error) throw error;
   return data ? rowToTask(data as TaskRow) : null;
 }
@@ -112,7 +134,8 @@ export interface CreateTaskInput {
   title: string;
   description?: string;
   clientId: string;
-  assignedWorkerId: string;
+  /** One or more workers; the first is the lead. */
+  workerIds: string[];
   scheduledAt: string;
   scheduledEnd?: string;
   templateId?: string;
@@ -120,6 +143,7 @@ export interface CreateTaskInput {
 }
 
 export async function createTask(input: CreateTaskInput): Promise<FieldTask> {
+  if (input.workerIds.length === 0) throw new Error('At least one worker is required');
   const recurrence: Recurrence = input.recurrence ?? 'none';
   const seriesId = crypto.randomUUID();
   const { data, error } = await getSupabase()
@@ -128,7 +152,7 @@ export async function createTask(input: CreateTaskInput): Promise<FieldTask> {
       title: input.title,
       description: input.description ?? null,
       client_id: input.clientId,
-      assigned_worker_id: input.assignedWorkerId,
+      assigned_worker_id: input.workerIds[0],
       scheduled_at: input.scheduledAt,
       scheduled_end: input.scheduledEnd ?? null,
       template_id: input.templateId ?? null,
@@ -137,7 +161,23 @@ export async function createTask(input: CreateTaskInput): Promise<FieldTask> {
     })
     .select('*').single();
   if (error) throw error;
-  return rowToTask(data as TaskRow);
+  const created = rowToTask(data as TaskRow);
+  return applyWorkers(created, input.workerIds);
+}
+
+/** Replace the full worker set of a task (manager only; atomic RPC). */
+export async function setTaskWorkers(taskId: string, workerIds: string[]): Promise<void> {
+  const { error } = await getSupabase().rpc('set_task_workers', {
+    p_task: taskId, p_workers: workerIds,
+  });
+  if (error) throw error;
+}
+
+/** After insert the lead is already in place; add the rest only when needed. */
+async function applyWorkers(task: FieldTask, workerIds: string[]): Promise<FieldTask> {
+  if (workerIds.length <= 1) return { ...task, workerIds: [...workerIds] };
+  await setTaskWorkers(task.id, workerIds);
+  return { ...task, workerIds: [...workerIds] };
 }
 
 /** Delete all proofs of a given kind on a task, plus the underlying files. */
@@ -183,5 +223,6 @@ export async function createNextOccurrence(task: FieldTask): Promise<FieldTask |
     })
     .select('*').single();
   if (error) throw error;
-  return rowToTask(data as TaskRow);
+  // Copy the full worker list (the lead is already set by the insert).
+  return applyWorkers(rowToTask(data as TaskRow), task.workerIds.length ? task.workerIds : [task.assignedWorkerId]);
 }

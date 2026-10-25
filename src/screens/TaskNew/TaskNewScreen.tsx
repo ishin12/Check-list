@@ -5,6 +5,7 @@ import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
 import { createTask } from '@/services/data/tasks';
+import { WorkerMultiSelect } from '@/components/WorkerMultiSelect';
 import { RECURRENCE_OPTIONS, recurrenceLabel, type Recurrence } from '@/domain/job/recurrence';
 
 interface Option { id: string; label: string }
@@ -18,7 +19,7 @@ export function TaskNewScreen() {
   const [templates, setTemplates] = useState<TemplateOpt[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [workerId, setWorkerId] = useState('');
+  const [workerIds, setWorkerIds] = useState<string[]>([]);
   const [clientId, setClientId] = useState('');
   const [templateId, setTemplateId] = useState('');
   const [when, setWhen] = useState(defaultWhen());
@@ -50,7 +51,7 @@ export function TaskNewScreen() {
     try {
       const task = await createTask({
         title, description: description || undefined,
-        clientId, assignedWorkerId: workerId,
+        clientId, workerIds,
         scheduledAt: new Date(when).toISOString(),
         recurrence,
         templateId: templateId || undefined,
@@ -63,7 +64,7 @@ export function TaskNewScreen() {
     }
   }
 
-  const ready = title && clientId && workerId && when;
+  const ready = title && clientId && workerIds.length > 0 && when;
 
   return (
     <AppShell>
@@ -87,10 +88,10 @@ export function TaskNewScreen() {
         </div>
         <div className="field">
           <label className="field__label">{t('taskNew.worker', 'Assign to')}</label>
-          <select className="input" required value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
-            <option value="">—</option>
-            {workers.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
-          </select>
+          <WorkerMultiSelect options={workers} value={workerIds} onChange={setWorkerIds} />
+          {workerIds.length === 0 ? (
+            <div className="hint">{t('workers.atLeastOne', 'Select at least one worker.')}</div>
+          ) : null}
         </div>
         <div className="field">
           <label className="field__label">{t('taskNew.when', 'Scheduled at')}</label>
