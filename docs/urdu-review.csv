@@ -1,359 +1,359 @@
-﻿"key","english","arabic","urdu","notes"
-"app.name","Ghsoon Najd","غصون نجد","Ghsoon Najd",""
-"app.tagline","Field operations, signed and shared.","العمليات الميدانية موثّقة وموقّعة.","فیلڈ کا کام، دستخط کے ساتھ اور سب کے ساتھ شیئر۔",""
-"nav.home","Home","الرئيسية","ہوم",""
-"nav.templates","Templates","القوالب","ٹیمپلیٹس",""
-"nav.settings","Settings","الإعدادات","سیٹنگز",""
-"nav.back","Back","رجوع","واپس",""
-"home.start","Start a new job","بدء مهمة جديدة","نیا کام شروع کریں",""
-"home.startDesc","Pick a checklist, complete the tasks, get a signature, and share.","اختر قائمة، أكمل المهام، احصل على التوقيع، ثم شارك.","چیک لسٹ چنیں، کام مکمل کریں، دستخط لیں اور شیئر کریں۔",""
-"home.manageTemplates","Manage templates","إدارة القوالب","ٹیمپلیٹس سنبھالیں",""
-"home.noTemplates","No templates yet. Create one to get started.","لا توجد قوالب بعد. أنشئ قالباً للبدء.","ابھی کوئی ٹیمپلیٹ نہیں ہے۔ شروع کرنے کے لیے ایک بنائیں۔",""
-"home.chooseTemplate","Choose a checklist","اختر قائمة","چیک لسٹ منتخب کریں",""
-"templates.title","Templates","القوالب","ٹیمپلیٹس",""
-"templates.new","New template","قالب جديد","نیا ٹیمپلیٹ",""
-"templates.empty","No templates yet.","لا توجد قوالب بعد.","ابھی کوئی ٹیمپلیٹ نہیں ہے۔",""
-"templates.emptyHint","Create your first checklist template.","أنشئ أول قالب قائمة مهام.","اپنا پہلا چیک لسٹ ٹیمپلیٹ بنائیں۔",""
-"templates.tasksCount","{{count}} task","{{count}} مهمة","{{count}} کام","Urdu one/other identical form."
-"templates.tasksCount_other","{{count}} tasks","{{count}} مهام","{{count}} کام",""
-"templates.deleteConfirm","Delete this template?","حذف هذا القالب؟","یہ ٹیمپلیٹ حذف کریں؟",""
-"templates.deleteConfirmBody","This can't be undone.","لا يمكن التراجع عن هذا الإجراء.","یہ عمل واپس نہیں ہو سکتا۔",""
-"templates.copySuffix","(copy)","(نسخة)","(کاپی)",""
-"editor.newTitle","New template","قالب جديد","نیا ٹیمپلیٹ",""
-"editor.editTitle","Edit template","تعديل القالب","ٹیمپلیٹ تبدیل کریں",""
-"editor.nameEn","Name (English)","الاسم (إنجليزي)","نام (انگریزی)",""
-"editor.nameAr","Name (Arabic)","الاسم (عربي)","نام (عربی)",""
-"editor.namePlaceholderEn","e.g. AC Maintenance","مثال: AC Maintenance","مثال: AC Maintenance",""
-"editor.namePlaceholderAr","مثال: صيانة المكيف","مثال: صيانة المكيف","مثال: صيانة المكيف",""
-"editor.nameUr","Name (Urdu, optional)","الاسم (أردو، اختياري)","نام (اردو، اختیاری)","New: optional Urdu title for templates."
-"editor.namePlaceholderUr","e.g. اے سی کی دیکھ بھال","مثال: اے سی کی دیکھ بھال","مثال: اے سی کی دیکھ بھال","New key (was hard-coded English): translated by the implementer, needs native review."
-"editor.tasks","Tasks","المهام","کام",""
-"editor.taskEn","Task (English)","المهمة (إنجليزي)","کام (انگریزی)",""
-"editor.taskAr","Task (Arabic)","المهمة (عربي)","کام (عربی)",""
-"editor.taskUr","Task (Urdu, optional)","المهمة (أردو، اختياري)","کام (اردو، اختیاری)","New: optional Urdu label for checklist items."
-"editor.addTask","Add task","إضافة مهمة","کام شامل کریں",""
-"editor.required","Required","إلزامية","لازمی","لازمی (common) vs ضروری."
-"editor.moveUp","Move up","تحريك لأعلى","اوپر لے جائیں",""
-"editor.moveDown","Move down","تحريك لأسفل","نیچے لے جائیں",""
-"editor.removeTask","Remove task","حذف المهمة","کام ہٹائیں",""
-"editor.noTasks","No tasks yet. Add your first task below.","لا توجد مهام بعد. أضف أول مهمة بالأسفل.","ابھی کوئی کام نہیں ہے۔ نیچے سے اپنا پہلا کام شامل کریں۔",""
-"editor.nameRequired","Please enter a template name.","الرجاء إدخال اسم القالب.","براہِ کرم ٹیمپلیٹ کا نام لکھیں۔",""
-"job.customer","Customer details","بيانات العميل","کلائنٹ کی تفصیل","EN 'Customer' mapped to کلائنٹ (same as Client) for one consistent term."
-"job.customerName","Customer name","اسم العميل","کلائنٹ کا نام",""
-"job.customerPhone","Phone number","رقم الهاتف","فون نمبر",""
-"job.phoneHint","Used to open WhatsApp to the right contact.","يُستخدم لفتح واتساب على جهة الاتصال الصحيحة.","WhatsApp پر صحیح نمبر کھولنے کے لیے استعمال ہوتا ہے۔",""
-"job.checklist","Checklist","قائمة المهام","چیک لسٹ",""
-"job.progress","{{done}} of {{total}} done","{{done}} من {{total}} مكتملة","{{total}} میں سے {{done}} مکمل",""
-"job.addNote","Add note","إضافة ملاحظة","نوٹ شامل کریں",""
-"job.notePlaceholder","Note (optional)","ملاحظة (اختياري)","نوٹ (اختیاری)",""
-"job.requiredBadge","Required","إلزامية","لازمی",""
-"job.toSignature","Continue to signature","المتابعة إلى التوقيع","دستخط کے لیے آگے بڑھیں",""
-"job.requiredRemaining","Complete required tasks to continue.","أكمل المهام الإلزامية للمتابعة.","آگے بڑھنے کے لیے لازمی کام مکمل کریں۔",""
-"signature.title","Customer signature","توقيع العميل","کلائنٹ کے دستخط",""
-"signature.instruction","Ask the customer to sign below with their finger.","اطلب من العميل التوقيع بالأسفل بإصبعه.","کلائنٹ سے کہیں کہ نیچے انگلی سے دستخط کریں۔",""
-"signature.signerName","Signer name","اسم الموقّع","دستخط کرنے والے کا نام",""
-"signature.clear","Clear","مسح","صاف کریں",""
-"signature.empty","Please capture a signature.","الرجاء التوقيع.","براہِ کرم دستخط کریں۔",""
-"signature.confirm","Confirm signature","تأكيد التوقيع","دستخط کی تصدیق کریں",""
-"signature.tapToSign","Sign here","وقّع هنا","یہاں دستخط کریں",""
-"report.title","Report","التقرير","رپورٹ",""
-"report.preview","Preview","معاينة","پری ویو","'پری ویو' loanword."
-"report.share","Share via WhatsApp","المشاركة عبر واتساب","WhatsApp پر بھیجیں",""
-"report.generating","Preparing PDF…","جارٍ تجهيز ملف PDF…","PDF تیار ہو رہی ہے…",""
-"report.shared","Shared successfully.","تمت المشاركة بنجاح.","کامیابی سے بھیج دی گئی۔",""
-"report.downloaded","PDF downloaded. Attach it in WhatsApp to send.","تم تنزيل ملف PDF. أرفقه في واتساب للإرسال.","PDF ڈاؤن لوڈ ہو گئی۔ بھیجنے کے لیے اسے WhatsApp میں لگائیں۔",""
-"report.shareError","Couldn't share. The PDF was downloaded instead.","تعذّرت المشاركة. تم تنزيل ملف PDF بدلاً من ذلك.","بھیجی نہیں جا سکی۔ اس کی جگہ PDF ڈاؤن لوڈ کر دی گئی۔",""
-"report.newJob","Start another job","بدء مهمة أخرى","ایک اور کام شروع کریں",""
-"report.reportTitle","Job Checklist Report","تقرير قائمة المهام","کام کی چیک لسٹ رپورٹ",""
-"report.date","Date","التاريخ","تاریخ",""
-"report.customer","Customer","العميل","کلائنٹ","Customer -> کلائنٹ."
-"report.signature","Signature","التوقيع","دستخط",""
-"report.completed","Completed","مكتملة","مکمل",""
-"report.notCompleted","Not completed","غير مكتملة","نامکمل",""
-"report.tasksDone","{{done}}/{{total}} tasks completed","{{done}}/{{total}} مهام مكتملة","{{done}}/{{total}} کام مکمل",""
-"report.signedBy","Signed by","وقّع بواسطة","دستخط کرنے والا","Label; 'دستخط کرنے والا'."
-"settings.title","Settings","الإعدادات","سیٹنگز",""
-"settings.language","Language","اللغة","زبان",""
-"settings.languageDesc","Choose the app and report language.","اختر لغة التطبيق والتقرير.","ایپ اور رپورٹ کی زبان چنیں۔",""
-"settings.english","English","English","English",""
-"settings.arabic","العربية","العربية","العربية",""
-"settings.about","About","حول التطبيق","ایپ کے بارے میں",""
-"settings.aboutDesc","Ghsoon Najd works offline. Data syncs when you’re back online.","يعمل التطبيق دون اتصال. تُحفظ البيانات على هذا الجهاز فقط.","Ghsoon Najd انٹرنیٹ کے بغیر بھی چلتی ہے۔ انٹرنیٹ واپس آنے پر ڈیٹا سنک ہو جاتا ہے۔",""
-"settings.install","Install app","تثبيت التطبيق","ایپ انسٹال کریں",""
-"settings.installHint","On iPhone: tap Share, then ""Add to Home Screen"".","على آيفون: اضغط مشاركة، ثم ""إضافة إلى الشاشة الرئيسية"".","آئی فون پر: Share دبائیں، پھر ""Add to Home Screen"" دبائیں۔","iOS button names left in Latin since iPhones in KSA are usually set to English/Arabic UI."
-"settings.changePassword","Change my password","تغيير كلمة المرور","میرا پاس ورڈ بدلیں",""
-"settings.updatePassword","Update password","تحديث كلمة المرور","پاس ورڈ اپڈیٹ کریں",""
-"settings.passwordChanged","Password changed.","تم تغيير كلمة المرور.","پاس ورڈ بدل گیا۔",""
-"settings.signingWindow","Client signing window","مهلة توقيع العميل","کلائنٹ کے دستخط کی مدت","Window = مدت (period)."
-"settings.signingWindowDesc","How long the client has to sign before the task auto-approves.","المدة المتاحة للعميل للتوقيع قبل اعتماد المهمة تلقائياً.","کلائنٹ کے پاس دستخط کے لیے کتنا وقت ہے۔ اس کے بعد کام خود بخود منظور ہو جائے گا۔",""
-"settings.expiryDays","Days to sign","أيام التوقيع","دستخط کے دن",""
-"settings.reminderHours","Reminder before expiry (hours)","تذكير قبل الانتهاء (ساعات)","مدت ختم ہونے سے پہلے یاد دہانی (گھنٹے)",""
-"settings.saveWindow","Save","حفظ","محفوظ کریں",""
-"settings.windowSaved","Saved. Applies to new signing links.","تم الحفظ. يُطبّق على الروابط الجديدة.","محفوظ ہو گیا۔ نئے دستخطی لنکس پر لاگو ہوگا۔",""
-"settings.urdu","اردو","اردو","اردو","New key (was hard-coded English): translated by the implementer, needs native review."
-"settings.demoTitle","Demo mode","الوضع التجريبي","ڈیمو موڈ","New key (was hard-coded English): translated by the implementer, needs native review."
-"settings.demoDesc","You’re running against in-browser seed data. Switch roles from the “Demo” chip in the header. To go live, set <c>VITE_SUPABASE_URL</c> and <c>VITE_SUPABASE_ANON_KEY</c> in <c>.env.local</c>, run the SQL migration, then set <c>VITE_DEMO_MODE=0</c>.","أنت تعمل على بيانات تجريبية داخل المتصفح. بدّل الأدوار من زر «تجريبي» في الرأس. للانتقال إلى النظام الفعلي، اضبط <c>VITE_SUPABASE_URL</c> و<c>VITE_SUPABASE_ANON_KEY</c> في <c>.env.local</c>، ثم شغّل ترحيل SQL، ثم اضبط <c>VITE_DEMO_MODE=0</c>.","آپ براؤزر کے اندر موجود ڈیمو ڈیٹا پر کام کر رہے ہیں۔ اوپر والے «ڈیمو» بٹن سے رول بدلیں۔ اصل سسٹم پر جانے کے لیے <c>.env.local</c> میں <c>VITE_SUPABASE_URL</c> اور <c>VITE_SUPABASE_ANON_KEY</c> سیٹ کریں، SQL مائیگریشن چلائیں، پھر <c>VITE_DEMO_MODE=0</c> سیٹ کریں۔","New key (was hard-coded English): translated by the implementer, needs native review."
-"settings.demoReset","Reset demo data","إعادة ضبط البيانات التجريبية","ڈیمو ڈیٹا ری سیٹ کریں","New key (was hard-coded English): translated by the implementer, needs native review."
-"tabs.today","Today","اليوم","آج",""
-"tabs.calendar","Calendar","التقويم","کیلنڈر",""
-"tabs.approvals","Approvals","الموافقات","منظوریاں",""
-"tabs.clients","Clients","العملاء","کلائنٹس",""
-"tabs.notifications","Inbox","الصندوق","اطلاعات","EN 'Inbox'; rendered as اطلاعات (notifications) to match notifications.empty and the glossary."
-"tabs.me","Me","حسابي","میرا اکاؤنٹ","Settings/profile tab (see navTabs.ts). Literal 'Me' (میں) is wrong; 'میرا اکاؤنٹ' chosen. Alternative: پروفائل."
-"auth.signIn","Sign in","تسجيل الدخول","لاگ اِن کریں",""
-"auth.signOut","Sign out","تسجيل الخروج","لاگ آؤٹ کریں",""
-"auth.welcome","Welcome back","أهلاً بعودتك","خوش آمدید",""
-"auth.magicLinkHint","Enter your email — we'll send a one-tap sign-in link.","أدخل بريدك — سنرسل لك رابط دخول بنقرة واحدة.","اپنی ای میل لکھیں۔ ہم آپ کو ایک ٹیپ میں لاگ اِن ہونے کا لنک بھیجیں گے۔",""
-"auth.email","Email","البريد الإلكتروني","ای میل",""
-"auth.password","Password","كلمة المرور","پاس ورڈ",""
-"auth.sending","Signing in…","جارٍ تسجيل الدخول…","لاگ اِن ہو رہا ہے…",""
-"auth.sendLink","Send magic link","أرسل الرابط","لنک بھیجیں",""
-"auth.linkSent","Check your email and tap the link to continue.","افحص بريدك واضغط الرابط للمتابعة.","اپنی ای میل دیکھیں اور آگے بڑھنے کے لیے لنک دبائیں۔",""
-"auth.notConfigured","Supabase is not configured. See .env.example.","Supabase غير مهيأ. راجع .env.example.","Supabase سیٹ اپ نہیں ہے۔ .env.example دیکھیں۔",""
-"auth.signingIn","Signing you in…","جارٍ تسجيل دخولك…","آپ کو لاگ اِن کیا جا رہا ہے…","New key (was hard-coded English): translated by the implementer, needs native review."
-"sign.heading","Please review and sign","يرجى المراجعة والتوقيع","براہِ کرم دیکھیں اور دستخط کریں",""
-"sign.visit","Visit","الزيارة","وزٹ",""
-"sign.client","Client","العميل","کلائنٹ",""
-"sign.worker","Technician","الفني","ٹیکنیشن","EN 'Technician'; ٹیکنیشن used on client-facing page, whereas internal UI uses ورکر."
-"sign.date","Date","التاريخ","تاریخ",""
-"sign.signHere","Sign below","وقّع بالأسفل","نیچے دستخط کریں",""
-"sign.confirm","Confirm signature","تأكيد التوقيع","دستخط کی تصدیق کریں",""
-"sign.submitting","Submitting…","جارٍ الإرسال…","جمع ہو رہا ہے…","Follows Submit = جمع کریں."
-"sign.expiresOn","This link expires on {{date}}","ينتهي هذا الرابط في {{date}}","یہ لنک {{date}} کو ختم ہو جائے گا",""
-"sign.invalidTitle","This link is no longer active","هذا الرابط لم يعد فعّالاً","یہ لنک اب چالو نہیں ہے",""
-"sign.invalidBody","It may have expired or already been signed. Thank you.","ربما انتهت صلاحيته أو تم التوقيع مسبقاً. شكراً لك.","ہو سکتا ہے اس کی مدت ختم ہو گئی ہو یا دستخط پہلے ہی ہو چکے ہوں۔ شکریہ۔",""
-"sign.thanksTitle","Thank you!","شكراً لك!","شکریہ!",""
-"sign.thanksBody","Your signature has been recorded.","تم تسجيل توقيعك.","آپ کے دستخط محفوظ ہو گئے ہیں۔",""
-"sign.linkSent","Signing link sent to the client.","تم إرسال رابط التوقيع للعميل.","دستخط کا لنک کلائنٹ کو بھیج دیا گیا۔",""
-"sign.deliveryFailed","Couldn’t deliver the signing link on WhatsApp.","تعذّر إرسال رابط التوقيع عبر واتساب.","دستخط کا لنک WhatsApp پر نہیں بھیجا جا سکا۔",""
-"sign.noPhone","No WhatsApp number on file for this client.","لا يوجد رقم واتساب مسجّل لهذا العميل.","اس کلائنٹ کا WhatsApp نمبر درج نہیں ہے۔",""
-"sign.resend","Resend link","إعادة الإرسال","لنک دوبارہ بھیجیں",""
-"sign.copyLink","Copy link","نسخ الرابط","لنک کاپی کریں",""
-"approval.signedShort","Signed","موقّعة","دستخط شدہ",""
-"approval.autoShort","Approved · no response","معتمدة · بدون رد","منظور · جواب نہیں آیا","Short badge text."
-"approval.autoFull","Auto-approved — client did not respond","اعتُمدت تلقائياً — لم يردّ العميل","خود بخود منظور — کلائنٹ نے جواب نہیں دیا",""
-"approval.signedLine","Signed by client on {{when}}","وقّع العميل في {{when}}","کلائنٹ نے {{when}} کو دستخط کیے",""
-"approval.autoLine","Auto-approved on {{when}} — client did not respond in time. No signature provided.","اعتُمدت تلقائياً في {{when}} — لم يردّ العميل في الوقت المحدد. لا يوجد توقيع.","{{when}} کو خود بخود منظور ہوا — کلائنٹ نے وقت پر جواب نہیں دیا۔ دستخط موجود نہیں ہیں۔",""
-"approval.managerLine","Approved by manager on {{when}}","اعتمدها المدير في {{when}}","مینیجر نے {{when}} کو منظور کیا",""
-"today.title","Today","اليوم","آج",""
-"today.greeting","Hi {{name}}","مرحباً {{name}}","ہیلو {{name}}","'ہیلو' vs 'السلام علیکم' - SA workplace may prefer the latter."
-"today.empty","No visits scheduled today. Enjoy the calm.","لا توجد زيارات اليوم. خذ قسطاً من الراحة.","آج کوئی وزٹ طے نہیں ہے۔ آرام کریں۔",""
-"today.summary","{{count}} visits · {{done}} done · {{min}} min on task","{{count}} زيارة · أُنجز {{done}} · {{min}} دقيقة عمل","{{count}} وزٹ · {{done}} مکمل · {{min}} منٹ کام پر","'min on task' as 'منٹ کام پر'."
-"today.upNext","Up next","التالية","اگلا",""
-"today.rest","Rest of today","بقية اليوم","آج کا باقی کام",""
-"calendar.title","Calendar","التقويم","کیلنڈر",""
-"calendar.add","Add task","أضف مهمة","کام شامل کریں",""
-"calendar.byWorker","By worker","حسب العامل","ورکر کے مطابق",""
-"calendar.byClient","By client","حسب العميل","کلائنٹ کے مطابق",""
-"calendar.all","All","الكل","سب",""
-"calendar.empty","No visits in this range.","لا توجد زيارات في هذه الفترة.","اس مدت میں کوئی وزٹ نہیں ہے۔",""
-"calendar.dayToday","Today","اليوم","آج","New key (was hard-coded English): translated by the implementer, needs native review."
-"calendar.dayTomorrow","Tomorrow","غدًا","کل","New key (was hard-coded English): translated by the implementer, needs native review."
-"calendar.dayYesterday","Yesterday","أمس","گزشتہ کل","New key (was hard-coded English): translated by the implementer, needs native review."
-"calendar.taskCount","Task count","عدد المهام","کاموں کی تعداد","New key (was hard-coded English): translated by the implementer, needs native review."
-"task.title","Task","المهمة","کام",""
-"task.description","Description","الوصف","تفصیل",""
-"task.decisionNote","Note (optional)","ملاحظة (اختياري)","نوٹ (اختیاری)",""
-"task.decisionPlaceholder","Add a reason if rejecting…","أضف سبباً في حال الرفض…","رد کرنا ہو تو وجہ لکھیں…",""
-"task.rejectedNote","Rejected — manager said:","رُفضت — تعليق المدير:","مسترد کر دیا گیا — مینیجر نے کہا:","Follows Rejected = مسترد."
-"task.approvedNote","Approved — manager said:","تمت الموافقة — تعليق المدير:","منظور ہو گیا — مینیجر نے کہا:",""
-"task.requiredRemaining","Complete the required items below before submitting:","أكمل البنود الإلزامية أدناه قبل الإرسال:","جمع کرنے سے پہلے نیچے دیے گئے لازمی کام مکمل کریں:","Follows Submit = جمع کریں."
-"task.action.start","Start","ابدأ","شروع کریں",""
-"task.action.submit","Submit","أرسل للموافقة","جمع کریں","Orchestrator decision: 'جمع کریں' (draft had 'بھیجیں')."
-"task.action.approve","Approve","وافق","منظور کریں",""
-"task.action.reject","Reject","ارفض","رد کریں","'رد کریں' preferred over formal 'مسترد کریں'."
-"task.action.reopen","Reopen","أعد الفتح","دوبارہ کھولیں",""
-"taskNew.title","New task","مهمة جديدة","نیا کام",""
-"taskNew.description","Description","الوصف","تفصیل",""
-"taskNew.client","Client","العميل","کلائنٹ",""
-"taskNew.worker","Assign to","الموظف المسؤول","ورکر کو دیں","'Assign to' as 'ورکر کو دیں'."
-"taskNew.when","Scheduled at","موعد الزيارة","طے شدہ وقت",""
-"taskNew.repeats","Repeats","التكرار","دہرانا","'دہرانا' as label; alternative 'تکرار'."
-"taskNew.template","Checklist template","قائمة المهام","چیک لسٹ ٹیمپلیٹ",""
-"taskNew.noTemplate","— none —","— بدون —","— کوئی نہیں —",""
-"taskNew.templateHint","The worker sees this checklist on the task and ticks items off as they go.","يرى العامل هذه القائمة على المهمة ويعلّم البنود أثناء التنفيذ.","ورکر کو کام پر یہ چیک لسٹ نظر آتی ہے اور وہ کام کرتے ہوئے ہر چیز پر نشان لگاتا ہے۔",""
-"taskNew.create","Create task","إنشاء المهمة","کام بنائیں",""
-"runner.title","Checklist","قائمة التحقق","چیک لسٹ",""
-"runner.saving","saving","جارٍ الحفظ","محفوظ ہو رہا ہے","New key (was hard-coded English): translated by the implementer, needs native review."
-"extras.title","Extra work done","أعمال إضافية","اضافی کام",""
-"extras.placeholder","Add something you did off the list…","أضف شيئاً قمت به خارج القائمة…","فہرست سے ہٹ کر جو کام کیا وہ لکھیں…",""
-"extras.add","Add","أضف","شامل کریں",""
-"extras.empty","Nothing extra logged yet.","لا توجد أعمال إضافية بعد.","ابھی کوئی اضافی کام درج نہیں ہے۔",""
-"extras.remove","Remove","إزالة","ہٹائیں",""
-"extras.lockedAfterApproval","Locked after approval.","مقفول بعد الموافقة.","منظوری کے بعد بند ہے۔",""
-"audit.title","Audit log","سجل العمليات","آڈٹ لاگ","آڈٹ لاگ loanword."
-"audit.empty","Nothing logged yet.","لا شيء مسجّل بعد.","ابھی کچھ درج نہیں ہے۔",""
-"audit.filters","Filters","تصفية","فلٹر",""
-"audit.entity","Type","النوع","قسم",""
-"audit.actor","Who","من","کس نے",""
-"audit.from","From","من تاريخ","از تاریخ",""
-"audit.to","To","إلى تاريخ","تا تاریخ",""
-"audit.anyone","Anyone","أي شخص","کوئی بھی",""
-"audit.allTypes","All","الكل","سب",""
-"audit.system","system","النظام","سسٹم","New key (was hard-coded English): translated by the implementer, needs native review."
-"recurrence.none","Does not repeat","لا يتكرر","دہرایا نہیں جاتا",""
-"recurrence.weekly","Every week","كل أسبوع","ہر ہفتے",""
-"recurrence.monthly","Every month","كل شهر","ہر مہینے",""
-"recurrence.quarterly","Every 3 months","كل 3 أشهر","ہر 3 مہینے بعد",""
-"recurrence.biannual","Every 6 months","كل 6 أشهر","ہر 6 مہینے بعد",""
-"demo.loginHint","Demo mode — pick an account below to see exactly what they see.","وضع العرض — اختر حساباً أدناه لترى ما يراه كل شخص.","ڈیمو موڈ — نیچے سے کوئی اکاؤنٹ چنیں تاکہ دیکھ سکیں کہ اسے کیا نظر آتا ہے۔",""
-"demo.accountsTitle","Demo accounts","حسابات العرض","ڈیمو اکاؤنٹس",""
-"demo.orEmail","Or sign in with email below:","أو سجّل الدخول بالبريد:","یا نیچے ای میل سے لاگ اِن کریں:",""
-"demo.chip","Demo","تجريبي","ڈیمو","New key (was hard-coded English): translated by the implementer, needs native review."
-"demo.switchRole","Switch role","تبديل الدور","رول بدلیں","New key (was hard-coded English): translated by the implementer, needs native review."
-"demo.blurb.manager","Full access — calendar, approvals, clients, audit","صلاحية كاملة — التقويم، الموافقات، العملاء، سجل العمليات","مکمل رسائی — کیلنڈر، منظوریاں، کلائنٹس، آڈٹ","New key (was hard-coded English): translated by the implementer, needs native review."
-"demo.blurb.worker","Sees only own tasks · capture proof · submit","يرى مهامه فقط · يلتقط الإثبات · يرسل","صرف اپنے کام دیکھتا ہے · تصویر لیتا ہے · جمع کرتا ہے","New key (was hard-coded English): translated by the implementer, needs native review."
-"demo.blurb.client","Read-only portal — visits & approved proof","بوابة للعرض فقط — الزيارات والإثباتات المعتمدة","صرف دیکھنے کا پورٹل — وزٹ اور منظور شدہ تصاویر","New key (was hard-coded English): translated by the implementer, needs native review."
-"proof.title","Proof","الإثبات","تصاویر","Changed to 'تصاویر' (the section holds the start/finish photos)."
-"proof.start","Start proof","إثبات البدء","شروع کی تصویر","Orchestrator decision: photo wording 'شروع کی تصویر'."
-"proof.finish","Finish proof","إثبات الإنهاء","کام ختم ہونے کی تصویر","Orchestrator decision: photo wording 'کام ختم ہونے کی تصویر'."
-"proof.tapToCapture","Tap the shutter to take a photo or video.","اضغط الزر لالتقاط صورة أو فيديو.","تصویر یا ویڈیو لینے کے لیے بٹن دبائیں۔",""
-"proof.use","Use this","استخدم هذه","یہ استعمال کریں",""
-"proof.saving","Saving…","جارٍ الحفظ…","محفوظ ہو رہا ہے…",""
-"proof.offlineHint","Offline — we'll upload when you're back online.","أنت خارج الشبكة — سيُرفع لاحقاً عند الاتصال.","انٹرنیٹ نہیں ہے — انٹرنیٹ آنے پر اپ لوڈ ہو جائے گا۔",""
-"proof.missing","Missing","غير موجود","موجود نہیں","New key (was hard-coded English): translated by the implementer, needs native review."
-"status.notStarted","Not started","لم تبدأ","شروع نہیں ہوا",""
-"status.inProgress","In progress","قيد التنفيذ","جاری ہے",""
-"status.submitted","Submitted","أُرسلت","جمع ہو گیا","Orchestrator decision: 'جمع ہو گیا'."
-"status.approved","Approved","موافَق عليها","منظور","Short 'منظور' for badge width."
-"status.rejected","Rejected","مرفوضة","مسترد","Orchestrator decision: 'مسترد' (draft had 'رد'). The action button task.action.reject stays 'رد کریں' as drafted."
-"clients.title","Clients","العملاء","کلائنٹس",""
-"clients.add","Add client","أضف عميل","کلائنٹ شامل کریں",""
-"clients.search","Search clients…","ابحث عن عميل…","کلائنٹ تلاش کریں…","Verb form 'تلاش کریں' (not the noun تلاش)."
-"clients.empty","No clients yet.","لا يوجد عملاء بعد.","ابھی کوئی کلائنٹ نہیں ہے۔",""
-"clients.upcoming","Upcoming visits","الزيارات القادمة","آنے والے وزٹ",""
-"clients.noUpcoming","Nothing scheduled.","لا شيء مُجدول.","کچھ طے نہیں ہے۔",""
-"clients.history","Visit history","سجل الزيارات","وزٹ کا ریکارڈ",""
-"clients.noHistory","No past visits yet.","لا توجد زيارات سابقة.","ابھی کوئی پرانا وزٹ نہیں ہے۔",""
-"clientNew.title","New client","عميل جديد","نیا کلائنٹ",""
-"clientNew.name","Name","الاسم","نام",""
-"clientNew.phone","Phone","الهاتف","فون",""
-"clientNew.address","Address","العنوان","پتہ",""
-"clientNew.create","Create client","إنشاء العميل","کلائنٹ بنائیں",""
-"notes.open","Open notes","ملاحظات مفتوحة","باقی نوٹس","EN 'Open notes' = unresolved; 'باقی نوٹس' chosen over 'کھلے نوٹس'."
-"notes.none","No open notes.","لا توجد ملاحظات مفتوحة.","کوئی باقی نوٹ نہیں ہے۔",""
-"notes.openFromBefore","Notes left for this visit","ملاحظات متروكة لهذه الزيارة","اس وزٹ کے لیے چھوڑے گئے نوٹس",""
-"notes.newForNext","Leave a note for next time","اترك ملاحظة للزيارة القادمة","اگلی بار کے لیے نوٹ چھوڑیں",""
-"notes.add","Leave a note for the next visit…","اكتب ملاحظة للزيارة القادمة…","اگلے وزٹ کے لیے نوٹ لکھیں…",""
-"notes.save","Save note","احفظ الملاحظة","نوٹ محفوظ کریں",""
-"notes.resolve","Mark resolved","تم الحل","حل ہو گیا","'حل ہو گیا' = Mark resolved."
-"approvals.title","Approvals","الموافقات","منظوریاں",""
-"approvals.empty","Nothing waiting on you.","لا شيء بانتظارك.","آپ کے انتظار میں کچھ نہیں ہے۔",""
-"notifications.title","Inbox","الصندوق","اطلاعات","EN 'Inbox'; see tabs.notifications."
-"notifications.empty","No notifications yet.","لا إشعارات بعد.","ابھی کوئی اطلاع نہیں ہے۔",""
-"notifications.markAllRead","Mark all read","تحديد الكل كمقروء","سب کو پڑھا ہوا کریں","New key (was hard-coded English): translated by the implementer, needs native review."
-"notifications.kind.assigned","New task assigned to you","تم إسناد مهمة جديدة إليك","آپ کو نیا کام سونپا گیا ہے","New key (was hard-coded English): translated by the implementer, needs native review."
-"notifications.kind.submitted","Task submitted for approval","تم إرسال المهمة للاعتماد","کام منظوری کے لیے جمع ہو گیا ہے","Follows Submit = جمع کریں."
-"notifications.kind.approved","Your task was approved","تم اعتماد مهمتك","آپ کا کام منظور ہو گیا ہے",""
-"notifications.kind.rejected","Your task was rejected","تم رفض مهمتك","آپ کا کام مسترد ہو گیا ہے","Follows Rejected = مسترد."
-"portal.title","Your visits","زياراتك","آپ کے وزٹ",""
-"portal.upcoming","Upcoming","القادمة","آنے والے",""
-"portal.past","Completed","المكتملة","مکمل",""
-"portal.noUpcoming","Nothing scheduled.","لا شيء مُجدول.","کچھ طے نہیں ہے۔",""
-"portal.noPast","No completed visits yet.","لا توجد زيارات مكتملة بعد.","ابھی کوئی مکمل وزٹ نہیں ہے۔",""
-"users.title","Team & clients","الفريق والعملاء","ٹیم اور کلائنٹس",""
-"users.invite","Invite someone","ادعُ شخصاً","کسی کو دعوت دیں",""
-"users.name","Name","الاسم","نام",""
-"users.role","Role","الدور","رول","'رول' (loanword) vs 'کردار'; workers/managers say رول."
-"users.linkClient","Linked client record","اربط بسجل عميل","منسلک کلائنٹ ریکارڈ",""
-"users.sending","Sending invite…","جارٍ إرسال الدعوة…","دعوت بھیجی جا رہی ہے…",""
-"users.sendInvite","Send invite","أرسل الدعوة","دعوت بھیجیں",""
-"users.inviteSent","Invite sent.","أُرسلت الدعوة.","دعوت بھیج دی گئی۔",""
-"users.everyone","Everyone","الجميع","سب",""
-"users.deactivate","Deactivate","إلغاء التفعيل","بند کریں","'بند کریں' for deactivate; vs 'غیر فعال کریں'."
-"users.activate","Activate","تفعيل","چالو کریں",""
-"users.setPassword","Set password","تعيين كلمة مرور","پاس ورڈ سیٹ کریں",""
-"users.newPassword","New password (min 8 chars)","كلمة مرور جديدة (8 أحرف على الأقل)","نیا پاس ورڈ (کم از کم 8 حروف)",""
-"users.savePassword","Save","حفظ","محفوظ کریں",""
-"users.passwordSet","Password updated.","تم تحديث كلمة المرور.","پاس ورڈ اپڈیٹ ہو گیا۔",""
-"users.passwordFailed","Couldn’t set password.","تعذّر تعيين كلمة المرور.","پاس ورڈ سیٹ نہیں ہو سکا۔",""
-"users.inactive","inactive","غير نشط","غیر فعال","New key (was hard-coded English): translated by the implementer, needs native review."
-"common.save","Save","حفظ","محفوظ کریں",""
-"common.cancel","Cancel","إلغاء","منسوخ کریں",""
-"common.delete","Delete","حذف","حذف کریں",""
-"common.duplicate","Duplicate","نسخ","کاپی بنائیں",""
-"common.edit","Edit","تعديل","تبدیل کریں","'تبدیل کریں' vs 'ایڈیٹ کریں'."
-"common.add","Add","إضافة","شامل کریں",""
-"common.done","Done","تم","ہو گیا",""
-"common.next","Next","التالي","اگلا",""
-"common.clear","Clear","مسح","صاف کریں",""
-"common.confirm","Confirm","تأكيد","تصدیق کریں",""
-"common.close","Close","إغلاق","بند کریں",""
-"common.optional","optional","اختياري","اختیاری",""
-"common.copy","Copy","نسخة","کاپی","Key not used in code; 'کاپی'."
-"common.yes","Yes","نعم","ہاں",""
-"common.no","No","لا","نہیں",""
-"common.saving","Saving…","جارٍ الحفظ…","محفوظ ہو رہا ہے…",""
-"common.loading","Loading…","جارٍ التحميل…","لوڈ ہو رہا ہے…",""
-"common.minutesShort","{{count}} min","{{count}} دقيقة","{{count}} منٹ","New key (was hard-coded English): translated by the implementer, needs native review."
-"photo.close","Close","إغلاق","بند کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.capture","Capture","التقاط","تصویر لیں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.retake","Retake","إعادة الالتقاط","دوبارہ لیں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.retry","Retry","إعادة المحاولة","دوبارہ کوشش کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.continue","Continue","متابعة","جاری رکھیں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.chooseAnother","Take another","التقاط صورة أخرى","دوسری تصویر لیں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.uploading","Uploading…","جارٍ الرفع…","اپ لوڈ ہو رہی ہے…","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.uploadingNow","Uploading…","جارٍ الرفع…","اپ لوڈ ہو رہی ہے…","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.savedOffline","Saved on this phone. It will upload automatically when you are back online.","تم الحفظ على هذا الهاتف. سيتم الرفع تلقائيًا عند عودة الاتصال بالإنترنت.","اس فون میں محفوظ ہو گئی۔ انٹرنیٹ آنے پر خود بخود اپ لوڈ ہو جائے گی۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.offlineHint","You are offline. The photo will be saved on this phone and uploaded when you are back online.","أنت غير متصل بالإنترنت. ستُحفظ الصورة على هذا الهاتف وتُرفع عند عودة الاتصال.","انٹرنیٹ نہیں ہے۔ تصویر اس فون میں محفوظ ہو جائے گی اور انٹرنیٹ آنے پر اپ لوڈ ہو جائے گی۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.queued","{{count}} waiting","{{count}} في الانتظار","{{count}} انتظار میں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.waiting","Waiting to upload","بانتظار الرفع","اپ لوڈ کے انتظار میں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.uploadFailed","Upload failed","فشل الرفع","اپ لوڈ نہیں ہو سکی","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.discard","Discard","حذف","حذف کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.replace","Replace","استبدال","بدلیں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.open","Open full screen","فتح بملء الشاشة","پوری اسکرین پر کھولیں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.viewFailed","This file could not be loaded.","تعذّر تحميل هذا الملف.","یہ فائل لوڈ نہیں ہو سکی۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.error.tooLarge","This file is too large. Photos can be up to 25 MB and videos up to 50 MB.","حجم الملف كبير جدًا. الحد الأقصى للصور 25 ميغابايت وللفيديو 50 ميغابايت.","فائل بہت بڑی ہے۔ تصویر 25 MB تک اور ویڈیو 50 MB تک ہو سکتی ہے۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.error.wrongType","This file type is not supported. Use a photo (JPEG, PNG, WebP, HEIC) or a video (MP4, MOV, WebM).","نوع الملف غير مدعوم. استخدم صورة (JPEG أو PNG أو WebP أو HEIC) أو فيديو (MP4 أو MOV أو WebM).","اس قسم کی فائل قبول نہیں ہے۔ تصویر (JPEG، PNG، WebP، HEIC) یا ویڈیو (MP4، MOV، WebM) استعمال کریں۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.error.decode","We could not read this photo. Please retake it with the camera.","تعذّرت قراءة هذه الصورة. يرجى إعادة التقاطها بالكاميرا.","یہ تصویر پڑھی نہیں جا سکی۔ براہِ کرم کیمرے سے دوبارہ لیں۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.error.offline","No connection. Check your internet and try again.","لا يوجد اتصال. تحقق من الإنترنت وحاول مرة أخرى.","انٹرنیٹ نہیں ہے۔ انٹرنیٹ چیک کریں اور دوبارہ کوشش کریں۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.error.permission","You do not have permission to upload this. Ask your manager.","ليس لديك صلاحية رفع هذا الملف. تواصل مع المدير.","آپ کو یہ اپ لوڈ کرنے کی اجازت نہیں ہے۔ اپنے مینیجر سے پوچھیں۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.error.exists","This file was already uploaded.","تم رفع هذا الملف مسبقًا.","یہ فائل پہلے ہی اپ لوڈ ہو چکی ہے۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"photo.error.other","The upload failed. Please try again.","فشل الرفع. يرجى المحاولة مرة أخرى.","اپ لوڈ نہیں ہو سکا۔ براہِ کرم دوبارہ کوشش کریں۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"workers.title","Workers","العمّال","ورکرز","'ورکرز' = plural of ورکر."
-"workers.assignTo","Assign to","إسناد إلى","ورکرز کو دیں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"workers.search","Search workers","ابحث عن عامل","ورکر تلاش کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"workers.selectAll","Select all","تحديد الكل","سب چنیں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"workers.clear","Clear","مسح","صاف کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"workers.selectedCount","{{count}} selected","تم تحديد {{count}}","{{count}} چنے گئے","Not in the original reviewed draft: translated by the implementer, needs native review."
-"workers.noMatches","No workers match.","لا يوجد عمّال مطابقون.","کوئی ورکر نہیں ملا۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"workers.atLeastOne","Select at least one worker.","اختر عاملاً واحداً على الأقل.","کم از کم ایک ورکر چنیں۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"workers.edit","Edit workers","تعديل العمّال","ورکرز تبدیل کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"workers.editTitle","Edit workers","تعديل العمّال","ورکرز تبدیل کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"workers.save","Save workers","حفظ العمّال","ورکرز محفوظ کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"workers.cancel","Cancel","إلغاء","منسوخ کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"workers.more","+{{count}}","+{{count}}","+{{count}}","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.optional","Optional","اختياري","اختیاری","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.label","Google Maps location","موقع Google Maps","Google Maps لوکیشن","'لوکیشن' loanword used for location throughout (added to the glossary)."
-"location.placeholder","Paste a Google Maps link or ""24.7136, 46.6753""","الصق رابط Google Maps أو اكتب ""24.7136, 46.6753""","Google Maps لنک یا ⁦""24.7136, 46.6753""⁩","Contains LRI/PDI isolates so the coordinates keep left-to-right order."
-"location.hint","Paste a link from Google Maps (Share), or type latitude and longitude.","الصق رابطًا من Google Maps (مشاركة)، أو اكتب خط العرض وخط الطول.","Google Maps سے لنک پیسٹ کریں (Share سے)، یا لوکیشن کے نمبر (latitude اور longitude) لکھیں۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.found","Coordinates found: {{coords}}","تم العثور على الإحداثيات: {{coords}}","لوکیشن کے نمبر مل گئے: {{coords}}","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.linkOnly","Link saved without coordinates. Workers can open it in Google Maps, but Directions needs coordinates.","تم حفظ الرابط بدون إحداثيات. يستطيع العمال فتحه في Google Maps، لكن الاتجاهات تحتاج إلى إحداثيات.","لنک محفوظ ہو گیا مگر لوکیشن کے نمبر نہیں ملے۔ ورکر اسے Google Maps میں کھول سکتے ہیں، لیکن راستہ دیکھنے کے لیے لوکیشن کے نمبر ضروری ہیں۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.useMine","Use my current location","استخدم موقعي الحالي","میری موجودہ لوکیشن استعمال کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.locating","Finding your location…","جارٍ تحديد موقعك…","آپ کی لوکیشن معلوم کی جا رہی ہے…","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.clear","Clear","مسح","صاف کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.open","Open in Google Maps","افتح في Google Maps","Google Maps میں کھولیں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.directions","Directions","الاتجاهات","راستہ","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.edit","Edit location","تعديل الموقع","لوکیشن تبدیل کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.add","Add location","إضافة موقع","لوکیشن شامل کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.editTitle","Job location","موقع العمل","کام کی لوکیشن","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.save","Save location","حفظ الموقع","لوکیشن محفوظ کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.cancel","Cancel","إلغاء","منسوخ کریں","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.saveFailed","Couldn’t save the location.","تعذّر حفظ الموقع.","لوکیشن محفوظ نہیں ہو سکی۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.errors.invalid","This isn’t a Google Maps link or a pair of coordinates.","هذا ليس رابط Google Maps ولا إحداثيات صحيحة.","یہ Google Maps کا لنک یا لوکیشن کے نمبر نہیں ہیں۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.errors.not_https","The link must start with https://.","يجب أن يبدأ الرابط بـ https://.","لنک https:// سے شروع ہونا چاہیے۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.errors.unsupported_host","Only Google Maps links are accepted (google.com/maps, maps.app.goo.gl).","يُقبل فقط روابط Google Maps (google.com/maps أو maps.app.goo.gl).","صرف Google Maps کے لنک قبول ہیں (google.com/maps، maps.app.goo.gl)۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.errors.out_of_range","Latitude must be between -90 and 90, and longitude between -180 and 180.","يجب أن يكون خط العرض بين -90 و90، وخط الطول بين -180 و180.","latitude ‎-90 اور 90 کے درمیان، اور longitude ‎-180 اور 180 کے درمیان ہونی چاہیے۔","Contains LRM marks so '-90' / '-180' keep their minus sign in RTL."
-"location.errors.too_long","This link is too long (maximum 2000 characters).","الرابط طويل جدًا (الحد الأقصى 2000 حرف).","یہ لنک بہت لمبا ہے (زیادہ سے زیادہ 2000 حروف)۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.geo.denied","Location permission was denied. Allow location access in your browser settings, or paste a link instead.","تم رفض إذن الموقع. اسمح بالوصول إلى الموقع من إعدادات المتصفح، أو الصق رابطًا بدلًا من ذلك.","لوکیشن کی اجازت نہیں دی گئی۔ براؤزر کی سیٹنگز میں لوکیشن کی اجازت دیں، یا لنک پیسٹ کریں۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.geo.unavailable","Your device couldn’t determine its location. Try again outside, or paste a link instead.","تعذّر على جهازك تحديد موقعه. حاول مرة أخرى في مكان مفتوح، أو الصق رابطًا.","آپ کا فون اپنی لوکیشن معلوم نہیں کر سکا۔ کھلی جگہ پر دوبارہ کوشش کریں، یا لنک پیسٹ کریں۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.geo.timeout","Finding your location took too long. Try again, or paste a link instead.","استغرق تحديد موقعك وقتًا طويلًا. حاول مرة أخرى، أو الصق رابطًا.","لوکیشن معلوم کرنے میں بہت وقت لگ گیا۔ دوبارہ کوشش کریں، یا لنک پیسٹ کریں۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.geo.unsupported","This browser can’t share your location. Paste a link instead.","هذا المتصفح لا يدعم مشاركة الموقع. الصق رابطًا بدلًا من ذلك.","یہ براؤزر لوکیشن شیئر نہیں کر سکتا۔ لنک پیسٹ کریں۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"location.geo.error","Couldn’t get your location.","تعذّر الحصول على موقعك.","لوکیشن حاصل نہیں ہو سکی۔","Not in the original reviewed draft: translated by the implementer, needs native review."
-"a11y.language","Language","اللغة","زبان","New key (was hard-coded English): translated by the implementer, needs native review."
-"a11y.primaryNav","Primary","التنقل الرئيسي","مین مینو","New key (was hard-coded English): translated by the implementer, needs native review."
-"roles.worker","Worker","عامل","ورکر","New key (was hard-coded English): translated by the implementer, needs native review."
-"roles.manager","Manager","مدير","مینیجر","New key (was hard-coded English): translated by the implementer, needs native review."
-"roles.client","Client","عميل","کلائنٹ","New key (was hard-coded English): translated by the implementer, needs native review."
-"setup.notConfigured","Supabase isn’t configured. Copy <c>.env.example</c> to <c>.env.local</c>.","Supabase غير مهيأ. انسخ <c>.env.example</c> إلى <c>.env.local</c>.","Supabase سیٹ اپ نہیں ہے۔ <c>.env.example</c> کو <c>.env.local</c> میں کاپی کریں۔","New key (was hard-coded English): translated by the implementer, needs native review."
-"setup.notConfiguredFull","Supabase isn’t configured. Copy <c>.env.example</c> to <c>.env.local</c> and set <c>VITE_SUPABASE_URL</c> and <c>VITE_SUPABASE_ANON_KEY</c>.","Supabase غير مهيأ. انسخ <c>.env.example</c> إلى <c>.env.local</c> واضبط <c>VITE_SUPABASE_URL</c> و<c>VITE_SUPABASE_ANON_KEY</c>.","Supabase سیٹ اپ نہیں ہے۔ <c>.env.example</c> کو <c>.env.local</c> میں کاپی کریں اور <c>VITE_SUPABASE_URL</c> اور <c>VITE_SUPABASE_ANON_KEY</c> سیٹ کریں۔","New key (was hard-coded English): translated by the implementer, needs native review."
+﻿key,english,arabic,urdu,notes
+app.name,Ghsoon Najd,غصون نجد,Ghsoon Najd,
+app.tagline,"Field operations, signed and shared.",العمليات الميدانية موثّقة وموقّعة.,فیلڈ کا کام، دستخط کے ساتھ اور سب کے ساتھ شیئر۔,
+nav.home,Home,الرئيسية,ہوم,
+nav.templates,Templates,القوالب,ٹیمپلیٹس,
+nav.settings,Settings,الإعدادات,سیٹنگز,
+nav.back,Back,رجوع,واپس,
+home.start,Start a new job,بدء مهمة جديدة,نیا کام شروع کریں,
+home.startDesc,"Pick a checklist, complete the tasks, get a signature, and share.",اختر قائمة، أكمل المهام، احصل على التوقيع، ثم شارك.,چیک لسٹ چنیں، کام مکمل کریں، دستخط لیں اور شیئر کریں۔,
+home.manageTemplates,Manage templates,إدارة القوالب,ٹیمپلیٹس سنبھالیں,
+home.noTemplates,No templates yet. Create one to get started.,لا توجد قوالب بعد. أنشئ قالباً للبدء.,ابھی کوئی ٹیمپلیٹ نہیں ہے۔ شروع کرنے کے لیے ایک بنائیں۔,
+home.chooseTemplate,Choose a checklist,اختر قائمة,چیک لسٹ منتخب کریں,
+templates.title,Templates,القوالب,ٹیمپلیٹس,
+templates.new,New template,قالب جديد,نیا ٹیمپلیٹ,
+templates.empty,No templates yet.,لا توجد قوالب بعد.,ابھی کوئی ٹیمپلیٹ نہیں ہے۔,
+templates.emptyHint,Create your first checklist template.,أنشئ أول قالب قائمة مهام.,اپنا پہلا چیک لسٹ ٹیمپلیٹ بنائیں۔,
+templates.tasksCount,{{count}} task,{{count}} مهمة,{{count}} کام,Urdu one/other identical form.
+templates.tasksCount_other,{{count}} tasks,{{count}} مهام,{{count}} کام,
+templates.deleteConfirm,Delete this template?,حذف هذا القالب؟,کیا یہ ٹیمپلیٹ حذف کرنا ہے؟,
+templates.deleteConfirmBody,This can't be undone.,لا يمكن التراجع عن هذا الإجراء.,یہ عمل واپس نہیں ہو سکتا۔,
+templates.copySuffix,(copy),(نسخة),(کاپی),
+editor.newTitle,New template,قالب جديد,نیا ٹیمپلیٹ,
+editor.editTitle,Edit template,تعديل القالب,ٹیمپلیٹ تبدیل کریں,
+editor.nameEn,Name (English),الاسم (إنجليزي),نام (انگریزی),
+editor.nameAr,Name (Arabic),الاسم (عربي),نام (عربی),
+editor.namePlaceholderEn,e.g. AC Maintenance,مثال: AC Maintenance,مثال: AC Maintenance,
+editor.namePlaceholderAr,مثال: صيانة المكيف,مثال: صيانة المكيف,مثال: صيانة المكيف,
+editor.nameUr,"Name (Urdu, optional)",الاسم (أردو، اختياري),نام (اردو، اختیاری),New: optional Urdu title for templates.
+editor.namePlaceholderUr,e.g. اے سی کی دیکھ بھال,مثال: اے سی کی دیکھ بھال,مثال: اے سی کی دیکھ بھال,"New key (was hard-coded English): translated by the implementer, needs native review."
+editor.tasks,Tasks,المهام,کام,
+editor.taskEn,Task (English),المهمة (إنجليزي),کام (انگریزی),
+editor.taskAr,Task (Arabic),المهمة (عربي),کام (عربی),
+editor.taskUr,"Task (Urdu, optional)",المهمة (أردو، اختياري),کام (اردو، اختیاری),New: optional Urdu label for checklist items.
+editor.addTask,Add task,إضافة مهمة,کام شامل کریں,
+editor.required,Required,إلزامية,لازمی,لازمی (common) vs ضروری.
+editor.moveUp,Move up,تحريك لأعلى,اوپر لے جائیں,
+editor.moveDown,Move down,تحريك لأسفل,نیچے لے جائیں,
+editor.removeTask,Remove task,حذف المهمة,کام ہٹائیں,
+editor.noTasks,No tasks yet. Add your first task below.,لا توجد مهام بعد. أضف أول مهمة بالأسفل.,ابھی کوئی کام نہیں ہے۔ نیچے سے اپنا پہلا کام شامل کریں۔,
+editor.nameRequired,Please enter a template name.,الرجاء إدخال اسم القالب.,براہِ کرم ٹیمپلیٹ کا نام لکھیں۔,
+job.customer,Customer details,بيانات العميل,کلائنٹ کی تفصیل,EN 'Customer' mapped to کلائنٹ (same as Client) for one consistent term.
+job.customerName,Customer name,اسم العميل,کلائنٹ کا نام,
+job.customerPhone,Phone number,رقم الهاتف,فون نمبر,
+job.phoneHint,Used to open WhatsApp to the right contact.,يُستخدم لفتح واتساب على جهة الاتصال الصحيحة.,صحیح شخص کا WhatsApp کھولنے کے لیے استعمال ہوتا ہے۔,
+job.checklist,Checklist,قائمة المهام,چیک لسٹ,
+job.progress,{{done}} of {{total}} done,{{done}} من {{total}} مكتملة,{{total}} میں سے {{done}} مکمل,
+job.addNote,Add note,إضافة ملاحظة,نوٹ شامل کریں,
+job.notePlaceholder,Note (optional),ملاحظة (اختياري),نوٹ (اختیاری),
+job.requiredBadge,Required,إلزامية,لازمی,
+job.toSignature,Continue to signature,المتابعة إلى التوقيع,دستخط کے لیے آگے بڑھیں,
+job.requiredRemaining,Complete required tasks to continue.,أكمل المهام الإلزامية للمتابعة.,آگے بڑھنے کے لیے لازمی کام مکمل کریں۔,
+signature.title,Customer signature,توقيع العميل,کلائنٹ کے دستخط,
+signature.instruction,Ask the customer to sign below with their finger.,اطلب من العميل التوقيع بالأسفل بإصبعه.,کلائنٹ سے کہیں کہ نیچے انگلی سے دستخط کریں۔,
+signature.signerName,Signer name,اسم الموقّع,دستخط کرنے والے کا نام,
+signature.clear,Clear,مسح,صاف کریں,
+signature.empty,Please capture a signature.,الرجاء التوقيع.,براہِ کرم دستخط کریں۔,
+signature.confirm,Confirm signature,تأكيد التوقيع,دستخط کی تصدیق کریں,
+signature.tapToSign,Sign here,وقّع هنا,یہاں دستخط کریں,
+report.title,Report,التقرير,رپورٹ,
+report.preview,Preview,معاينة,پری ویو,'پری ویو' loanword.
+report.share,Share via WhatsApp,المشاركة عبر واتساب,WhatsApp پر بھیجیں,
+report.generating,Preparing PDF…,جارٍ تجهيز ملف PDF…,PDF تیار ہو رہی ہے…,
+report.shared,Shared successfully.,تمت المشاركة بنجاح.,کامیابی سے بھیج دی گئی۔,
+report.downloaded,PDF downloaded. Attach it in WhatsApp to send.,تم تنزيل ملف PDF. أرفقه في واتساب للإرسال.,PDF ڈاؤن لوڈ ہو گئی۔ بھیجنے کے لیے اسے WhatsApp میں اٹیچ کریں۔,
+report.shareError,Couldn't share. The PDF was downloaded instead.,تعذّرت المشاركة. تم تنزيل ملف PDF بدلاً من ذلك.,بھیجی نہیں جا سکی۔ اس کے بجائے PDF ڈاؤن لوڈ ہو گئی ہے۔,
+report.newJob,Start another job,بدء مهمة أخرى,ایک اور کام شروع کریں,
+report.reportTitle,Job Checklist Report,تقرير قائمة المهام,کام کی چیک لسٹ رپورٹ,
+report.date,Date,التاريخ,تاریخ,
+report.customer,Customer,العميل,کلائنٹ,Customer -> کلائنٹ.
+report.signature,Signature,التوقيع,دستخط,
+report.completed,Completed,مكتملة,مکمل,
+report.notCompleted,Not completed,غير مكتملة,نامکمل,
+report.tasksDone,{{done}}/{{total}} tasks completed,{{done}}/{{total}} مهام مكتملة,{{done}}/{{total}} کام مکمل,
+report.signedBy,Signed by,وقّع بواسطة,دستخط کرنے والا,Label; 'دستخط کرنے والا'.
+settings.title,Settings,الإعدادات,سیٹنگز,
+settings.language,Language,اللغة,زبان,
+settings.languageDesc,Choose the app and report language.,اختر لغة التطبيق والتقرير.,ایپ اور رپورٹ کی زبان چنیں۔,
+settings.english,English,English,English,
+settings.arabic,العربية,العربية,العربية,
+settings.about,About,حول التطبيق,ایپ کے بارے میں,
+settings.aboutDesc,Ghsoon Najd works offline. Data syncs when you’re back online.,يعمل التطبيق دون اتصال. تُحفظ البيانات على هذا الجهاز فقط.,Ghsoon Najd انٹرنیٹ کے بغیر بھی چلتی ہے۔ انٹرنیٹ واپس آنے پر ڈیٹا سنک ہو جاتا ہے۔,
+settings.install,Install app,تثبيت التطبيق,ایپ انسٹال کریں,
+settings.installHint,"On iPhone: tap Share, then ""Add to Home Screen"".","على آيفون: اضغط مشاركة، ثم ""إضافة إلى الشاشة الرئيسية"".","آئی فون پر: Share دبائیں، پھر ""Add to Home Screen"" دبائیں۔",iOS button names left in Latin since iPhones in KSA are usually set to English/Arabic UI.
+settings.changePassword,Change my password,تغيير كلمة المرور,میرا پاس ورڈ بدلیں,
+settings.updatePassword,Update password,تحديث كلمة المرور,پاس ورڈ اپڈیٹ کریں,
+settings.passwordChanged,Password changed.,تم تغيير كلمة المرور.,پاس ورڈ بدل گیا۔,
+settings.signingWindow,Client signing window,مهلة توقيع العميل,کلائنٹ کے دستخط کی مدت,Window = مدت (period).
+settings.signingWindowDesc,How long the client has to sign before the task auto-approves.,المدة المتاحة للعميل للتوقيع قبل اعتماد المهمة تلقائياً.,کلائنٹ کے پاس دستخط کے لیے کتنا وقت ہے۔ اس کے بعد کام خود بخود منظور ہو جائے گا۔,
+settings.expiryDays,Days to sign,أيام التوقيع,دستخط کے لیے دن,
+settings.reminderHours,Reminder before expiry (hours),تذكير قبل الانتهاء (ساعات),مدت ختم ہونے سے پہلے یاد دہانی (گھنٹے),
+settings.saveWindow,Save,حفظ,محفوظ کریں,
+settings.windowSaved,Saved. Applies to new signing links.,تم الحفظ. يُطبّق على الروابط الجديدة.,محفوظ ہو گیا۔ نئے دستخط کے لنکس پر لاگو ہو گا۔,
+settings.urdu,اردو,اردو,اردو,"New key (was hard-coded English): translated by the implementer, needs native review."
+settings.demoTitle,Demo mode,الوضع التجريبي,ڈیمو موڈ,"New key (was hard-coded English): translated by the implementer, needs native review."
+settings.demoDesc,"You’re running against in-browser seed data. Switch roles from the “Demo” chip in the header. To go live, set <c>VITE_SUPABASE_URL</c> and <c>VITE_SUPABASE_ANON_KEY</c> in <c>.env.local</c>, run the SQL migration, then set <c>VITE_DEMO_MODE=0</c>.",أنت تعمل على بيانات تجريبية داخل المتصفح. بدّل الأدوار من زر «تجريبي» في الرأس. للانتقال إلى النظام الفعلي، اضبط <c>VITE_SUPABASE_URL</c> و<c>VITE_SUPABASE_ANON_KEY</c> في <c>.env.local</c>، ثم شغّل ترحيل SQL، ثم اضبط <c>VITE_DEMO_MODE=0</c>.,آپ براؤزر کے اندر موجود ڈیمو ڈیٹا پر کام کر رہے ہیں۔ اوپر والے “ڈیمو” بٹن سے رول بدلیں۔ اصل سسٹم پر جانے کے لیے <c>.env.local</c> میں <c>VITE_SUPABASE_URL</c> اور <c>VITE_SUPABASE_ANON_KEY</c> سیٹ کریں، SQL مائیگریشن چلائیں، پھر <c>VITE_DEMO_MODE=0</c> سیٹ کریں۔,"New key (was hard-coded English): translated by the implementer, needs native review."
+settings.demoReset,Reset demo data,إعادة ضبط البيانات التجريبية,ڈیمو ڈیٹا ری سیٹ کریں,"New key (was hard-coded English): translated by the implementer, needs native review."
+tabs.today,Today,اليوم,آج,
+tabs.calendar,Calendar,التقويم,کیلنڈر,
+tabs.approvals,Approvals,الموافقات,منظوریاں,
+tabs.clients,Clients,العملاء,کلائنٹس,
+tabs.notifications,Inbox,الصندوق,اطلاعات,EN 'Inbox'; rendered as اطلاعات (notifications) to match notifications.empty and the glossary.
+tabs.me,Me,حسابي,میرا اکاؤنٹ,Settings/profile tab (see navTabs.ts). Literal 'Me' (میں) is wrong; 'میرا اکاؤنٹ' chosen. Alternative: پروفائل.
+auth.signIn,Sign in,تسجيل الدخول,لاگ اِن کریں,
+auth.signOut,Sign out,تسجيل الخروج,لاگ آؤٹ کریں,
+auth.welcome,Welcome back,أهلاً بعودتك,دوبارہ خوش آمدید,
+auth.magicLinkHint,Enter your email — we'll send a one-tap sign-in link.,أدخل بريدك — سنرسل لك رابط دخول بنقرة واحدة.,اپنی ای میل لکھیں۔ ہم آپ کو ایک ٹیپ سے لاگ اِن ہونے والا لنک بھیجیں گے۔,
+auth.email,Email,البريد الإلكتروني,ای میل,
+auth.password,Password,كلمة المرور,پاس ورڈ,
+auth.sending,Signing in…,جارٍ تسجيل الدخول…,لاگ اِن ہو رہا ہے…,
+auth.sendLink,Send magic link,أرسل الرابط,لنک بھیجیں,
+auth.linkSent,Check your email and tap the link to continue.,افحص بريدك واضغط الرابط للمتابعة.,اپنی ای میل دیکھیں اور آگے بڑھنے کے لیے لنک دبائیں۔,
+auth.notConfigured,Supabase is not configured. See .env.example.,Supabase غير مهيأ. راجع .env.example.,Supabase سیٹ اپ نہیں ہے۔ .env.example دیکھیں۔,
+auth.signingIn,Signing you in…,جارٍ تسجيل دخولك…,آپ کو لاگ اِن کیا جا رہا ہے…,"New key (was hard-coded English): translated by the implementer, needs native review."
+sign.heading,Please review and sign,يرجى المراجعة والتوقيع,براہِ کرم دیکھیں اور دستخط کریں,
+sign.visit,Visit,الزيارة,وزٹ,
+sign.client,Client,العميل,کلائنٹ,
+sign.worker,Technician,الفني,ٹیکنیشن,"EN 'Technician'; ٹیکنیشن used on client-facing page, whereas internal UI uses ورکر."
+sign.date,Date,التاريخ,تاریخ,
+sign.signHere,Sign below,وقّع بالأسفل,نیچے دستخط کریں,
+sign.confirm,Confirm signature,تأكيد التوقيع,دستخط کی تصدیق کریں,
+sign.submitting,Submitting…,جارٍ الإرسال…,جمع ہو رہا ہے…,Follows Submit = جمع کریں.
+sign.expiresOn,This link expires on {{date}},ينتهي هذا الرابط في {{date}},یہ لنک {{date}} کو ختم ہو جائے گا,
+sign.invalidTitle,This link is no longer active,هذا الرابط لم يعد فعّالاً,یہ لنک اب چالو نہیں ہے,
+sign.invalidBody,It may have expired or already been signed. Thank you.,ربما انتهت صلاحيته أو تم التوقيع مسبقاً. شكراً لك.,ہو سکتا ہے اس کی مدت ختم ہو گئی ہو یا دستخط پہلے ہی ہو چکے ہوں۔ شکریہ۔,
+sign.thanksTitle,Thank you!,شكراً لك!,شکریہ!,
+sign.thanksBody,Your signature has been recorded.,تم تسجيل توقيعك.,آپ کے دستخط محفوظ ہو گئے ہیں۔,
+sign.linkSent,Signing link sent to the client.,تم إرسال رابط التوقيع للعميل.,دستخط کا لنک کلائنٹ کو بھیج دیا گیا۔,
+sign.deliveryFailed,Couldn’t deliver the signing link on WhatsApp.,تعذّر إرسال رابط التوقيع عبر واتساب.,دستخط کا لنک WhatsApp پر نہیں بھیجا جا سکا۔,
+sign.noPhone,No WhatsApp number on file for this client.,لا يوجد رقم واتساب مسجّل لهذا العميل.,اس کلائنٹ کا WhatsApp نمبر درج نہیں ہے۔,
+sign.resend,Resend link,إعادة الإرسال,لنک دوبارہ بھیجیں,
+sign.copyLink,Copy link,نسخ الرابط,لنک کاپی کریں,
+approval.signedShort,Signed,موقّعة,دستخط شدہ,
+approval.autoShort,Approved · no response,معتمدة · بدون رد,منظور · جواب نہیں آیا,Short badge text.
+approval.autoFull,Auto-approved — client did not respond,اعتُمدت تلقائياً — لم يردّ العميل,خود بخود منظور — کلائنٹ نے جواب نہیں دیا,
+approval.signedLine,Signed by client on {{when}},وقّع العميل في {{when}},کلائنٹ نے {{when}} کو دستخط کیے,
+approval.autoLine,Auto-approved on {{when}} — client did not respond in time. No signature provided.,اعتُمدت تلقائياً في {{when}} — لم يردّ العميل في الوقت المحدد. لا يوجد توقيع.,{{when}} کو خود بخود منظور ہوا — کلائنٹ نے وقت پر جواب نہیں دیا۔ دستخط موجود نہیں ہیں۔,
+approval.managerLine,Approved by manager on {{when}},اعتمدها المدير في {{when}},مینیجر نے {{when}} کو منظور کیا,
+today.title,Today,اليوم,آج,
+today.greeting,Hi {{name}},مرحباً {{name}},ہیلو {{name}},'ہیلو' vs 'السلام علیکم' - SA workplace may prefer the latter.
+today.empty,No visits scheduled today. Enjoy the calm.,لا توجد زيارات اليوم. خذ قسطاً من الراحة.,آج کوئی وزٹ طے نہیں ہے۔ آرام کریں۔,
+today.summary,{{count}} visits · {{done}} done · {{min}} min on task,{{count}} زيارة · أُنجز {{done}} · {{min}} دقيقة عمل,{{count}} وزٹ · {{done}} مکمل · {{min}} منٹ کام پر,'min on task' as 'منٹ کام پر'.
+today.upNext,Up next,التالية,اگلا,
+today.rest,Rest of today,بقية اليوم,آج کا باقی کام,
+calendar.title,Calendar,التقويم,کیلنڈر,
+calendar.add,Add task,أضف مهمة,کام شامل کریں,
+calendar.byWorker,By worker,حسب العامل,ورکر کے مطابق,
+calendar.byClient,By client,حسب العميل,کلائنٹ کے مطابق,
+calendar.all,All,الكل,سب,
+calendar.empty,No visits in this range.,لا توجد زيارات في هذه الفترة.,اس مدت میں کوئی وزٹ نہیں ہے۔,
+calendar.dayToday,Today,اليوم,آج,"New key (was hard-coded English): translated by the implementer, needs native review."
+calendar.dayTomorrow,Tomorrow,غدًا,کل,"New key (was hard-coded English): translated by the implementer, needs native review."
+calendar.dayYesterday,Yesterday,أمس,گزشتہ کل,"New key (was hard-coded English): translated by the implementer, needs native review."
+calendar.taskCount,Task count,عدد المهام,کاموں کی تعداد,"New key (was hard-coded English): translated by the implementer, needs native review."
+task.title,Task,المهمة,کام,
+task.description,Description,الوصف,تفصیل,
+task.decisionNote,Note (optional),ملاحظة (اختياري),نوٹ (اختیاری),
+task.decisionPlaceholder,Add a reason if rejecting…,أضف سبباً في حال الرفض…,رد کرنا ہو تو وجہ لکھیں…,
+task.rejectedNote,Rejected — manager said:,رُفضت — تعليق المدير:,مسترد کر دیا گیا — مینیجر نے کہا:,Follows Rejected = مسترد.
+task.approvedNote,Approved — manager said:,تمت الموافقة — تعليق المدير:,منظور ہو گیا — مینیجر نے کہا:,
+task.requiredRemaining,Complete the required items below before submitting:,أكمل البنود الإلزامية أدناه قبل الإرسال:,جمع کرنے سے پہلے نیچے دیے گئے لازمی کام مکمل کریں:,Follows Submit = جمع کریں.
+task.action.start,Start,ابدأ,شروع کریں,
+task.action.submit,Submit,أرسل للموافقة,جمع کریں,Orchestrator decision: 'جمع کریں' (draft had 'بھیجیں').
+task.action.approve,Approve,وافق,منظور کریں,
+task.action.reject,Reject,ارفض,رد کریں,'رد کریں' preferred over formal 'مسترد کریں'.
+task.action.reopen,Reopen,أعد الفتح,دوبارہ کھولیں,
+taskNew.title,New task,مهمة جديدة,نیا کام,
+taskNew.description,Description,الوصف,تفصیل,
+taskNew.client,Client,العميل,کلائنٹ,
+taskNew.worker,Assign to,الموظف المسؤول,ورکر کو دیں,'Assign to' as 'ورکر کو دیں'.
+taskNew.when,Scheduled at,موعد الزيارة,طے شدہ وقت,
+taskNew.repeats,Repeats,التكرار,دہرانا,'دہرانا' as label; alternative 'تکرار'.
+taskNew.template,Checklist template,قائمة المهام,چیک لسٹ ٹیمپلیٹ,
+taskNew.noTemplate,— none —,— بدون —,— کوئی نہیں —,
+taskNew.templateHint,The worker sees this checklist on the task and ticks items off as they go.,يرى العامل هذه القائمة على المهمة ويعلّم البنود أثناء التنفيذ.,ورکر کو کام پر یہ چیک لسٹ نظر آتی ہے اور وہ کام کرتے ہوئے ہر چیز پر نشان لگاتا ہے۔,
+taskNew.create,Create task,إنشاء المهمة,کام بنائیں,
+runner.title,Checklist,قائمة التحقق,چیک لسٹ,
+runner.saving,saving,جارٍ الحفظ,محفوظ ہو رہا ہے,"New key (was hard-coded English): translated by the implementer, needs native review."
+extras.title,Extra work done,أعمال إضافية,اضافی کام,
+extras.placeholder,Add something you did off the list…,أضف شيئاً قمت به خارج القائمة…,فہرست سے ہٹ کر جو کام کیا وہ لکھیں…,
+extras.add,Add,أضف,شامل کریں,
+extras.empty,Nothing extra logged yet.,لا توجد أعمال إضافية بعد.,ابھی کوئی اضافی کام درج نہیں ہے۔,
+extras.remove,Remove,إزالة,ہٹائیں,
+extras.lockedAfterApproval,Locked after approval.,مقفول بعد الموافقة.,منظوری کے بعد بند ہے۔,
+audit.title,Audit log,سجل العمليات,آڈٹ لاگ,آڈٹ لاگ loanword.
+audit.empty,Nothing logged yet.,لا شيء مسجّل بعد.,ابھی کچھ درج نہیں ہے۔,
+audit.filters,Filters,تصفية,فلٹر,
+audit.entity,Type,النوع,قسم,
+audit.actor,Who,من,کس نے,
+audit.from,From,من تاريخ,تاریخ سے,
+audit.to,To,إلى تاريخ,تاریخ تک,
+audit.anyone,Anyone,أي شخص,کوئی بھی,
+audit.allTypes,All,الكل,سب,
+audit.system,system,النظام,سسٹم,"New key (was hard-coded English): translated by the implementer, needs native review."
+recurrence.none,Does not repeat,لا يتكرر,دہرایا نہیں جاتا,
+recurrence.weekly,Every week,كل أسبوع,ہر ہفتے,
+recurrence.monthly,Every month,كل شهر,ہر مہینے,
+recurrence.quarterly,Every 3 months,كل 3 أشهر,ہر 3 مہینے بعد,
+recurrence.biannual,Every 6 months,كل 6 أشهر,ہر 6 مہینے بعد,
+demo.loginHint,Demo mode — pick an account below to see exactly what they see.,وضع العرض — اختر حساباً أدناه لترى ما يراه كل شخص.,ڈیمو موڈ — نیچے سے کوئی اکاؤنٹ چنیں تاکہ دیکھ سکیں کہ اسے کیا نظر آتا ہے۔,
+demo.accountsTitle,Demo accounts,حسابات العرض,ڈیمو اکاؤنٹس,
+demo.orEmail,Or sign in with email below:,أو سجّل الدخول بالبريد:,یا نیچے ای میل سے لاگ اِن کریں:,
+demo.chip,Demo,تجريبي,ڈیمو,"New key (was hard-coded English): translated by the implementer, needs native review."
+demo.switchRole,Switch role,تبديل الدور,رول بدلیں,"New key (was hard-coded English): translated by the implementer, needs native review."
+demo.blurb.manager,"Full access — calendar, approvals, clients, audit",صلاحية كاملة — التقويم، الموافقات، العملاء، سجل العمليات,مکمل رسائی — کیلنڈر، منظوریاں، کلائنٹس، آڈٹ,"New key (was hard-coded English): translated by the implementer, needs native review."
+demo.blurb.worker,Sees only own tasks · capture proof · submit,يرى مهامه فقط · يلتقط الإثبات · يرسل,صرف اپنے کام دیکھتا ہے · تصویر لیتا ہے · جمع کرتا ہے,"New key (was hard-coded English): translated by the implementer, needs native review."
+demo.blurb.client,Read-only portal — visits & approved proof,بوابة للعرض فقط — الزيارات والإثباتات المعتمدة,صرف دیکھنے کا پورٹل — وزٹ اور منظور شدہ تصاویر,"New key (was hard-coded English): translated by the implementer, needs native review."
+proof.title,Proof,الإثبات,تصاویر,Changed to 'تصاویر' (the section holds the start/finish photos).
+proof.start,Start proof,إثبات البدء,شروع کی تصویر,Orchestrator decision: photo wording 'شروع کی تصویر'.
+proof.finish,Finish proof,إثبات الإنهاء,کام ختم ہونے کی تصویر,Orchestrator decision: photo wording 'کام ختم ہونے کی تصویر'.
+proof.tapToCapture,Tap the shutter to take a photo or video.,اضغط الزر لالتقاط صورة أو فيديو.,تصویر یا ویڈیو لینے کے لیے بٹن دبائیں۔,
+proof.use,Use this,استخدم هذه,یہ استعمال کریں,
+proof.saving,Saving…,جارٍ الحفظ…,محفوظ ہو رہا ہے…,
+proof.offlineHint,Offline — we'll upload when you're back online.,أنت خارج الشبكة — سيُرفع لاحقاً عند الاتصال.,انٹرنیٹ نہیں ہے — انٹرنیٹ آنے پر اپ لوڈ ہو جائے گا۔,
+proof.missing,Missing,غير موجود,موجود نہیں,"New key (was hard-coded English): translated by the implementer, needs native review."
+status.notStarted,Not started,لم تبدأ,شروع نہیں ہوا,
+status.inProgress,In progress,قيد التنفيذ,جاری ہے,
+status.submitted,Submitted,أُرسلت,جمع ہو گیا,Orchestrator decision: 'جمع ہو گیا'.
+status.approved,Approved,موافَق عليها,منظور,Short 'منظور' for badge width.
+status.rejected,Rejected,مرفوضة,مسترد,Orchestrator decision: 'مسترد' (draft had 'رد'). The action button task.action.reject stays 'رد کریں' as drafted.
+clients.title,Clients,العملاء,کلائنٹس,
+clients.add,Add client,أضف عميل,کلائنٹ شامل کریں,
+clients.search,Search clients…,ابحث عن عميل…,کلائنٹ تلاش کریں…,Verb form 'تلاش کریں' (not the noun تلاش).
+clients.empty,No clients yet.,لا يوجد عملاء بعد.,ابھی کوئی کلائنٹ نہیں ہے۔,
+clients.upcoming,Upcoming visits,الزيارات القادمة,آنے والے وزٹ,
+clients.noUpcoming,Nothing scheduled.,لا شيء مُجدول.,کچھ طے نہیں ہے۔,
+clients.history,Visit history,سجل الزيارات,وزٹ کا ریکارڈ,
+clients.noHistory,No past visits yet.,لا توجد زيارات سابقة.,ابھی کوئی پرانا وزٹ نہیں ہے۔,
+clientNew.title,New client,عميل جديد,نیا کلائنٹ,
+clientNew.name,Name,الاسم,نام,
+clientNew.phone,Phone,الهاتف,فون,
+clientNew.address,Address,العنوان,پتہ,
+clientNew.create,Create client,إنشاء العميل,کلائنٹ بنائیں,
+notes.open,Open notes,ملاحظات مفتوحة,باقی نوٹس,EN 'Open notes' = unresolved; 'باقی نوٹس' chosen over 'کھلے نوٹس'.
+notes.none,No open notes.,لا توجد ملاحظات مفتوحة.,کوئی باقی نوٹ نہیں ہے۔,
+notes.openFromBefore,Notes left for this visit,ملاحظات متروكة لهذه الزيارة,اس وزٹ کے لیے چھوڑے گئے نوٹس,
+notes.newForNext,Leave a note for next time,اترك ملاحظة للزيارة القادمة,اگلی بار کے لیے نوٹ چھوڑیں,
+notes.add,Leave a note for the next visit…,اكتب ملاحظة للزيارة القادمة…,اگلے وزٹ کے لیے نوٹ لکھیں…,
+notes.save,Save note,احفظ الملاحظة,نوٹ محفوظ کریں,
+notes.resolve,Mark resolved,تم الحل,حل ہو گیا,'حل ہو گیا' = Mark resolved.
+approvals.title,Approvals,الموافقات,منظوریاں,
+approvals.empty,Nothing waiting on you.,لا شيء بانتظارك.,آپ کی منظوری کے انتظار میں کچھ نہیں ہے۔,
+notifications.title,Inbox,الصندوق,اطلاعات,EN 'Inbox'; see tabs.notifications.
+notifications.empty,No notifications yet.,لا إشعارات بعد.,ابھی کوئی اطلاع نہیں ہے۔,
+notifications.markAllRead,Mark all read,تحديد الكل كمقروء,سب کو پڑھا ہوا نشان زد کریں,"New key (was hard-coded English): translated by the implementer, needs native review."
+notifications.kind.assigned,New task assigned to you,تم إسناد مهمة جديدة إليك,آپ کو نیا کام سونپا گیا ہے,"New key (was hard-coded English): translated by the implementer, needs native review."
+notifications.kind.submitted,Task submitted for approval,تم إرسال المهمة للاعتماد,کام منظوری کے لیے جمع ہو گیا ہے,Follows Submit = جمع کریں.
+notifications.kind.approved,Your task was approved,تم اعتماد مهمتك,آپ کا کام منظور ہو گیا ہے,
+notifications.kind.rejected,Your task was rejected,تم رفض مهمتك,آپ کا کام مسترد ہو گیا ہے,Follows Rejected = مسترد.
+portal.title,Your visits,زياراتك,آپ کے وزٹ,
+portal.upcoming,Upcoming,القادمة,آنے والے,
+portal.past,Completed,المكتملة,مکمل,
+portal.noUpcoming,Nothing scheduled.,لا شيء مُجدول.,کچھ طے نہیں ہے۔,
+portal.noPast,No completed visits yet.,لا توجد زيارات مكتملة بعد.,ابھی کوئی مکمل وزٹ نہیں ہے۔,
+users.title,Team & clients,الفريق والعملاء,ٹیم اور کلائنٹس,
+users.invite,Invite someone,ادعُ شخصاً,کسی کو دعوت دیں,
+users.name,Name,الاسم,نام,
+users.role,Role,الدور,رول,'رول' (loanword) vs 'کردار'; workers/managers say رول.
+users.linkClient,Linked client record,اربط بسجل عميل,منسلک کلائنٹ ریکارڈ,
+users.sending,Sending invite…,جارٍ إرسال الدعوة…,دعوت بھیجی جا رہی ہے…,
+users.sendInvite,Send invite,أرسل الدعوة,دعوت بھیجیں,
+users.inviteSent,Invite sent.,أُرسلت الدعوة.,دعوت بھیج دی گئی۔,
+users.everyone,Everyone,الجميع,سب,
+users.deactivate,Deactivate,إلغاء التفعيل,غیر فعال کریں,'بند کریں' for deactivate; vs 'غیر فعال کریں'.
+users.activate,Activate,تفعيل,فعال کریں,
+users.setPassword,Set password,تعيين كلمة مرور,پاس ورڈ سیٹ کریں,
+users.newPassword,New password (min 8 chars),كلمة مرور جديدة (8 أحرف على الأقل),نیا پاس ورڈ (کم از کم 8 حروف),
+users.savePassword,Save,حفظ,محفوظ کریں,
+users.passwordSet,Password updated.,تم تحديث كلمة المرور.,پاس ورڈ اپڈیٹ ہو گیا۔,
+users.passwordFailed,Couldn’t set password.,تعذّر تعيين كلمة المرور.,پاس ورڈ سیٹ نہیں ہو سکا۔,
+users.inactive,inactive,غير نشط,غیر فعال,"New key (was hard-coded English): translated by the implementer, needs native review."
+common.save,Save,حفظ,محفوظ کریں,
+common.cancel,Cancel,إلغاء,منسوخ کریں,
+common.delete,Delete,حذف,حذف کریں,
+common.duplicate,Duplicate,نسخ,کاپی بنائیں,
+common.edit,Edit,تعديل,تبدیل کریں,'تبدیل کریں' vs 'ایڈیٹ کریں'.
+common.add,Add,إضافة,شامل کریں,
+common.done,Done,تم,ہو گیا,
+common.next,Next,التالي,اگلا,
+common.clear,Clear,مسح,صاف کریں,
+common.confirm,Confirm,تأكيد,تصدیق کریں,
+common.close,Close,إغلاق,بند کریں,
+common.optional,optional,اختياري,اختیاری,
+common.copy,Copy,نسخة,کاپی,Key not used in code; 'کاپی'.
+common.yes,Yes,نعم,ہاں,
+common.no,No,لا,نہیں,
+common.saving,Saving…,جارٍ الحفظ…,محفوظ ہو رہا ہے…,
+common.loading,Loading…,جارٍ التحميل…,لوڈ ہو رہا ہے…,
+common.minutesShort,{{count}} min,{{count}} دقيقة,{{count}} منٹ,"New key (was hard-coded English): translated by the implementer, needs native review."
+photo.close,Close,إغلاق,بند کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.capture,Capture,التقاط,تصویر لیں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.retake,Retake,إعادة الالتقاط,دوبارہ لیں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.retry,Retry,إعادة المحاولة,دوبارہ کوشش کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.continue,Continue,متابعة,جاری رکھیں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.chooseAnother,Take another,التقاط صورة أخرى,دوسری تصویر لیں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.uploading,Uploading…,جارٍ الرفع…,اپ لوڈ ہو رہی ہے…,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.uploadingNow,Uploading…,جارٍ الرفع…,اپ لوڈ ہو رہی ہے…,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.savedOffline,Saved on this phone. It will upload automatically when you are back online.,تم الحفظ على هذا الهاتف. سيتم الرفع تلقائيًا عند عودة الاتصال بالإنترنت.,اس فون میں محفوظ ہو گئی۔ انٹرنیٹ آنے پر خود بخود اپ لوڈ ہو جائے گی۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.offlineHint,You are offline. The photo will be saved on this phone and uploaded when you are back online.,أنت غير متصل بالإنترنت. ستُحفظ الصورة على هذا الهاتف وتُرفع عند عودة الاتصال.,انٹرنیٹ نہیں ہے۔ تصویر اس فون میں محفوظ ہو جائے گی اور انٹرنیٹ آنے پر اپ لوڈ ہو جائے گی۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.queued,{{count}} waiting,{{count}} في الانتظار,{{count}} انتظار میں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.waiting,Waiting to upload,بانتظار الرفع,اپ لوڈ کے انتظار میں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.uploadFailed,Upload failed,فشل الرفع,اپ لوڈ نہیں ہو سکی,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.discard,Discard,حذف,حذف کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.replace,Replace,استبدال,بدلیں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.open,Open full screen,فتح بملء الشاشة,پوری اسکرین پر کھولیں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.viewFailed,This file could not be loaded.,تعذّر تحميل هذا الملف.,یہ فائل لوڈ نہیں ہو سکی۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.error.tooLarge,This file is too large. Photos can be up to 25 MB and videos up to 50 MB.,حجم الملف كبير جدًا. الحد الأقصى للصور 25 ميغابايت وللفيديو 50 ميغابايت.,فائل بہت بڑی ہے۔ تصویر 25 MB تک اور ویڈیو 50 MB تک ہو سکتی ہے۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.error.wrongType,"This file type is not supported. Use a photo (JPEG, PNG, WebP, HEIC) or a video (MP4, MOV, WebM).",نوع الملف غير مدعوم. استخدم صورة (JPEG أو PNG أو WebP أو HEIC) أو فيديو (MP4 أو MOV أو WebM).,اس قسم کی فائل قبول نہیں ہے۔ تصویر (JPEG، PNG، WebP، HEIC) یا ویڈیو (MP4، MOV، WebM) استعمال کریں۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.error.decode,We could not read this photo. Please retake it with the camera.,تعذّرت قراءة هذه الصورة. يرجى إعادة التقاطها بالكاميرا.,یہ تصویر پڑھی نہیں جا سکی۔ براہِ کرم کیمرے سے دوبارہ لیں۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.error.offline,No connection. Check your internet and try again.,لا يوجد اتصال. تحقق من الإنترنت وحاول مرة أخرى.,انٹرنیٹ نہیں ہے۔ انٹرنیٹ چیک کریں اور دوبارہ کوشش کریں۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.error.permission,You do not have permission to upload this. Ask your manager.,ليس لديك صلاحية رفع هذا الملف. تواصل مع المدير.,آپ کو یہ اپ لوڈ کرنے کی اجازت نہیں ہے۔ اپنے مینیجر سے پوچھیں۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.error.exists,This file was already uploaded.,تم رفع هذا الملف مسبقًا.,یہ فائل پہلے ہی اپ لوڈ ہو چکی ہے۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+photo.error.other,The upload failed. Please try again.,فشل الرفع. يرجى المحاولة مرة أخرى.,اپ لوڈ نہیں ہو سکا۔ براہِ کرم دوبارہ کوشش کریں۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+workers.title,Workers,العمّال,ورکرز,'ورکرز' = plural of ورکر.
+workers.assignTo,Assign to,إسناد إلى,ورکرز کو دیں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+workers.search,Search workers,ابحث عن عامل,ورکر تلاش کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+workers.selectAll,Select all,تحديد الكل,سب چنیں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+workers.clear,Clear,مسح,صاف کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+workers.selectedCount,{{count}} selected,تم تحديد {{count}},{{count}} چنے گئے,"Not in the original reviewed draft: translated by the implementer, needs native review."
+workers.noMatches,No workers match.,لا يوجد عمّال مطابقون.,کوئی ورکر نہیں ملا۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+workers.atLeastOne,Select at least one worker.,اختر عاملاً واحداً على الأقل.,کم از کم ایک ورکر چنیں۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+workers.edit,Edit workers,تعديل العمّال,ورکرز تبدیل کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+workers.editTitle,Edit workers,تعديل العمّال,ورکرز تبدیل کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+workers.save,Save workers,حفظ العمّال,ورکرز محفوظ کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+workers.cancel,Cancel,إلغاء,منسوخ کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+workers.more,+{{count}},+{{count}},+{{count}},"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.optional,Optional,اختياري,اختیاری,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.label,Google Maps location,موقع Google Maps,Google Maps لوکیشن,'لوکیشن' loanword used for location throughout (added to the glossary).
+location.placeholder,"Paste a Google Maps link or ""24.7136, 46.6753""","الصق رابط Google Maps أو اكتب ""24.7136, 46.6753""","Google Maps لنک یا ⁦""24.7136, 46.6753""⁩",Contains LRI/PDI isolates so the coordinates keep left-to-right order.
+location.hint,"Paste a link from Google Maps (Share), or type latitude and longitude.",الصق رابطًا من Google Maps (مشاركة)، أو اكتب خط العرض وخط الطول.,Google Maps سے لنک پیسٹ کریں (Share سے)، یا لوکیشن کے نمبر (latitude اور longitude) لکھیں۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.found,Coordinates found: {{coords}},تم العثور على الإحداثيات: {{coords}},لوکیشن کے نمبر مل گئے: {{coords}},"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.linkOnly,"Link saved without coordinates. Workers can open it in Google Maps, but Directions needs coordinates.",تم حفظ الرابط بدون إحداثيات. يستطيع العمال فتحه في Google Maps، لكن الاتجاهات تحتاج إلى إحداثيات.,لنک محفوظ ہو گیا مگر لوکیشن کے نمبر نہیں ملے۔ ورکر اسے Google Maps میں کھول سکتے ہیں، لیکن راستہ دیکھنے کے لیے لوکیشن کے نمبر ضروری ہیں۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.useMine,Use my current location,استخدم موقعي الحالي,میری موجودہ لوکیشن استعمال کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.locating,Finding your location…,جارٍ تحديد موقعك…,آپ کی لوکیشن معلوم کی جا رہی ہے…,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.clear,Clear,مسح,صاف کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.open,Open in Google Maps,افتح في Google Maps,Google Maps میں کھولیں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.directions,Directions,الاتجاهات,راستہ,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.edit,Edit location,تعديل الموقع,لوکیشن تبدیل کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.add,Add location,إضافة موقع,لوکیشن شامل کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.editTitle,Job location,موقع العمل,کام کی لوکیشن,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.save,Save location,حفظ الموقع,لوکیشن محفوظ کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.cancel,Cancel,إلغاء,منسوخ کریں,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.saveFailed,Couldn’t save the location.,تعذّر حفظ الموقع.,لوکیشن محفوظ نہیں ہو سکی۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.errors.invalid,This isn’t a Google Maps link or a pair of coordinates.,هذا ليس رابط Google Maps ولا إحداثيات صحيحة.,یہ Google Maps کا لنک یا لوکیشن کے نمبر نہیں ہیں۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.errors.not_https,The link must start with https://.,يجب أن يبدأ الرابط بـ https://.,لنک https:// سے شروع ہونا چاہیے۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.errors.unsupported_host,"Only Google Maps links are accepted (google.com/maps, maps.app.goo.gl).",يُقبل فقط روابط Google Maps (google.com/maps أو maps.app.goo.gl).,صرف Google Maps کے لنک قبول ہیں (google.com/maps، maps.app.goo.gl)۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.errors.out_of_range,"Latitude must be between -90 and 90, and longitude between -180 and 180.",يجب أن يكون خط العرض بين -90 و90، وخط الطول بين -180 و180.,latitude ‎-90 اور 90 کے درمیان، اور longitude ‎-180 اور 180 کے درمیان ہونی چاہیے۔,Contains LRM marks so '-90' / '-180' keep their minus sign in RTL.
+location.errors.too_long,This link is too long (maximum 2000 characters).,الرابط طويل جدًا (الحد الأقصى 2000 حرف).,یہ لنک بہت لمبا ہے (زیادہ سے زیادہ 2000 حروف)۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.geo.denied,"Location permission was denied. Allow location access in your browser settings, or paste a link instead.",تم رفض إذن الموقع. اسمح بالوصول إلى الموقع من إعدادات المتصفح، أو الصق رابطًا بدلًا من ذلك.,لوکیشن کی اجازت نہیں دی گئی۔ براؤزر کی سیٹنگز میں لوکیشن کی اجازت دیں، یا لنک پیسٹ کریں۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.geo.unavailable,"Your device couldn’t determine its location. Try again outside, or paste a link instead.",تعذّر على جهازك تحديد موقعه. حاول مرة أخرى في مكان مفتوح، أو الصق رابطًا.,آپ کا فون اپنی لوکیشن معلوم نہیں کر سکا۔ کھلی جگہ پر دوبارہ کوشش کریں، یا لنک پیسٹ کریں۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.geo.timeout,"Finding your location took too long. Try again, or paste a link instead.",استغرق تحديد موقعك وقتًا طويلًا. حاول مرة أخرى، أو الصق رابطًا.,لوکیشن معلوم کرنے میں بہت وقت لگ گیا۔ دوبارہ کوشش کریں، یا لنک پیسٹ کریں۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.geo.unsupported,This browser can’t share your location. Paste a link instead.,هذا المتصفح لا يدعم مشاركة الموقع. الصق رابطًا بدلًا من ذلك.,یہ براؤزر لوکیشن شیئر نہیں کر سکتا۔ لنک پیسٹ کریں۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+location.geo.error,Couldn’t get your location.,تعذّر الحصول على موقعك.,لوکیشن حاصل نہیں ہو سکی۔,"Not in the original reviewed draft: translated by the implementer, needs native review."
+a11y.language,Language,اللغة,زبان,"New key (was hard-coded English): translated by the implementer, needs native review."
+a11y.primaryNav,Primary,التنقل الرئيسي,مین مینو,"New key (was hard-coded English): translated by the implementer, needs native review."
+roles.worker,Worker,عامل,ورکر,"New key (was hard-coded English): translated by the implementer, needs native review."
+roles.manager,Manager,مدير,مینیجر,"New key (was hard-coded English): translated by the implementer, needs native review."
+roles.client,Client,عميل,کلائنٹ,"New key (was hard-coded English): translated by the implementer, needs native review."
+setup.notConfigured,Supabase isn’t configured. Copy <c>.env.example</c> to <c>.env.local</c>.,Supabase غير مهيأ. انسخ <c>.env.example</c> إلى <c>.env.local</c>.,Supabase سیٹ اپ نہیں ہے۔ <c>.env.example</c> کو <c>.env.local</c> میں کاپی کریں۔,"New key (was hard-coded English): translated by the implementer, needs native review."
+setup.notConfiguredFull,Supabase isn’t configured. Copy <c>.env.example</c> to <c>.env.local</c> and set <c>VITE_SUPABASE_URL</c> and <c>VITE_SUPABASE_ANON_KEY</c>.,Supabase غير مهيأ. انسخ <c>.env.example</c> إلى <c>.env.local</c> واضبط <c>VITE_SUPABASE_URL</c> و<c>VITE_SUPABASE_ANON_KEY</c>.,Supabase سیٹ اپ نہیں ہے۔ <c>.env.example</c> کو <c>.env.local</c> میں کاپی کریں اور <c>VITE_SUPABASE_URL</c> اور <c>VITE_SUPABASE_ANON_KEY</c> سیٹ کریں۔,"New key (was hard-coded English): translated by the implementer, needs native review."

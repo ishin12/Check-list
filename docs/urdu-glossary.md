@@ -49,3 +49,14 @@
 | workers (plural) | ورکرز | |
 
 Digits are always Western (0-9). Punctuation: ۔ ، ؟. Technical terms (Google Maps, latitude, longitude, https://) stay in Latin.
+
+## Additions after independent review
+
+| English | Urdu | Notes |
+|---|---|---|
+| activate / deactivate | فعال کریں / غیر فعال کریں | distinct from close (بند کریں) |
+| from date / to date | تاریخ سے / تاریخ تک | filters |
+| attach | اٹیچ کریں | |
+| mark (as read) | نشان زد کریں | |
+
+Spelling: "ہو گا" and "ہو گیا" are written with a space.
