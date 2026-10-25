@@ -54,12 +54,12 @@ export function TemplateRunner({ templateId, taskId, initialResults, readOnly, o
   const title = localizedText(template.title, language);
 
   return (
-    <section className="card">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
+    <section className="card section-card">
+      <div className="section-card__head">
         <span className="section-title">{t('runner.title', 'Checklist')} · {title}</span>
         <span className="card__meta">{done}/{items.length}{saving ? ` · ${t('runner.saving', 'saving')}` : ''}</span>
       </div>
-      <div className="stack" style={{ marginTop: 8 }}>
+      <div className="stack">
         {items.map((item) => {
           const r = results.find((x) => x.taskId === item.id);
           const checked = !!r?.checked;
