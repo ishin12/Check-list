@@ -7,7 +7,7 @@ import { AppShell } from '@/components/AppShell';
 import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/app/providers/AuthContext';
 import { listTasks } from '@/services/data/tasks';
-import { dailySummary, timeOnTaskMinutes } from '@/domain/job/taskFlow';
+import { timeOnTaskMinutes } from '@/domain/job/taskFlow';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
 import { formatTime } from '@/lib/datetime';
@@ -49,8 +49,17 @@ export function TodayScreen() {
     })();
   }, [user]);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const summary = user ? dailySummary(user.id, today, tasks) : null;
+  // The list below is already scoped to today (and to the worker's own tasks
+  // for workers; managers see everyone's), so the greeting counts exactly that
+  // list. It used to re-filter by "assigned to me", which made a manager's
+  // hero say "No visits scheduled today" above a list of today's visits.
+  const summary = user
+    ? {
+        taskCount: tasks.length,
+        completedCount: tasks.filter((x) => x.status === 'submitted' || x.status === 'approved').length,
+        totalMinutes: tasks.reduce((sum, x) => sum + timeOnTaskMinutes(x), 0),
+      }
+    : null;
   const next = tasks.find((x) => x.status !== 'approved' && x.status !== 'rejected') ?? tasks[0];
 
   return (
@@ -81,7 +90,7 @@ export function TodayScreen() {
           <Link to={`/tasks/${next.id}`} className="card card--tap card--accent">
             <div className="stack" style={{ gap: 4, flex: 1 }}>
               <div className="row" style={{ justifyContent: 'space-between' }}>
-                <span className="section-title">{t('today.upNext', 'Up next')}</span>
+                <span className="section-title section-title--eyebrow">{t('today.upNext', 'Up next')}</span>
                 <StatusPill status={next.status} />
               </div>
               <div className="card__title">{next.title}</div>

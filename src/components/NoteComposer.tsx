@@ -42,7 +42,7 @@ export function NoteComposer({ clientId, taskId, onSaved }: Props) {
         onChange={(e) => setBody(e.target.value)}
       />
       {error ? <div className="banner banner--error">{error}</div> : null}
-      <button className="btn btn--primary" disabled={!body.trim() || saving} onClick={save}>
+      <button className="btn btn--secondary" disabled={!body.trim() || saving} onClick={save}>
         {saving ? t('common.saving', 'Saving…') : t('notes.save', 'Save note')}
       </button>
     </div>

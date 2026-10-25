@@ -9,6 +9,7 @@ import { useCurrentJob } from '@/app/providers/CurrentJobContext';
 import { templateTitle } from '@/domain/template/template';
 import { startJob } from '@/domain/job/job';
 import type { Template } from '@/domain/models/types';
+import { Icon } from '@/components/Icon';
 
 export function HomeScreen() {
   const { t } = useTranslation();
@@ -39,7 +40,7 @@ export function HomeScreen() {
         <div className="section-title">{t('home.chooseTemplate')}</div>
         {templates.length === 0 ? (
           <div className="empty">
-            <div className="empty__icon">📋</div>
+            <div className="empty__icon"><Icon name="list" /></div>
             <p>{t('home.noTemplates')}</p>
           </div>
         ) : (
@@ -51,7 +52,7 @@ export function HomeScreen() {
                 className="card card--tap"
                 onClick={() => begin(template)}
               >
-                <span style={{ fontSize: '1.5rem' }}>✅</span>
+                <span className="card__lead"><Icon name="check-circle" /></span>
                 <span style={{ flex: 1 }}>
                   <span className="card__title" style={{ display: 'block' }}>
                     {templateTitle(template, language)}
@@ -74,14 +75,14 @@ export function HomeScreen() {
             className="btn btn--ghost btn--block"
             onClick={() => navigate('/templates')}
           >
-            🗂️ {t('home.manageTemplates')}
+            <Icon name="list" />{t('home.manageTemplates')}
           </button>
           <button
             type="button"
             className="btn btn--ghost btn--block"
             onClick={() => navigate('/settings')}
           >
-            ⚙️ {t('nav.settings')}
+            <Icon name="sliders" />{t('nav.settings')}
           </button>
         </div>
       </main>

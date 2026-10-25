@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getProofUrl } from '@/services/media/proofUrls';
 import type { TaskProof } from '@/domain/models/ops';
+import { Icon } from './Icon';
 
 interface Props {
   proof: TaskProof;
@@ -69,7 +70,7 @@ export function ProofViewer({ proof, title, replaceTo, onClose }: Props) {
       <div className="viewer__bar">
         <span className="viewer__title">{title}</span>
         <button ref={closeRef} type="button" className="icon-btn viewer__close" onClick={onClose} aria-label={t('photo.close', 'Close') ?? 'Close'}>
-          ✕
+          <Icon name="close" />
         </button>
       </div>
       <div className="viewer__stage" onClick={onClose}>

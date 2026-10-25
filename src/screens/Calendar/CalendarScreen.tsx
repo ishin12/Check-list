@@ -13,6 +13,7 @@ import { getSupabase } from '@/services/supabase/client';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
 import { formatDate, formatTime } from '@/lib/datetime';
+import { Icon } from '@/components/Icon';
 
 interface Option { id: string; label: string }
 
@@ -71,7 +72,7 @@ export function CalendarScreen() {
       <AppHeader title={t('calendar.title', 'Calendar')}>
         {isManager ? (
           <Link to="/tasks/new" className="btn btn--primary btn--icon" aria-label={t('calendar.add', 'Add task')}>
-            +
+            <Icon name="plus" />
           </Link>
         ) : null}
       </AppHeader>
@@ -100,7 +101,7 @@ export function CalendarScreen() {
 
         {groups.length === 0 ? (
           <div className="empty">
-            <div className="empty__icon">▦</div>
+            <div className="empty__icon"><Icon name="calendar" /></div>
             <p>{t('calendar.empty', 'No visits in this range.')}</p>
           </div>
         ) : null}

@@ -5,6 +5,7 @@ import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
 import type { Client } from '@/domain/models/ops';
+import { Icon } from '@/components/Icon';
 
 export function ClientsScreen() {
   const { t } = useTranslation();
@@ -27,13 +28,13 @@ export function ClientsScreen() {
   return (
     <AppShell>
       <AppHeader title={t('clients.title', 'Clients')}>
-        <Link to="/clients/new" className="btn btn--primary btn--icon" aria-label={t('clients.add', 'Add client')}>+</Link>
+        <Link to="/clients/new" className="btn btn--primary btn--icon" aria-label={t('clients.add', 'Add client')}><Icon name="plus" /></Link>
       </AppHeader>
       <main className="app-main">
         <input className="input" placeholder={t('clients.search', 'Search clients…') ?? ''} value={q} onChange={(e) => setQ(e.target.value)} />
         {filtered.length === 0 ? (
           <div className="empty">
-            <div className="empty__icon">⌖</div>
+            <div className="empty__icon"><Icon name="clients" /></div>
             <p>{t('clients.empty', 'No clients yet.')}</p>
           </div>
         ) : (

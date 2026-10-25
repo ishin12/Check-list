@@ -7,6 +7,7 @@ import { useStorage } from '@/app/providers/StorageContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { duplicateTemplate, templateTitle } from '@/domain/template/template';
 import type { Template } from '@/domain/models/types';
+import { Icon } from '@/components/Icon';
 
 export function TemplateListScreen() {
   const { t } = useTranslation();
@@ -42,7 +43,7 @@ export function TemplateListScreen() {
       <main className="app-main">
         {templates.length === 0 ? (
           <div className="empty">
-            <div className="empty__icon">🗂️</div>
+            <div className="empty__icon"><Icon name="list" /></div>
             <p>{t('templates.empty')}</p>
             <p className="hint">{t('templates.emptyHint')}</p>
           </div>
@@ -67,7 +68,7 @@ export function TemplateListScreen() {
                     style={{ flex: 1 }}
                     onClick={() => navigate(`/templates/${template.id}`)}
                   >
-                    ✏️ {t('common.edit')}
+                    <Icon name="edit" />{t('common.edit')}
                   </button>
                   <button
                     type="button"
@@ -75,7 +76,7 @@ export function TemplateListScreen() {
                     onClick={() => onDuplicate(template)}
                     aria-label={t('common.duplicate')}
                   >
-                    ⧉
+                    <Icon name="copy" />
                   </button>
                   <button
                     type="button"
@@ -83,7 +84,7 @@ export function TemplateListScreen() {
                     onClick={() => setPendingDelete(template)}
                     aria-label={t('common.delete')}
                   >
-                    🗑
+                    <Icon name="trash" />
                   </button>
                 </div>
               </div>
@@ -97,7 +98,7 @@ export function TemplateListScreen() {
           className="btn btn--primary btn--block btn--lg"
           onClick={() => navigate('/templates/new')}
         >
-          ＋ {t('templates.new')}
+          <Icon name="plus" />{t('templates.new')}
         </button>
       </div>
 

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getSupabase } from '@/services/supabase/client';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import type { Task as ChecklistItem, Template, TaskResult } from '@/domain/models/types';
+import { Icon } from './Icon';
 
 interface Props {
   templateId: string;
@@ -53,12 +54,12 @@ export function TemplateRunner({ templateId, taskId, initialResults, readOnly, o
   const title = localizedText(template.title, language);
 
   return (
-    <section className="card">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
+    <section className="card section-card">
+      <div className="section-card__head">
         <span className="section-title">{t('runner.title', 'Checklist')} · {title}</span>
         <span className="card__meta">{done}/{items.length}{saving ? ` · ${t('runner.saving', 'saving')}` : ''}</span>
       </div>
-      <div className="stack" style={{ marginTop: 8 }}>
+      <div className="stack">
         {items.map((item) => {
           const r = results.find((x) => x.taskId === item.id);
           const checked = !!r?.checked;
@@ -74,7 +75,7 @@ export function TemplateRunner({ templateId, taskId, initialResults, readOnly, o
               style={{ textAlign: 'start' }}
             >
               <div className="check-item__main">
-                <span className={`checkbox ${checked ? 'checkbox--checked' : ''}`} aria-hidden>✓</span>
+                <span className={`checkbox ${checked ? 'checkbox--checked' : ''}`} aria-hidden><Icon name="check" /></span>
                 <span className="check-item__label">{label}</span>
                 {item.required ? <span className="badge">{t('job.requiredBadge', 'Required')}</span> : null}
               </div>

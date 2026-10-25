@@ -31,6 +31,7 @@ import {
 } from '@/domain/location';
 import type { WorkerOption } from '@/domain/workerSelect';
 import { formatDate, formatDateAndTime, formatTime } from '@/lib/datetime';
+import { Icon } from '@/components/Icon';
 
 export function TaskDetailScreen() {
   const { t } = useTranslation();
@@ -181,25 +182,28 @@ export function TaskDetailScreen() {
       <main className="app-main">
         {error ? <div className="banner banner--error">{error}</div> : null}
 
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <span className="card__meta">
-            {formatDateAndTime(task.scheduledAt, language, {
-              weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-            })}
-          </span>
-          <div className="row" style={{ gap: 6 }}>
-            {task.recurrence !== 'none' ? (() => {
-              const lbl = recurrenceLabel(task.recurrence);
-              return <span className="repeat-pill">↻ {t(lbl.i18n, lbl.fallback)}</span>;
-            })() : null}
+        <header className="task-head">
+          <div className="task-head__pills">
             {task.status === 'approved'
               ? <ApprovalBadge approvalMethod={task.approvalMethod} pill />
               : <StatusPill status={task.status} />}
+            {task.recurrence !== 'none' ? (() => {
+              const lbl = recurrenceLabel(task.recurrence);
+              return <span className="repeat-pill"><Icon name="refresh" />{t(lbl.i18n, lbl.fallback)}</span>;
+            })() : null}
           </div>
+          <div className="task-head__when">
+            {formatDateAndTime(task.scheduledAt, language, {
+              weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+            })}
+          </div>
+          <TaskWhoLine task={task} linkClient />
+        </header>
+
+        <div className="task-actions">
+          {role === 'manager' ? <EditWorkers task={task} onSaved={load} /> : null}
+          <LocationCard task={task} canEdit={role === 'manager'} onSaved={load} />
         </div>
-        <TaskWhoLine task={task} linkClient />
-        {role === 'manager' ? <EditWorkers task={task} onSaved={load} /> : null}
-        <LocationCard task={task} canEdit={role === 'manager'} onSaved={load} />
 
         {task.status === 'approved'
           ? <ApprovalBadge approvalMethod={task.approvalMethod} decidedAt={task.decisionAt} note={task.decisionNote} />
@@ -225,8 +229,8 @@ export function TaskDetailScreen() {
         ) : null}
 
         {openNotes.length > 0 ? (
-          <section>
-            <div className="section-title">📎 {t('notes.openFromBefore', 'Notes left for this visit')}</div>
+          <section className="section">
+            <div className="section-title">{t('notes.openFromBefore', 'Notes left for this visit')}</div>
             <div className="stack">
               {openNotes.map((n) => (
                 <div key={n.id} className="note-card">
@@ -245,11 +249,6 @@ export function TaskDetailScreen() {
             </div>
           </section>
         ) : null}
-
-        <section>
-          <div className="section-title">{t('notes.newForNext', 'Leave a note for next time')}</div>
-          <NoteComposer clientId={task.clientId} taskId={task.id} onSaved={load} />
-        </section>
 
         {task.description ? (
           <div className="card">
@@ -293,17 +292,22 @@ export function TaskDetailScreen() {
           onChange={load}
         />
 
-        <section className="card">
-          <div className="row" style={{ justifyContent: 'space-between' }}>
+        <section className="card section-card">
+          <div className="section-card__head">
             <span className="section-title">{t('proof.title', 'Proof')}</span>
             <span className="card__meta">
               {task.startedAt ? t('common.minutesShort', { count: timeOnTaskMinutes(task) }) : '—'}
             </span>
           </div>
-          <div className="stack" style={{ marginTop: 8 }}>
+          <div className="stack">
             <ProofRow kind="start"  proofs={proofs} taskId={task.id} canEdit={canEditProofs} queued={queued} onOpen={setViewing} />
             <ProofRow kind="finish" proofs={proofs} taskId={task.id} canEdit={canEditProofs} queued={queued} onOpen={setViewing} />
           </div>
+        </section>
+
+        <section className="section">
+          <div className="section-title">{t('notes.newForNext', 'Leave a note for next time')}</div>
+          <NoteComposer clientId={task.clientId} taskId={task.id} onSaved={load} />
         </section>
 
         {viewing ? (
@@ -402,15 +406,13 @@ function EditWorkers({ task, onSaved }: { task: FieldTask; onSaved: () => Promis
 
   if (!open) {
     return (
-      <div>
-        <button type="button" className="btn btn--ghost" onClick={() => void begin()}>
-          {t('workers.edit', 'Edit workers')}
-        </button>
-      </div>
+      <button type="button" className="btn btn--ghost btn--sm" onClick={() => void begin()}>
+        <Icon name="users" />{t('workers.edit', 'Edit workers')}
+      </button>
     );
   }
   return (
-    <section className="card worker-edit">
+    <section className="card worker-edit task-actions__panel">
       <div className="section-title">{t('workers.editTitle', 'Edit workers')}</div>
       {err ? <div className="banner banner--error">{err}</div> : null}
       <WorkerMultiSelect options={options} value={value} onChange={setValue} />
@@ -418,7 +420,7 @@ function EditWorkers({ task, onSaved }: { task: FieldTask; onSaved: () => Promis
         <button type="button" className="btn btn--primary" disabled={saving || value.length === 0} onClick={() => void save()}>
           {saving ? t('common.saving', 'Saving…') : t('workers.save', 'Save workers')}
         </button>
-        <button type="button" className="btn btn--ghost" disabled={saving} onClick={() => setOpen(false)}>
+        <button type="button" className="btn btn--text" disabled={saving} onClick={() => setOpen(false)}>
           {t('workers.cancel', 'Cancel')}
         </button>
       </div>
@@ -455,7 +457,7 @@ function LocationCard({ task, canEdit, onSaved }: { task: FieldTask; canEdit: bo
 
   if (open) {
     return (
-      <section className="card location-card">
+      <section className="card location-card task-actions__panel">
         <div className="section-title">{t('location.editTitle')}</div>
         {err ? <div className="banner banner--error">{err}</div> : null}
         <LocationInput
@@ -467,7 +469,7 @@ function LocationCard({ task, canEdit, onSaved }: { task: FieldTask; canEdit: bo
           <button type="button" className="btn btn--primary" disabled={saving || state === 'invalid'} onClick={() => void save()}>
             {saving ? t('common.saving', 'Saving…') : t('location.save')}
           </button>
-          <button type="button" className="btn btn--ghost" disabled={saving} onClick={() => setOpen(false)}>
+          <button type="button" className="btn btn--text" disabled={saving} onClick={() => setOpen(false)}>
             {t('location.cancel')}
           </button>
         </div>
@@ -477,12 +479,12 @@ function LocationCard({ task, canEdit, onSaved }: { task: FieldTask; canEdit: bo
 
   if (!mapsLink && !canEdit) return null;
   return (
-    <section className={mapsLink ? 'card location-card' : undefined}>
+    <>
       {mapsLink ? (
-        <>
+        <section className="card location-card task-actions__panel">
           <div className="location-card__actions">
-            <a className="btn btn--primary" href={mapsLink} target="_blank" rel="noopener noreferrer">
-              📍 {t('location.open')}
+            <a className="btn" href={mapsLink} target="_blank" rel="noopener noreferrer">
+              <Icon name="pin" />{t('location.open')}
             </a>
             {directions ? (
               <a className="btn btn--ghost" href={directions} target="_blank" rel="noopener noreferrer">
@@ -495,20 +497,18 @@ function LocationCard({ task, canEdit, onSaved }: { task: FieldTask; canEdit: bo
               {formatCoords(task.locationLat as number, task.locationLng as number)}
             </div>
           ) : null}
-        </>
+        </section>
       ) : null}
       {canEdit ? (
-        <div>
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={() => { setErr(null); setDraft(task); setState('valid'); setOpen(true); }}
-          >
-            {mapsLink ? t('location.edit') : t('location.add')}
-          </button>
-        </div>
+        <button
+          type="button"
+          className="btn btn--ghost btn--sm"
+          onClick={() => { setErr(null); setDraft(task); setState('valid'); setOpen(true); }}
+        >
+          <Icon name="pin" />{mapsLink ? t('location.edit') : t('location.add')}
+        </button>
       ) : null}
-    </section>
+    </>
   );
 }
 
@@ -544,7 +544,7 @@ function ProofRow({ kind, proofs, taskId, canEdit, queued, onOpen }: {
         </span>
         {canEdit && found ? (
           <button type="button" className="btn btn--ghost btn--icon" onClick={() => navigate(retakeUrl)} aria-label={t('photo.retake', 'Retake')}>
-            ↻
+            <Icon name="refresh" />
           </button>
         ) : null}
         {canEdit && !found ? (

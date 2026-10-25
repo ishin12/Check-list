@@ -24,7 +24,6 @@ export function AppHeader({ title, showBack, showLanguage, action, children }: P
           className="icon-btn"
           aria-label={t('nav.back')}
           onClick={() => navigate(-1)}
-          style={{ fontSize: '1.75rem', lineHeight: 1 }}
         >
           <Chevron kind="back" />
         </button>

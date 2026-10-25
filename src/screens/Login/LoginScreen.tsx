@@ -4,6 +4,7 @@ import { Navigate } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { useAuth } from '@/app/providers/AuthContext';
 import { isDemoMode } from '@/services/supabase/client';
+import { Icon } from '@/components/Icon';
 
 interface DemoProfile { id: string; full_name: string; email: string; role: 'manager' | 'worker' | 'client' }
 
@@ -107,7 +108,7 @@ export function LoginScreen() {
                     <div className="card__title">{p.full_name}</div>
                     <div className="card__meta">{t(`demo.blurb.${p.role}`)}</div>
                   </div>
-                  <span className="demo-account__arrow" aria-hidden>→</span>
+                  <span className="demo-account__arrow"><Icon name="forward" /></span>
                 </button>
               ))}
             </div>

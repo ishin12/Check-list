@@ -3,6 +3,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
+import { Chevron } from '@/components/Chevron';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { useAuth } from '@/app/providers/AuthContext';
 import { isDemoMode } from '@/services/supabase/client';
@@ -144,9 +145,9 @@ export function SettingsScreen() {
 
         {user?.role === 'manager' ? (
           <div className="stack">
-            <Link to="/templates" className="card card--tap"><div className="card__title">{t('nav.templates', 'Templates')}</div></Link>
-            <Link to="/users" className="card card--tap"><div className="card__title">{t('users.title', 'Team & clients')}</div></Link>
-            <Link to="/audit" className="card card--tap"><div className="card__title">{t('audit.title', 'Audit log')}</div></Link>
+            <Link to="/templates" className="card card--tap"><div className="card__title" style={{ flex: 1 }}>{t('nav.templates', 'Templates')}</div><Chevron kind="forward" /></Link>
+            <Link to="/users" className="card card--tap"><div className="card__title" style={{ flex: 1 }}>{t('users.title', 'Team & clients')}</div><Chevron kind="forward" /></Link>
+            <Link to="/audit" className="card card--tap"><div className="card__title" style={{ flex: 1 }}>{t('audit.title', 'Audit log')}</div><Chevron kind="forward" /></Link>
           </div>
         ) : null}
 

@@ -9,6 +9,7 @@ import { listTasks } from '@/services/data/tasks';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
 import { formatDate, formatDateAndTime } from '@/lib/datetime';
+import { Icon } from '@/components/Icon';
 
 export function PortalScreen() {
   const { t } = useTranslation();
@@ -27,7 +28,7 @@ export function PortalScreen() {
   return (
     <AppShell bare>
       <AppHeader title={t('portal.title', 'Your visits')}>
-        <button className="icon-btn" onClick={signOut}>↩</button>
+        <button className="icon-btn" onClick={signOut} aria-label={t('auth.signOut', 'Sign out')}><Icon name="sign-out" /></button>
       </AppHeader>
       <main className="app-main">
         <section>

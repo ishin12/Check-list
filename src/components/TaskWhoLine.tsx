@@ -56,7 +56,7 @@ export function TaskWhoLine({ task, hideWorker, hideClient, linkClient }: Props)
 
   return (
     <div className="card__meta who-line">
-      {parts.flatMap((p, i) => (i === 0 ? [p] : [<span key={`sep${i}`} className="who-line__sep">·</span>, p]))}
+      {parts.flatMap((p, i) => (i === 0 ? [p] : [<span key={`sep${i}`} className="who-line__sep" aria-hidden> · </span>, p]))}
     </div>
   );
 }

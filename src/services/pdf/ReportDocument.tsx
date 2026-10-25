@@ -35,7 +35,7 @@ export const ReportDocument = forwardRef<HTMLDivElement, Props>(
         ? "'Noto Nastaliq Urdu', 'Noto Naskh Arabic', 'Cairo', system-ui, sans-serif"
         : language === 'ar'
           ? "'Cairo', system-ui, sans-serif"
-          : "'Inter', system-ui, sans-serif";
+          : "'Geist', system-ui, sans-serif";
     // Nastaliq needs tall line boxes or ascenders/descenders get clipped.
     const lineHeight = language === 'ur' ? 2.1 : undefined;
     const tasks = job.templateSnapshot.tasks;

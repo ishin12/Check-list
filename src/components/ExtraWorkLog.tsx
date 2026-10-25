@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getSupabase } from '@/services/supabase/client';
 import type { ExtraWorkEntry } from '@/domain/models/ops';
 import { formatDateAndTime } from '@/lib/datetime';
+import { Icon } from './Icon';
 
 interface Props {
   taskId: string;
@@ -54,15 +55,15 @@ export function ExtraWorkLog({
   }
 
   return (
-    <section className="card">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
+    <section className="card section-card">
+      <div className="section-card__head">
         <span className="section-title">{t('extras.title', 'Extra work done')}</span>
         <span className="card__meta">{entries.length}</span>
       </div>
 
       {lockedHint ? <div className="hint" style={{ marginTop: 6 }}>{lockedHint}</div> : null}
 
-      <div className="stack" style={{ marginTop: 8 }}>
+      <div className="stack">
         {entries.length === 0 ? (
           <p className="hint" style={{ marginBlock: 4 }}>
             {t('extras.empty', 'Nothing extra logged yet.')}
@@ -88,7 +89,7 @@ export function ExtraWorkLog({
                     onClick={() => remove(e.id)}
                     disabled={saving}
                   >
-                    ×
+                    <Icon name="close" />
                   </button>
                 ) : null}
               </div>
@@ -106,7 +107,7 @@ export function ExtraWorkLog({
             onChange={(e) => setBody(e.target.value)}
           />
           {error ? <div className="banner banner--error">{error}</div> : null}
-          <button className="btn btn--primary" disabled={!body.trim() || saving} onClick={add}>
+          <button className="btn btn--secondary" disabled={!body.trim() || saving} onClick={add}>
             {saving ? t('common.saving', 'Saving…') : t('extras.add', 'Add')}
           </button>
         </div>

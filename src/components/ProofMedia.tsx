@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getProofUrl } from '@/services/media/proofUrls';
 import type { TaskProof } from '@/domain/models/ops';
+import { Icon } from './Icon';
 
 interface Props {
   proof: TaskProof;
@@ -27,7 +28,7 @@ export function ProofMedia({ proof, size, thumb }: Props) {
   const style = size ? { width: size, height: size } : undefined;
 
   if (error) {
-    return <div className="proof-media proof-media--missing" style={style}>×</div>;
+    return <div className="proof-media proof-media--missing" style={style}><Icon name="close" /></div>;
   }
   if (!url) {
     return <div className="proof-media proof-media--loading" style={style} />;

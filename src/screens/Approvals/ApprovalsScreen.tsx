@@ -9,6 +9,7 @@ import { listTasks } from '@/services/data/tasks';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
 import { formatDateAndTime } from '@/lib/datetime';
+import { Icon } from '@/components/Icon';
 
 export function ApprovalsScreen() {
   const { t } = useTranslation();
@@ -25,7 +26,7 @@ export function ApprovalsScreen() {
       <main className="app-main">
         {tasks.length === 0 ? (
           <div className="empty">
-            <div className="empty__icon">✓</div>
+            <div className="empty__icon"><Icon name="check-circle" /></div>
             <p>{t('approvals.empty', 'Nothing waiting on you.')}</p>
           </div>
         ) : (
