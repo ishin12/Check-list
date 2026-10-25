@@ -792,6 +792,19 @@ html[dir='rtl'] .demo-account__arrow { transform: scaleX(-1); }
 .who-line__link { color: var(--color-brand-strong); text-decoration: none; font-weight: 600; }
 .who-line__link:hover { text-decoration: underline; }
 
+/* Job location ------------------------------------------------------------- */
+.location-input { display: flex; flex-direction: column; gap: 8px; min-inline-size: 0; }
+.location-input__text { inline-size: 100%; text-align: start; }
+.location-input__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.location-input__feedback { font-size: 0.875rem; overflow-wrap: anywhere; }
+.location-input__feedback--ok { color: var(--color-brand-strong); }
+.location-input__feedback--info { color: var(--color-text-muted); }
+.location-input__feedback--error { color: var(--color-danger); }
+.location-card { display: flex; flex-direction: column; gap: 8px; }
+.location-card__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.location-card__actions .btn { flex: 1 1 auto; text-decoration: none; text-align: center; justify-content: center; }
+.location-card__coords { font-size: 0.75rem; color: var(--color-text-muted); unicode-bidi: isolate; }
+
 /* Extra-work entries ------------------------------------------------------- */
 .extra-entry {
   display: flex;
