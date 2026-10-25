@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { useAuth } from '@/app/providers/AuthContext';
 import type { Role } from '@/domain/models/ops';
 
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function RoleGate({ roles, children }: Props) {
+  const { t } = useTranslation();
   const { loading, user, configured } = useAuth();
   const location = useLocation();
 
@@ -17,8 +19,7 @@ export function RoleGate({ roles, children }: Props) {
       <div className="app-shell">
         <main className="app-main">
           <div className="banner banner--error">
-            Supabase isn’t configured. Copy <code>.env.example</code> to <code>.env.local</code> and
-            set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code>.
+            <Trans i18nKey="setup.notConfiguredFull" components={{ c: <code dir="ltr" /> }} />
           </div>
         </main>
       </div>
@@ -28,7 +29,7 @@ export function RoleGate({ roles, children }: Props) {
     return (
       <div className="app-shell">
         <main className="app-main">
-          <p className="hint">Loading…</p>
+          <p className="hint">{t('common.loading', 'Loading…')}</p>
         </main>
       </div>
     );

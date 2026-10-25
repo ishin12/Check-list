@@ -71,7 +71,7 @@ export function LocationInput({ initial, onChange, disabled }: Props) {
     if (!parsed.ok) {
       feedback = { tone: 'error', text: t(`location.errors.${parsed.error satisfies LocationParseError}`) };
     } else if (parsed.lat !== undefined && parsed.lng !== undefined) {
-      feedback = { tone: 'ok', text: t('location.found', { coords: formatCoords(parsed.lat, parsed.lng) }) };
+      feedback = { tone: 'ok', text: t('location.found', { coords: `\u2066${formatCoords(parsed.lat, parsed.lng)}\u2069` }) };
     } else {
       feedback = { tone: 'info', text: t('location.linkOnly') };
     }

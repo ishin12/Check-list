@@ -34,9 +34,12 @@
     "nameAr": "Name (Arabic)",
     "namePlaceholderEn": "e.g. AC Maintenance",
     "namePlaceholderAr": "مثال: صيانة المكيف",
+    "nameUr": "Name (Urdu, optional)",
+    "namePlaceholderUr": "e.g. اے سی کی دیکھ بھال",
     "tasks": "Tasks",
     "taskEn": "Task (English)",
     "taskAr": "Task (Arabic)",
+    "taskUr": "Task (Urdu, optional)",
     "addTask": "Add task",
     "required": "Required",
     "moveUp": "Move up",
@@ -103,7 +106,11 @@
     "expiryDays": "Days to sign",
     "reminderHours": "Reminder before expiry (hours)",
     "saveWindow": "Save",
-    "windowSaved": "Saved. Applies to new signing links."
+    "windowSaved": "Saved. Applies to new signing links.",
+    "urdu": "اردو",
+    "demoTitle": "Demo mode",
+    "demoDesc": "You’re running against in-browser seed data. Switch roles from the “Demo” chip in the header. To go live, set <c>VITE_SUPABASE_URL</c> and <c>VITE_SUPABASE_ANON_KEY</c> in <c>.env.local</c>, run the SQL migration, then set <c>VITE_DEMO_MODE=0</c>.",
+    "demoReset": "Reset demo data"
   },
   "tabs": {
     "today": "Today",
@@ -123,7 +130,8 @@
     "sending": "Signing in…",
     "sendLink": "Send magic link",
     "linkSent": "Check your email and tap the link to continue.",
-    "notConfigured": "Supabase is not configured. See .env.example."
+    "notConfigured": "Supabase is not configured. See .env.example.",
+    "signingIn": "Signing you in…"
   },
   "sign": {
     "heading": "Please review and sign",
@@ -167,7 +175,11 @@
     "byWorker": "By worker",
     "byClient": "By client",
     "all": "All",
-    "empty": "No visits in this range."
+    "empty": "No visits in this range.",
+    "dayToday": "Today",
+    "dayTomorrow": "Tomorrow",
+    "dayYesterday": "Yesterday",
+    "taskCount": "Task count"
   },
   "task": {
     "title": "Task",
@@ -198,7 +210,8 @@
     "create": "Create task"
   },
   "runner": {
-    "title": "Checklist"
+    "title": "Checklist",
+    "saving": "saving"
   },
   "extras": {
     "title": "Extra work done",
@@ -217,7 +230,8 @@
     "from": "From",
     "to": "To",
     "anyone": "Anyone",
-    "allTypes": "All"
+    "allTypes": "All",
+    "system": "system"
   },
   "recurrence": {
     "none": "Does not repeat",
@@ -229,7 +243,14 @@
   "demo": {
     "loginHint": "Demo mode — pick an account below to see exactly what they see.",
     "accountsTitle": "Demo accounts",
-    "orEmail": "Or sign in with email below:"
+    "orEmail": "Or sign in with email below:",
+    "chip": "Demo",
+    "switchRole": "Switch role",
+    "blurb": {
+      "manager": "Full access — calendar, approvals, clients, audit",
+      "worker": "Sees only own tasks · capture proof · submit",
+      "client": "Read-only portal — visits & approved proof"
+    }
   },
   "proof": {
     "title": "Proof",
@@ -238,7 +259,8 @@
     "tapToCapture": "Tap the shutter to take a photo or video.",
     "use": "Use this",
     "saving": "Saving…",
-    "offlineHint": "Offline — we'll upload when you're back online."
+    "offlineHint": "Offline — we'll upload when you're back online.",
+    "missing": "Missing"
   },
   "status": {
     "notStarted": "Not started",
@@ -279,7 +301,14 @@
   },
   "notifications": {
     "title": "Inbox",
-    "empty": "No notifications yet."
+    "empty": "No notifications yet.",
+    "markAllRead": "Mark all read",
+    "kind": {
+      "assigned": "New task assigned to you",
+      "submitted": "Task submitted for approval",
+      "approved": "Your task was approved",
+      "rejected": "Your task was rejected"
+    }
   },
   "portal": {
     "title": "Your visits",
@@ -304,7 +333,8 @@
     "newPassword": "New password (min 8 chars)",
     "savePassword": "Save",
     "passwordSet": "Password updated.",
-    "passwordFailed": "Couldn’t set password."
+    "passwordFailed": "Couldn’t set password.",
+    "inactive": "inactive"
   },
   "common": {
     "save": "Save",
@@ -323,7 +353,8 @@
     "yes": "Yes",
     "no": "No",
     "saving": "Saving…",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "minutesShort": "{{count}} min"
   },
   "photo": {
     "close": "Close",
@@ -400,5 +431,18 @@
       "unsupported": "This browser can’t share your location. Paste a link instead.",
       "error": "Couldn’t get your location."
     }
+  },
+  "a11y": {
+    "language": "Language",
+    "primaryNav": "Primary"
+  },
+  "roles": {
+    "worker": "Worker",
+    "manager": "Manager",
+    "client": "Client"
+  },
+  "setup": {
+    "notConfigured": "Supabase isn’t configured. Copy <c>.env.example</c> to <c>.env.local</c>.",
+    "notConfiguredFull": "Supabase isn’t configured. Copy <c>.env.example</c> to <c>.env.local</c> and set <c>VITE_SUPABASE_URL</c> and <c>VITE_SUPABASE_ANON_KEY</c>."
   }
 }

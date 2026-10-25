@@ -66,6 +66,7 @@ export function duplicateTemplate(template: Template, suffix: LocalizedText): Te
     title: {
       en: `${template.title.en} ${suffix.en}`.trim(),
       ar: `${template.title.ar} ${suffix.ar}`.trim(),
+      ...(template.title.ur ? { ur: `${template.title.ur} ${suffix.ur ?? suffix.en}`.trim() } : {}),
     },
     tasks: normalizeTaskOrder(template.tasks).map((task) => ({
       ...task,
@@ -74,10 +75,24 @@ export function duplicateTemplate(template: Template, suffix: LocalizedText): Te
   };
 }
 
+/**
+ * Picks the text for a language from a bilingual (or trilingual) value.
+ * Urdu falls back ur -> en -> ar; en/ar behave as before (own language, en, ar).
+ * Tolerates null/partial values coming from the database.
+ */
+export function localizedText(
+  text: Partial<LocalizedText> | null | undefined,
+  language: Language,
+): string {
+  if (!text) return '';
+  if (language === 'ur') return text.ur || text.en || text.ar || '';
+  return text[language] || text.en || text.ar || '';
+}
+
 export function templateTitle(template: Template, language: Language): string {
-  return template.title[language] || template.title.en || template.title.ar;
+  return localizedText(template.title, language);
 }
 
 export function taskLabel(task: Task, language: Language): string {
-  return task.label[language] || task.label.en || task.label.ar;
+  return localizedText(task.label, language);
 }

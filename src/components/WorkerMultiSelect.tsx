@@ -60,7 +60,7 @@ export function WorkerMultiSelect({ options, value, onChange }: Props) {
                 checked={value.includes(o.id)}
                 onChange={() => onChange(toggleWorker(value, o.id))}
               />
-              <span>{o.label}</span>
+              <span><bdi>{o.label}</bdi></span>
             </label>
           </li>
         ))}

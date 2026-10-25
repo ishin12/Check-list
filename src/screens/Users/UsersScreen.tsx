@@ -115,9 +115,9 @@ export function UsersScreen() {
           <div className="field">
             <label className="field__label">{t('users.role', 'Role')}</label>
             <select className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-              <option value="worker">Worker</option>
-              <option value="manager">Manager</option>
-              <option value="client">Client</option>
+              <option value="worker">{t('roles.worker', 'Worker')}</option>
+              <option value="manager">{t('roles.manager', 'Manager')}</option>
+              <option value="client">{t('roles.client', 'Client')}</option>
             </select>
           </div>
           {role === 'client' ? (
@@ -142,8 +142,8 @@ export function UsersScreen() {
             <div key={u.id} className="card">
               <div className="row" style={{ justifyContent: 'space-between' }}>
                 <div>
-                  <div className="card__title">{u.fullName ?? u.email ?? u.id}</div>
-                  <div className="card__meta">{u.role}{u.active ? '' : ' · inactive'}</div>
+                  <div className="card__title"><bdi>{u.fullName ?? u.email ?? u.id}</bdi></div>
+                  <div className="card__meta">{t(`roles.${u.role}`, u.role)}{u.active ? '' : ` · ${t('users.inactive', 'inactive')}`}</div>
                 </div>
                 <div className="row" style={{ gap: 6 }}>
                   {u.role !== 'client' ? (

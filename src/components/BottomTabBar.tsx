@@ -7,7 +7,7 @@ export function BottomTabBar({ role }: { role: Role }) {
   const { t } = useTranslation();
   const visible = tabsForRole(role);
   return (
-    <nav className="tab-bar" aria-label="Primary">
+    <nav className="tab-bar" aria-label={t('a11y.primaryNav', 'Primary')}>
       {visible.map((tab) => (
         <NavLink
           key={tab.to}

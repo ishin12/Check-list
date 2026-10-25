@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLanguage } from '@/app/providers/LanguageContext';
+import { localizedText } from '@/domain/template/template';
+import type { LocalizedText } from '@/domain/models/types';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
@@ -27,9 +30,11 @@ import {
   directionsLinkFor, formatCoords, mapsLinkFor, type TaskLocation,
 } from '@/domain/location';
 import type { WorkerOption } from '@/domain/workerSelect';
+import { formatDate, formatDateAndTime, formatTime } from '@/lib/datetime';
 
 export function TaskDetailScreen() {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -63,9 +68,9 @@ export function TaskDetailScreen() {
       // Load the template's required items so we can gate Submit.
       if (t.templateId) {
         const { data: tpl } = await sb.from('templates').select('tasks, title').eq('id', t.templateId).maybeSingle();
-        const items = ((tpl?.tasks ?? []) as Array<{ id: string; required?: boolean; label: { en: string; ar: string } }>)
+        const items = ((tpl?.tasks ?? []) as Array<{ id: string; required?: boolean; label: LocalizedText }>)
           .filter((it) => it.required)
-          .map((it) => ({ id: it.id, label: it.label?.en ?? it.label?.ar ?? '—' }));
+          .map((it) => ({ id: it.id, label: localizedText(it.label, language) || '—' }));
         setRequiredItems(items);
       } else {
         setRequiredItems([]);
@@ -90,7 +95,7 @@ export function TaskDetailScreen() {
       <AppShell>
         <AppHeader title={t('task.title', 'Task')} showBack />
         <main className="app-main">
-          {error ? <div className="banner banner--error">{error}</div> : <p className="hint">Loading…</p>}
+          {error ? <div className="banner banner--error">{error}</div> : <p className="hint">{t('common.loading', 'Loading…')}</p>}
         </main>
       </AppShell>
     );
@@ -178,7 +183,7 @@ export function TaskDetailScreen() {
 
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <span className="card__meta">
-            {new Date(task.scheduledAt).toLocaleString(undefined, {
+            {formatDateAndTime(task.scheduledAt, language, {
               weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
             })}
           </span>
@@ -225,9 +230,9 @@ export function TaskDetailScreen() {
             <div className="stack">
               {openNotes.map((n) => (
                 <div key={n.id} className="note-card">
-                  <div>{n.body}</div>
+                  <div dir="auto">{n.body}</div>
                   <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
-                    <span className="card__meta">{new Date(n.createdAt).toLocaleDateString()}</span>
+                    <span className="card__meta">{formatDate(n.createdAt, language)}</span>
                     <button
                       className="btn btn--ghost"
                       onClick={async () => { await resolveNote(n.id, task!.id); await load(); }}
@@ -292,7 +297,7 @@ export function TaskDetailScreen() {
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <span className="section-title">{t('proof.title', 'Proof')}</span>
             <span className="card__meta">
-              {task.startedAt ? `${timeOnTaskMinutes(task)} min` : '—'}
+              {task.startedAt ? t('common.minutesShort', { count: timeOnTaskMinutes(task) }) : '—'}
             </span>
           </div>
           <div className="stack" style={{ marginTop: 8 }}>
@@ -517,6 +522,7 @@ function ProofRow({ kind, proofs, taskId, canEdit, queued, onOpen }: {
 }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const waiting = queued.filter((q) => q.kind === kind);
   // If the worker re-took a proof, the most recent one is what counts.
   const found = proofs
@@ -529,21 +535,21 @@ function ProofRow({ kind, proofs, taskId, canEdit, queued, onOpen }: {
       <div className="row" style={{ alignItems: 'center' }}>
         <span className={`proof-dot proof-dot--${found ? 'on' : 'off'}`} aria-hidden />
         <span style={{ flex: 1, fontWeight: 600 }}>
-          {kind === 'start' ? 'Start proof' : 'Finish proof'}
+          {kind === 'start' ? t('proof.start', 'Start proof') : t('proof.finish', 'Finish proof')}
         </span>
         <span className="card__meta">
           {found
-            ? new Date(found.capturedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-            : 'Missing'}
+            ? formatTime(found.capturedAt, language, { hour: '2-digit', minute: '2-digit' })
+            : t('proof.missing', 'Missing')}
         </span>
         {canEdit && found ? (
-          <button type="button" className="btn btn--ghost btn--icon" onClick={() => navigate(retakeUrl)} aria-label="Retake">
+          <button type="button" className="btn btn--ghost btn--icon" onClick={() => navigate(retakeUrl)} aria-label={t('photo.retake', 'Retake')}>
             ↻
           </button>
         ) : null}
         {canEdit && !found ? (
           <button type="button" className="btn btn--ghost" onClick={() => navigate(`/tasks/${taskId}/capture/${kind}`)}>
-            Capture
+            {t('photo.capture', 'Capture')}
           </button>
         ) : null}
       </div>

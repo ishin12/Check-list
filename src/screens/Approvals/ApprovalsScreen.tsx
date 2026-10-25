@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/app/providers/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
@@ -7,9 +8,11 @@ import { StatusPill } from '@/components/StatusPill';
 import { listTasks } from '@/services/data/tasks';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
+import { formatDateAndTime } from '@/lib/datetime';
 
 export function ApprovalsScreen() {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const [tasks, setTasks] = useState<FieldTask[]>([]);
 
   useEffect(() => {
@@ -32,7 +35,7 @@ export function ApprovalsScreen() {
                 <div style={{ flex: 1 }}>
                   <div className="card__title">{x.title}</div>
                   <TaskWhoLine task={x} />
-                  <div className="card__meta">{new Date(x.scheduledAt).toLocaleString()}</div>
+                  <div className="card__meta">{formatDateAndTime(x.scheduledAt, language)}</div>
                 </div>
                 <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
               </Link>

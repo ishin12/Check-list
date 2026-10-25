@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/app/providers/LanguageContext';
+import { localizedText } from '@/domain/template/template';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
@@ -15,6 +17,7 @@ interface TemplateOpt extends Option { /* same shape, kept distinct for readabil
 
 export function TaskNewScreen() {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const navigate = useNavigate();
   const [workers, setWorkers] = useState<Option[]>([]);
   const [clients, setClients] = useState<Option[]>([]);
@@ -43,7 +46,7 @@ export function TaskNewScreen() {
       setClients((cs ?? []).map((c) => ({ id: c.id, label: c.name })));
       setTemplates((ts ?? []).map((tpl) => ({
         id: tpl.id,
-        label: (tpl.title?.en ?? tpl.title?.ar ?? 'Untitled') as string,
+        label: localizedText(tpl.title, language) || 'Untitled',
       })));
     })();
   }, []);
