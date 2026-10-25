@@ -367,5 +367,38 @@
     "save": "Save workers",
     "cancel": "Cancel",
     "more": "+{{count}}"
+  },
+  "location": {
+    "optional": "Optional",
+    "label": "Google Maps location",
+    "placeholder": "Paste a Google Maps link or \"24.7136, 46.6753\"",
+    "hint": "Paste a link from Google Maps (Share), or type latitude and longitude.",
+    "found": "Coordinates found: {{coords}}",
+    "linkOnly": "Link saved without coordinates. Workers can open it in Google Maps, but Directions needs coordinates.",
+    "useMine": "Use my current location",
+    "locating": "Finding your location…",
+    "clear": "Clear",
+    "open": "Open in Google Maps",
+    "directions": "Directions",
+    "edit": "Edit location",
+    "add": "Add location",
+    "editTitle": "Job location",
+    "save": "Save location",
+    "cancel": "Cancel",
+    "saveFailed": "Couldn’t save the location.",
+    "errors": {
+      "invalid": "This isn’t a Google Maps link or a pair of coordinates.",
+      "not_https": "The link must start with https://.",
+      "unsupported_host": "Only Google Maps links are accepted (google.com/maps, maps.app.goo.gl).",
+      "out_of_range": "Latitude must be between -90 and 90, and longitude between -180 and 180.",
+      "too_long": "This link is too long (maximum 2000 characters)."
+    },
+    "geo": {
+      "denied": "Location permission was denied. Allow location access in your browser settings, or paste a link instead.",
+      "unavailable": "Your device couldn’t determine its location. Try again outside, or paste a link instead.",
+      "timeout": "Finding your location took too long. Try again, or paste a link instead.",
+      "unsupported": "This browser can’t share your location. Paste a link instead.",
+      "error": "Couldn’t get your location."
+    }
   }
 }

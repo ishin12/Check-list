@@ -836,9 +836,9 @@ async function seedDemo(): Promise<void> {
   ];
 
   state.tasks = [
-    mkTask('k-1', 'AC maintenance — Living room', 'u-wa', 'c-1', day(0, 9),  'not_started', { template_id: 't-ac' }),
+    mkTask('k-1', 'AC maintenance — Living room', 'u-wa', 'c-1', day(0, 9),  'not_started', { template_id: 't-ac', location_lat: 24.7136, location_lng: 46.6753, location_url: 'https://www.google.com/maps/search/?api=1&query=24.7136,46.6753' }),
     mkTask('k-2', 'Quarterly inspection',          'u-wa', 'c-2', day(0, 11), 'in_progress', { started_at: day(0, 10, 0), recurrence: 'quarterly', series_id: 's-2' }),
-    mkTask('k-3', 'Pool service',                  'u-wb', 'c-3', day(0, 14), 'not_started', { recurrence: 'weekly', series_id: 's-3' }),
+    mkTask('k-3', 'Pool service',                  'u-wb', 'c-3', day(0, 14), 'not_started', { recurrence: 'weekly', series_id: 's-3', location_url: 'https://maps.app.goo.gl/demoPoolVilla' }),
     mkTask('k-4', 'Filter change',                 'u-wa', 'c-2', day(-1, 10),'submitted',   { started_at: day(-1, 10, 5), finished_at: day(-1, 10, 55), extra_work: [
       { id: 'ew-1', body: 'Tightened a loose mounting bracket on the return duct.', addedAt: day(-1, 10, 40), addedBy: 'u-wa', addedByName: 'Ahmed' },
     ] }),
@@ -951,6 +951,7 @@ function mkTask(
     recurrence: 'none', series_id: id,
     extra_work: [],
     approval_method: null,
+    location_url: null, location_lat: null, location_lng: null,
     ...extra,
   };
 }

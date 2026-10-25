@@ -1,5 +1,6 @@
 import { getSupabase } from '@/services/supabase/client';
 import type { ExtraWorkEntry, FieldTask } from '@/domain/models/ops';
+import type { TaskLocation } from '@/domain/location';
 import { nextOccurrenceDate, type Recurrence } from '@/domain/job/recurrence';
 
 interface TaskRow {
@@ -25,6 +26,9 @@ interface TaskRow {
   series_id: string | null;
   extra_work: ExtraWorkEntry[] | null;
   approval_method: FieldTask['approvalMethod'] | null;
+  location_url?: string | null;
+  location_lat?: number | null;
+  location_lng?: number | null;
   /** Embedded task_workers(worker_id); absent on rows from inserts. */
   task_workers?: Array<{ worker_id: string }> | null;
 }
@@ -63,6 +67,9 @@ function rowToTask(r: TaskRow): FieldTask {
     seriesId: r.series_id ?? undefined,
     extraWork: r.extra_work ?? [],
     approvalMethod: r.approval_method ?? undefined,
+    locationUrl: r.location_url ?? undefined,
+    locationLat: r.location_lat ?? undefined,
+    locationLng: r.location_lng ?? undefined,
   };
 }
 
@@ -140,6 +147,21 @@ export interface CreateTaskInput {
   scheduledEnd?: string;
   templateId?: string;
   recurrence?: Recurrence;
+  location?: TaskLocation | null;
+}
+
+function locationColumns(loc?: TaskLocation | null) {
+  return {
+    location_url: loc?.locationUrl ?? null,
+    location_lat: loc?.locationLat ?? null,
+    location_lng: loc?.locationLng ?? null,
+  };
+}
+
+/** Set or clear (null) the Google Maps location of a task. Manager only in the UI. */
+export async function updateTaskLocation(taskId: string, loc: TaskLocation | null): Promise<void> {
+  const { error } = await getSupabase().from('tasks').update(locationColumns(loc)).eq('id', taskId);
+  if (error) throw error;
 }
 
 export async function createTask(input: CreateTaskInput): Promise<FieldTask> {
@@ -158,6 +180,7 @@ export async function createTask(input: CreateTaskInput): Promise<FieldTask> {
       template_id: input.templateId ?? null,
       recurrence,
       series_id: seriesId,
+      ...locationColumns(input.location),
     })
     .select('*').single();
   if (error) throw error;
@@ -248,6 +271,7 @@ export async function createNextOccurrence(task: FieldTask): Promise<FieldTask |
       template_id: task.templateId ?? null,
       recurrence: task.recurrence,
       series_id: seriesId,
+      ...locationColumns(task),
     })
     .select('*').single();
   if (error) throw error;

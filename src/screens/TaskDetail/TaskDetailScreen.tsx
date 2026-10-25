@@ -5,7 +5,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
 import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/app/providers/AuthContext';
-import { createNextOccurrence, getTask, setTaskWorkers, updateTaskStatus } from '@/services/data/tasks';
+import { createNextOccurrence, getTask, setTaskWorkers, updateTaskLocation, updateTaskStatus } from '@/services/data/tasks';
 import { invokeFunction } from '@/services/data/functions';
 import { getSupabase } from '@/services/supabase/client';
 import { availableActions, canTransition, proofRequirements, timeOnTaskMinutes } from '@/domain/job/taskFlow';
@@ -22,6 +22,10 @@ import { ExtraWorkLog } from '@/components/ExtraWorkLog';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import { ApprovalBadge } from '@/components/ApprovalBadge';
 import { WorkerMultiSelect } from '@/components/WorkerMultiSelect';
+import { LocationInput, type LocationInputState } from '@/components/LocationInput';
+import {
+  directionsLinkFor, formatCoords, mapsLinkFor, type TaskLocation,
+} from '@/domain/location';
 import type { WorkerOption } from '@/domain/workerSelect';
 
 export function TaskDetailScreen() {
@@ -190,6 +194,7 @@ export function TaskDetailScreen() {
         </div>
         <TaskWhoLine task={task} linkClient />
         {role === 'manager' ? <EditWorkers task={task} onSaved={load} /> : null}
+        <LocationCard task={task} canEdit={role === 'manager'} onSaved={load} />
 
         {task.status === 'approved'
           ? <ApprovalBadge approvalMethod={task.approvalMethod} decidedAt={task.decisionAt} note={task.decisionNote} />
@@ -412,6 +417,92 @@ function EditWorkers({ task, onSaved }: { task: FieldTask; onSaved: () => Promis
           {t('workers.cancel', 'Cancel')}
         </button>
       </div>
+    </section>
+  );
+}
+
+/** Maps buttons for everyone (when a location exists); manager-only add/edit. */
+function LocationCard({ task, canEdit, onSaved }: { task: FieldTask; canEdit: boolean; onSaved: () => Promise<void> | void }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<TaskLocation | null>(null);
+  const [state, setState] = useState<LocationInputState>('empty');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const mapsLink = mapsLinkFor(task);
+  const directions = directionsLinkFor(task);
+  const hasCoords = typeof task.locationLat === 'number' && typeof task.locationLng === 'number';
+
+  async function save() {
+    setSaving(true);
+    setErr(null);
+    try {
+      await updateTaskLocation(task.id, draft);
+      setOpen(false);
+      await onSaved();
+    } catch (e) {
+      setErr(`${t('location.saveFailed')} ${e instanceof Error ? e.message : String((e as { message?: string })?.message ?? e)}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (open) {
+    return (
+      <section className="card location-card">
+        <div className="section-title">{t('location.editTitle')}</div>
+        {err ? <div className="banner banner--error">{err}</div> : null}
+        <LocationInput
+          initial={task}
+          disabled={saving}
+          onChange={(loc, s) => { setDraft(loc); setState(s); }}
+        />
+        <div className="row" style={{ gap: 8 }}>
+          <button type="button" className="btn btn--primary" disabled={saving || state === 'invalid'} onClick={() => void save()}>
+            {saving ? t('common.saving', 'Saving…') : t('location.save')}
+          </button>
+          <button type="button" className="btn btn--ghost" disabled={saving} onClick={() => setOpen(false)}>
+            {t('location.cancel')}
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (!mapsLink && !canEdit) return null;
+  return (
+    <section className={mapsLink ? 'card location-card' : undefined}>
+      {mapsLink ? (
+        <>
+          <div className="location-card__actions">
+            <a className="btn btn--primary" href={mapsLink} target="_blank" rel="noopener noreferrer">
+              📍 {t('location.open')}
+            </a>
+            {directions ? (
+              <a className="btn btn--ghost" href={directions} target="_blank" rel="noopener noreferrer">
+                {t('location.directions')}
+              </a>
+            ) : null}
+          </div>
+          {hasCoords ? (
+            <div className="location-card__coords" dir="ltr">
+              {formatCoords(task.locationLat as number, task.locationLng as number)}
+            </div>
+          ) : null}
+        </>
+      ) : null}
+      {canEdit ? (
+        <div>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => { setErr(null); setDraft(task); setState('valid'); setOpen(true); }}
+          >
+            {mapsLink ? t('location.edit') : t('location.add')}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

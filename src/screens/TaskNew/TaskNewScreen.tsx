@@ -6,6 +6,8 @@ import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
 import { createTask } from '@/services/data/tasks';
 import { WorkerMultiSelect } from '@/components/WorkerMultiSelect';
+import { LocationInput } from '@/components/LocationInput';
+import type { TaskLocation } from '@/domain/location';
 import { RECURRENCE_OPTIONS, recurrenceLabel, type Recurrence } from '@/domain/job/recurrence';
 
 interface Option { id: string; label: string }
@@ -24,6 +26,8 @@ export function TaskNewScreen() {
   const [templateId, setTemplateId] = useState('');
   const [when, setWhen] = useState(defaultWhen());
   const [recurrence, setRecurrence] = useState<Recurrence>('none');
+  const [location, setLocation] = useState<TaskLocation | null>(null);
+  const [locationInvalid, setLocationInvalid] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,6 +59,7 @@ export function TaskNewScreen() {
         scheduledAt: new Date(when).toISOString(),
         recurrence,
         templateId: templateId || undefined,
+        location,
       });
       navigate(`/tasks/${task.id}`, { replace: true });
     } catch (err) {
@@ -64,7 +69,7 @@ export function TaskNewScreen() {
     }
   }
 
-  const ready = title && clientId && workerIds.length > 0 && when;
+  const ready = title && clientId && workerIds.length > 0 && when && !locationInvalid;
 
   return (
     <AppShell>
@@ -117,6 +122,12 @@ export function TaskNewScreen() {
               return <option key={opt} value={opt}>{t(lbl.i18n, lbl.fallback)}</option>;
             })}
           </select>
+        </div>
+        <div className="field">
+          <label className="field__label">
+            {t('location.label')} <span className="hint">({t('location.optional')})</span>
+          </label>
+          <LocationInput onChange={(loc, state) => { setLocation(loc); setLocationInvalid(state === 'invalid'); }} />
         </div>
         <button className="btn btn--primary btn--block btn--lg" disabled={!ready || saving} type="submit">
           {saving ? t('common.saving', 'Saving…') : t('taskNew.create', 'Create task')}
