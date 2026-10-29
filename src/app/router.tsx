@@ -8,6 +8,7 @@ import { ReportPreviewScreen } from '@/screens/ReportPreview/ReportPreviewScreen
 import { SettingsScreen } from '@/screens/Settings/SettingsScreen';
 import { LoginScreen } from '@/screens/Login/LoginScreen';
 import { AuthCallbackScreen } from '@/screens/Login/AuthCallbackScreen';
+import { ResetPasswordScreen } from '@/screens/Login/ResetPasswordScreen';
 import { TodayScreen } from '@/screens/Today/TodayScreen';
 import { CalendarScreen } from '@/screens/Calendar/CalendarScreen';
 import { TaskDetailScreen } from '@/screens/TaskDetail/TaskDetailScreen';
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
   { path: '/', element: <RootRedirect /> },
   { path: '/login', element: <LoginScreen /> },
   { path: '/auth/callback', element: <AuthCallbackScreen /> },
+  { path: '/auth/reset', element: <ResetPasswordScreen /> },
   // Public, unauthenticated signing page (reached from the WhatsApp link).
   { path: '/sign/:token', element: <SignScreen /> },
 

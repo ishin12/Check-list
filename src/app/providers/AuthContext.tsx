@@ -11,6 +11,8 @@ interface AuthState {
   signInWithEmail: (email: string) => Promise<void>;
   /** Email + password sign-in (production). */
   signInWithPassword: (email: string, password: string) => Promise<void>;
+  /** Email a password-reset link (production). */
+  sendPasswordReset: (email: string) => Promise<void>;
   /** Change the signed-in user's own password. */
   updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -107,6 +109,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw new Error(error.message);
   }, []);
 
+  const sendPasswordReset = useCallback(async (email: string) => {
+    const sb = getSupabase();
+    const base = `${location.origin}${import.meta.env.BASE_URL}`.replace(/\/$/, '');
+    const { error } = await (sb.auth as unknown as {
+      resetPasswordForEmail: (e: string, o: { redirectTo: string }) => Promise<{ error: { message: string } | null }>;
+    }).resetPasswordForEmail(email, { redirectTo: `${base}/auth/reset` });
+    if (error) throw new Error(error.message);
+  }, []);
+
   const updatePassword = useCallback(async (password: string) => {
     const sb = getSupabase();
     const { error } = await (sb.auth as unknown as {
@@ -122,8 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ loading, user, configured, signInWithEmail, signInWithPassword, updatePassword, signOut, refresh }),
-    [loading, user, configured, signInWithEmail, signInWithPassword, updatePassword, signOut, refresh],
+    () => ({ loading, user, configured, signInWithEmail, signInWithPassword, sendPasswordReset, updatePassword, signOut, refresh }),
+    [loading, user, configured, signInWithEmail, signInWithPassword, sendPasswordReset, updatePassword, signOut, refresh],
   );
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;

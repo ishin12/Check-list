@@ -11,7 +11,7 @@ interface DemoProfile { id: string; full_name: string; email: string; role: 'man
 
 export function LoginScreen() {
   const { t } = useTranslation();
-  const { user, signInWithEmail, signInWithPassword, configured } = useAuth();
+  const { user, signInWithEmail, signInWithPassword, sendPasswordReset, configured } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
@@ -42,6 +42,23 @@ export function LoginScreen() {
         await signInWithPassword(email.trim(), password);
         setStatus('idle');
       }
+    } catch (err) {
+      setStatus('error');
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  async function onForgot() {
+    if (!email) {
+      setStatus('error');
+      setError(t('auth.email', 'Email'));
+      return;
+    }
+    setStatus('sending');
+    setError(null);
+    try {
+      await sendPasswordReset(email.trim());
+      setStatus('sent');
     } catch (err) {
       setStatus('error');
       setError(err instanceof Error ? err.message : String(err));
@@ -158,9 +175,22 @@ export function LoginScreen() {
               : demo ? t('auth.sendLink', 'Send magic link') : t('auth.signIn', 'Sign in')}
           </button>
 
+          {!demo ? (
+            <button
+              type="button"
+              className="btn btn--block"
+              onClick={onForgot}
+              disabled={status === 'sending' || !configured}
+            >
+              {t('auth.forgotPassword', 'Forgot password?')}
+            </button>
+          ) : null}
+
           {status === 'sent' ? (
             <div className="banner banner--success">
-              {t('auth.linkSent', 'Check your email and tap the link to continue.')}
+              {demo
+                ? t('auth.linkSent', 'Check your email and tap the link to continue.')
+                : t('auth.resetSent', 'If that email has an account, a reset link is on its way.')}
             </div>
           ) : null}
           {status === 'error' && error ? (

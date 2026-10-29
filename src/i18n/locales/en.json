@@ -131,7 +131,15 @@
     "sendLink": "Send magic link",
     "linkSent": "Check your email and tap the link to continue.",
     "notConfigured": "Supabase is not configured. See .env.example.",
-    "signingIn": "Signing you in…"
+    "signingIn": "Signing you in…",
+    "forgotPassword": "Forgot password?",
+    "resetSent": "If that email has an account, a reset link is on its way.",
+    "resetTitle": "Set a new password",
+    "newPassword": "New password",
+    "savePassword": "Save password",
+    "resetDone": "Password updated.",
+    "resetInvalid": "This reset link is invalid or has expired. Request a new one from the sign-in page.",
+    "backToSignIn": "Back to sign in"
   },
   "sign": {
     "heading": "Please review and sign",
