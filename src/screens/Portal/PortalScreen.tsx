@@ -8,8 +8,10 @@ import { useAuth } from '@/app/providers/AuthContext';
 import { listTasks } from '@/services/data/tasks';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
-import { formatDate, formatDateAndTime } from '@/lib/datetime';
+import { formatDate } from '@/lib/datetime';
 import { Icon } from '@/components/Icon';
+import { VisitWhen } from '@/screens/Sign/VisitWhen';
+import '@/styles/screens/first-impression.css';
 
 export function PortalScreen() {
   const { t } = useTranslation();
@@ -31,19 +33,23 @@ export function PortalScreen() {
         <button className="icon-btn" onClick={signOut} aria-label={t('auth.signOut', 'Sign out')}><Icon name="sign-out" /></button>
       </AppHeader>
       <main className="app-main">
-        <section>
-          <div className="section-title">{t('portal.upcoming', 'Upcoming')}</div>
+        <section className="portal-section">
+          <h2 className="section-title">{t('portal.upcoming', 'Upcoming')}</h2>
           {upcoming.length === 0 ? (
-            <p className="hint">{t('portal.noUpcoming', 'Nothing scheduled.')}</p>
+            <div className="empty">
+              <div className="empty__icon"><Icon name="calendar" /></div>
+              <p>{t('portal.noUpcoming', 'Nothing scheduled.')}</p>
+            </div>
           ) : (
             <div className="stack">
-              {upcoming.map((x) => (
-                <div key={x.id} className="card">
-                  <div className="row" style={{ justifyContent: 'space-between' }}>
-                    <div>
+              {upcoming.map((x, i) => (
+                // The next visit leads: the accent tone step, as on the worker's Today.
+                <div key={x.id} className={`card${i === 0 ? ' card--accent' : ''}`}>
+                  <div className="portal-visit">
+                    <div className="portal-visit__main">
                       <div className="card__title">{x.title}</div>
                       <TaskWhoLine task={x} hideClient />
-                      <div className="card__meta">{formatDateAndTime(x.scheduledAt, language)}</div>
+                      <div className="card__meta"><VisitWhen iso={x.scheduledAt} language={language} /></div>
                     </div>
                     <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
                   </div>
@@ -53,10 +59,13 @@ export function PortalScreen() {
           )}
         </section>
 
-        <section>
-          <div className="section-title">{t('portal.past', 'Completed')}</div>
+        <section className="portal-section">
+          <h2 className="section-title">{t('portal.past', 'Completed')}</h2>
           {past.length === 0 ? (
-            <p className="hint">{t('portal.noPast', 'No completed visits yet.')}</p>
+            <div className="empty">
+              <div className="empty__icon"><Icon name="check-circle" /></div>
+              <p>{t('portal.noPast', 'No completed visits yet.')}</p>
+            </div>
           ) : (
             <div className="stack">
               {past.map((x) => (
@@ -65,9 +74,9 @@ export function PortalScreen() {
                   <TaskWhoLine task={x} hideClient />
                   <div className="card__meta">{formatDate(x.scheduledAt, language)}</div>
                   {x.extraWork.length > 0 ? (
-                    <div style={{ marginTop: 12 }}>
-                      <div className="section-title">{t('extras.title', 'Extra work done')}</div>
-                      <ul style={{ marginBlock: 6, paddingInlineStart: 18 }}>
+                    <div className="portal-extras">
+                      <div className="portal-extras__title">{t('extras.title', 'Extra work done')}</div>
+                      <ul>
                         {x.extraWork.map((e) => <li key={e.id}>{e.body}</li>)}
                       </ul>
                     </div>
