@@ -11,6 +11,7 @@ import type { Client, ClientNote, FieldTask } from '@/domain/models/ops';
 import { NoteComposer, resolveNote } from '@/components/NoteComposer';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import { formatDate, formatDateAndTime } from '@/lib/datetime';
+import '@/styles/screens/admin.css';
 
 export function ClientDetailScreen() {
   const { t } = useTranslation();
@@ -65,12 +66,11 @@ export function ClientDetailScreen() {
     <AppShell>
       <AppHeader title={client.name} showBack />
       <main className="app-main">
-        <div className="card">
-          <div className="card__title">{client.name}</div>
-          <div className="card__meta">{contactBits.length ? contactBits.map((v, i) => <span key={i}>{i > 0 ? ' · ' : ''}<bdi>{v}</bdi></span>) : '—'}</div>
+        <div className={`card adm-contact${contactBits.length ? '' : ' adm-contact--empty'}`}>
+          {contactBits.length ? contactBits.map((v, i) => <bdi key={i}>{v}</bdi>) : '—'}
         </div>
 
-        <section>
+        <section className="section">
           <div className="section-title">{t('notes.open', 'Open notes')}</div>
           {openNotes.length === 0 ? (
             <p className="hint">{t('notes.none', 'No open notes.')}</p>
@@ -79,7 +79,7 @@ export function ClientDetailScreen() {
               {openNotes.map((n) => (
                 <div key={n.id} className="note-card">
                   <div dir="auto">{n.body}</div>
-                  <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
+                  <div className="adm-note__foot">
                     <span className="card__meta">{formatDate(n.createdAt, language)}</span>
                     <button className="btn btn--ghost" onClick={async () => { await resolveNote(n.id); await load(); }}>
                       {t('notes.resolve', 'Mark resolved')}
@@ -89,12 +89,12 @@ export function ClientDetailScreen() {
               ))}
             </div>
           )}
-          <div style={{ marginTop: 12 }}>
+          <div className="adm-after">
             <NoteComposer clientId={client.id} onSaved={load} />
           </div>
         </section>
 
-        <section>
+        <section className="section">
           <div className="section-title">{t('clients.upcoming', 'Upcoming visits')}</div>
           {upcoming.length === 0 ? (
             <p className="hint">{t('clients.noUpcoming', 'Nothing scheduled.')}</p>
@@ -102,7 +102,7 @@ export function ClientDetailScreen() {
             <div className="stack">
               {upcoming.map((x) => (
                 <Link key={x.id} to={`/tasks/${x.id}`} className="card card--tap">
-                  <div style={{ flex: 1 }}>
+                  <div className="adm-row__text">
                     <div className="card__title">{x.title}</div>
                     <TaskWhoLine task={x} hideClient />
                     <div className="card__meta">{formatDateAndTime(x.scheduledAt, language)}</div>
@@ -114,7 +114,7 @@ export function ClientDetailScreen() {
           )}
         </section>
 
-        <section>
+        <section className="section">
           <div className="section-title">{t('clients.history', 'Visit history')}</div>
           {history.length === 0 ? (
             <p className="hint">{t('clients.noHistory', 'No past visits yet.')}</p>
@@ -123,7 +123,7 @@ export function ClientDetailScreen() {
               {history.map((x) => (
                 <Link key={x.id} to={`/tasks/${x.id}`} className="timeline__item">
                   <span className="timeline__dot" />
-                  <div style={{ flex: 1 }}>
+                  <div className="adm-row__text">
                     <div className="card__title">{x.title}</div>
                     <TaskWhoLine task={x} hideClient />
                     <div className="card__meta">{formatDate(x.scheduledAt, language)}</div>

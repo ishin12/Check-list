@@ -12,6 +12,7 @@ import {
 } from '@/domain/template/template';
 import type { Task, Template } from '@/domain/models/types';
 import { Icon } from '@/components/Icon';
+import '@/styles/screens/admin.css';
 
 export function TemplateEditorScreen() {
   const { t } = useTranslation();
@@ -82,7 +83,7 @@ export function TemplateEditorScreen() {
         showBack
       />
       <main className="app-main">
-        <div className="card stack">
+        <div className="card adm-trio">
           <div className="field">
             <label className="field__label">{t('editor.nameEn')}</label>
             <input
@@ -126,12 +127,11 @@ export function TemplateEditorScreen() {
         {tasks.length === 0 ? (
           <p className="hint">{t('editor.noTasks')}</p>
         ) : (
-          <div className="stack">
+          <div className="adm-list">
             {tasks.map((task, index) => (
-              <div key={task.id} className="card stack">
-                <div className="row">
-                  <span className="badge">{index + 1}</span>
-                  <span className="spacer" />
+              <div key={task.id} className="card adm-step">
+                <div className="adm-step__head">
+                  <span className="adm-step__no">{index + 1}</span>
                   <button
                     type="button"
                     className="icon-btn"
@@ -152,17 +152,18 @@ export function TemplateEditorScreen() {
                   </button>
                   <button
                     type="button"
-                    className="icon-btn"
+                    className="icon-btn adm-danger"
                     aria-label={t('editor.removeTask')}
                     onClick={() => removeTask(task.id)}
-                    style={{ color: 'var(--color-danger)' }}
                   >
                     <Icon name="close" />
                   </button>
                 </div>
+                <div className="adm-trio">
                 <input
                   className="input"
                   dir="ltr"
+                  aria-label={t('editor.taskEn')}
                   value={task.label.en}
                   placeholder={t('editor.taskEn')}
                   onChange={(e) =>
@@ -174,6 +175,7 @@ export function TemplateEditorScreen() {
                 <input
                   className="input"
                   dir="rtl"
+                  aria-label={t('editor.taskAr')}
                   value={task.label.ar}
                   placeholder={t('editor.taskAr')}
                   onChange={(e) =>
@@ -186,6 +188,7 @@ export function TemplateEditorScreen() {
                   className="input"
                   dir="rtl"
                   lang="ur"
+                  aria-label={t('editor.taskUr')}
                   value={task.label.ur ?? ''}
                   placeholder={t('editor.taskUr')}
                   onChange={(e) =>
@@ -194,7 +197,8 @@ export function TemplateEditorScreen() {
                     })
                   }
                 />
-                <label className="row" style={{ gap: 'var(--space-2)' }}>
+                </div>
+                <label className="adm-check">
                   <input
                     type="checkbox"
                     checked={task.required}
@@ -202,7 +206,7 @@ export function TemplateEditorScreen() {
                       updateTask(task.id, { required: e.target.checked })
                     }
                   />
-                  <span className="hint">{t('editor.required')}</span>
+                  <span>{t('editor.required')}</span>
                 </label>
               </div>
             ))}
@@ -217,7 +221,7 @@ export function TemplateEditorScreen() {
           <Icon name="plus" />{t('editor.addTask')}
         </button>
 
-        {error ? <div className="error-text">{error}</div> : null}
+        {error ? <div className="banner banner--error" role="alert">{error}</div> : null}
       </main>
 
       <div className="action-bar">

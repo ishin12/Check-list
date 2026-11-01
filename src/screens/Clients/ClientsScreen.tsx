@@ -6,6 +6,8 @@ import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
 import type { Client } from '@/domain/models/ops';
 import { Icon } from '@/components/Icon';
+import { Chevron } from '@/components/Chevron';
+import '@/styles/screens/admin.css';
 
 export function ClientsScreen() {
   const { t } = useTranslation();
@@ -38,14 +40,17 @@ export function ClientsScreen() {
             <p>{t('clients.empty', 'No clients yet.')}</p>
           </div>
         ) : (
-          <div className="stack">
+          <div className="adm-list adm-list--grid">
             {filtered.map((c) => (
-              <Link key={c.id} to={`/clients/${c.id}`} className="card card--tap">
-                <div style={{ flex: 1 }}>
-                  <div className="card__title">{c.name}</div>
-                  <div className="card__meta"><bdi>{c.phone ?? c.email ?? '—'}</bdi></div>
-                </div>
-              </Link>
+              <div key={c.id} className="adm-row adm-row--link">
+                <Link to={`/clients/${c.id}`} className="adm-row__main">
+                  <div className="adm-row__text">
+                    <div className="card__title">{c.name}</div>
+                    <div className="card__meta"><bdi>{c.phone ?? c.email ?? '—'}</bdi></div>
+                  </div>
+                  <span className="adm-row__trail"><Chevron kind="forward" /></span>
+                </Link>
+              </div>
             ))}
           </div>
         )}

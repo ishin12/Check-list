@@ -5,6 +5,7 @@ import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
 import { useDirectory } from '@/app/providers/DirectoryContext';
+import '@/styles/screens/admin.css';
 
 export function ClientNewScreen() {
   const { t } = useTranslation();
@@ -40,7 +41,7 @@ export function ClientNewScreen() {
   return (
     <AppShell>
       <AppHeader title={t('clientNew.title', 'New client')} showBack />
-      <form className="app-main" onSubmit={save}>
+      <form className="app-main adm-narrow" onSubmit={save}>
         {error ? <div className="banner banner--error">{error}</div> : null}
         <div className="field">
           <label className="field__label">{t('clientNew.name', 'Name')}</label>

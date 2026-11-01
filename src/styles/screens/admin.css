@@ -1,0 +1,182 @@
+/* =========================================================================
+   Admin screens: Clients, Users, Settings, Templates, Audit, Report preview.
+   Follows DESIGN.md: tone steps instead of outlines, one 8px control radius,
+   12px cards, spacing 8 / 12 / 24, five type sizes. Logical properties only.
+   Imported by each admin screen; the shared layer stays in global.css.
+   ========================================================================= */
+
+/* Forms and settings read better as a column than stretched over 960px. */
+.adm-narrow { max-inline-size: 640px; }
+
+/* A dense, calm list: rows are 8px apart, a group of rows is one unit. */
+.adm-list { display: flex; flex-direction: column; gap: var(--space-2); }
+/* Where the column is wide (side rail layout), long lists run in two columns. */
+@media (min-width: 1024px) {
+  .adm-list--grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
+
+/* Row: the main area is the tap target, trailing icon buttons are siblings. */
+.adm-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline-start: var(--space-4);
+  padding-inline-end: var(--space-2);
+  min-height: 64px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+}
+.adm-row__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  min-height: 64px;
+  color: inherit;
+  text-decoration: none;
+  text-align: start;
+  background: transparent;
+  border: 0;
+  font: inherit;
+}
+.adm-row__text { flex: 1; min-width: 0; }
+.adm-row__trail { color: var(--color-text-muted); display: inline-flex; }
+@media (hover: hover) {
+  .adm-row:hover { background: var(--color-surface-2); }
+}
+.icon-btn.adm-danger,
+.icon-btn.adm-danger:hover { color: var(--color-danger); }
+
+/* Tap-only row (clients list): the whole row is the link. */
+.adm-row--link { padding-inline-end: var(--space-4); }
+.adm-row--link .adm-row__main { padding-block: var(--space-3); }
+
+/* Tone-step tile inside a card (never a second card). */
+.adm-tile {
+  background: var(--color-surface-2);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* A card that holds a titled form: heading size title, then the fields. */
+.adm-card { display: flex; flex-direction: column; gap: var(--space-4); }
+.adm-card__title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: var(--tracking-tight);
+}
+.adm-card__lede { margin-top: var(--space-1); font-size: var(--fs-base); line-height: 1.5; overflow-wrap: anywhere; }
+
+/* Fields that sit side by side when there is room. */
+.adm-fields { display: grid; gap: var(--space-3); grid-template-columns: minmax(0, 1fr); }
+.adm-fields--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* The shell is 560px wide until the side rail appears at 1024px. */
+@media (min-width: 600px) {
+  .adm-fields--md-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .adm-fields--md-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* The three language inputs (en / ar / ur) stack: the editor column is 560px at most. */
+.adm-trio { display: grid; gap: var(--space-3); grid-template-columns: minmax(0, 1fr); }
+
+/* Button group at the end of a form or row. */
+.adm-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.adm-actions .btn { flex: 0 1 auto; }
+
+/* Segmented choice (language): three equal buttons. */
+.adm-seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+
+/* Settings: links to the admin screens, one card, rows inside. */
+.adm-links { padding: var(--space-1); display: flex; flex-direction: column; }
+.adm-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 52px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  font-weight: 700;
+  color: inherit;
+  text-decoration: none;
+}
+.adm-link > span:first-child { flex: 1; }
+.adm-link .icon { color: var(--color-text-muted); }
+@media (hover: hover) { .adm-link:hover { background: var(--color-surface-2); } }
+.adm-link:active { background: var(--color-surface-3); }
+
+.adm-who { display: flex; flex-direction: column; gap: 2px; }
+.adm-who__name { font-size: var(--fs-md); font-weight: 700; line-height: 1.25; letter-spacing: var(--tracking-tight); }
+
+/* Person (Users): identity on top, role and state as tags, actions below. */
+.adm-person { display: flex; flex-direction: column; gap: var(--space-3); }
+.adm-person__head { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--space-2); row-gap: var(--space-1); }
+.adm-person--off { background: var(--color-surface-2); }
+.adm-person--off .adm-tile { background: var(--color-surface); }
+.adm-tag--off { background: var(--color-surface-3); }
+.adm-person .card__meta { overflow-wrap: anywhere; }
+
+/* Client detail: contact lines, one per line. */
+.adm-contact { display: flex; flex-direction: column; gap: var(--space-1); color: var(--color-text); }
+.adm-contact--empty { color: var(--color-text-muted); }
+.adm-after { margin-block-start: var(--space-1); }
+.adm-note__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-2); }
+
+/* Template editor ---------------------------------------------------------- */
+.adm-step { display: flex; flex-direction: column; gap: var(--space-3); }
+.adm-step__head { display: flex; align-items: center; gap: var(--space-1); }
+.adm-step__no { font-weight: 700; font-size: var(--fs-md); min-inline-size: 2ch; margin-inline-end: auto; }
+.adm-check { display: flex; align-items: center; gap: var(--space-3); min-height: 44px; font-size: var(--fs-base); }
+.adm-check input { inline-size: 22px; block-size: 22px; flex: none; margin: 0; }
+
+/* Audit -------------------------------------------------------------------- */
+.adm-log { display: flex; flex-direction: column; gap: var(--space-2); }
+.adm-log__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-3);
+  row-gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius);
+}
+.adm-log__what { font-weight: 700; overflow-wrap: anywhere; }
+.adm-log__when { font-size: var(--fs-sm); color: var(--color-text-muted); text-align: end; }
+.adm-log__who { grid-column: 1 / -1; font-size: var(--fs-sm); color: var(--color-text-muted); overflow-wrap: anywhere; }
+@media (min-width: 1024px) {
+  .adm-log__row { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.4fr) auto; align-items: baseline; }
+  .adm-log__what { grid-column: 1; grid-row: 1; }
+  .adm-log__who { grid-column: 2; grid-row: 1; }
+  .adm-log__when { grid-column: 3; grid-row: 1; }
+}
+
+/* Report preview: the document is the page; the desk behind it is one tone down. */
+.adm-desk {
+  inline-size: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-3);
+  padding: var(--space-2);
+}
+.adm-desk__sheet { border-radius: var(--radius-xs); overflow: hidden; }
+@media (min-width: 600px) { .adm-desk { padding: var(--space-4); } }
+
+/* Urdu: Nastaliq needs taller line boxes than the Latin and Arabic scale. */
+html[lang='ur'] .adm-card__title,
+html[lang='ur'] .adm-who__name,
+html[lang='ur'] .adm-step__no { line-height: 2.1; }
+html[lang='ur'] .adm-card__lede,
+html[lang='ur'] .adm-contact,
+html[lang='ur'] .adm-check,
+html[lang='ur'] .adm-link { line-height: 2; }
+html[lang='ur'] .adm-log__when,
+html[lang='ur'] .adm-log__who { line-height: 2; }
+html[lang='ur'] .adm-log__what,
+html[lang='ur'] .adm-row__text { line-height: 1.8; }

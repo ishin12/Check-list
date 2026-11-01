@@ -6,6 +6,7 @@ import { getSupabase } from '@/services/supabase/client';
 import { invokeFunction } from '@/services/data/functions';
 import { useDirectory } from '@/app/providers/DirectoryContext';
 import type { AppUser, Role } from '@/domain/models/ops';
+import '@/styles/screens/admin.css';
 
 interface ClientOpt { id: string; name: string }
 
@@ -102,33 +103,35 @@ export function UsersScreen() {
     <AppShell>
       <AppHeader title={t('users.title', 'Team & clients')} showBack />
       <main className="app-main">
-        <form className="card stack" onSubmit={invite}>
-          <div className="card__title">{t('users.invite', 'Invite someone')}</div>
-          <div className="field">
-            <label className="field__label">{t('auth.email', 'Email')}</label>
-            <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="field__label">{t('users.name', 'Name')}</label>
-            <input className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="field__label">{t('users.role', 'Role')}</label>
-            <select className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-              <option value="worker">{t('roles.worker', 'Worker')}</option>
-              <option value="manager">{t('roles.manager', 'Manager')}</option>
-              <option value="client">{t('roles.client', 'Client')}</option>
-            </select>
-          </div>
-          {role === 'client' ? (
+        <form className="card adm-card" onSubmit={invite}>
+          <div className="adm-card__title">{t('users.invite', 'Invite someone')}</div>
+          <div className="adm-fields adm-fields--md-2">
             <div className="field">
-              <label className="field__label">{t('users.linkClient', 'Linked client record')}</label>
-              <select className="input" value={clientId} onChange={(e) => setClientId(e.target.value)} required>
-                <option value="">—</option>
-                {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              <label className="field__label">{t('auth.email', 'Email')}</label>
+              <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div className="field">
+              <label className="field__label">{t('users.name', 'Name')}</label>
+              <input className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            </div>
+            <div className="field">
+              <label className="field__label">{t('users.role', 'Role')}</label>
+              <select className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>
+                <option value="worker">{t('roles.worker', 'Worker')}</option>
+                <option value="manager">{t('roles.manager', 'Manager')}</option>
+                <option value="client">{t('roles.client', 'Client')}</option>
               </select>
             </div>
-          ) : null}
+            {role === 'client' ? (
+              <div className="field">
+                <label className="field__label">{t('users.linkClient', 'Linked client record')}</label>
+                <select className="input" value={clientId} onChange={(e) => setClientId(e.target.value)} required>
+                  <option value="">—</option>
+                  {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            ) : null}
+          </div>
           <button className="btn btn--primary btn--block" type="submit" disabled={status === 'sending'}>
             {status === 'sending' ? t('users.sending', 'Sending invite…') : t('users.sendInvite', 'Send invite')}
           </button>
@@ -137,28 +140,29 @@ export function UsersScreen() {
         </form>
 
         <div className="section-title">{t('users.everyone', 'Everyone')}</div>
-        <div className="stack">
+        <div className="adm-list adm-list--grid">
           {users.map((u) => (
-            <div key={u.id} className="card">
-              <div className="row" style={{ justifyContent: 'space-between' }}>
-                <div>
+            <div key={u.id} className={`card adm-person${u.active ? '' : ' adm-person--off'}`}>
+              <div>
+                <div className="adm-person__head">
                   <div className="card__title"><bdi>{u.fullName ?? u.email ?? u.id}</bdi></div>
-                  {u.fullName && u.email ? <div className="card__meta"><bdi>{u.email}</bdi></div> : null}
-                  <div className="card__meta">{t(`roles.${u.role}`, u.role)}{u.active ? '' : ` · ${t('users.inactive', 'inactive')}`}</div>
+                  <span className="badge">{t(`roles.${u.role}`, u.role)}</span>
+                  {u.active ? null : <span className="badge adm-tag--off">{t('users.inactive', 'inactive')}</span>}
                 </div>
-                <div className="row" style={{ gap: 6 }}>
-                  {u.role !== 'client' ? (
-                    <button className="btn btn--ghost" onClick={() => setPasswordFor(u)}>
-                      {t('users.setPassword', 'Set password')}
-                    </button>
-                  ) : null}
-                  <button className="btn btn--ghost" onClick={() => toggleActive(u)}>
-                    {u.active ? t('users.deactivate', 'Deactivate') : t('users.activate', 'Activate')}
+                {u.fullName && u.email ? <div className="card__meta"><bdi>{u.email}</bdi></div> : null}
+              </div>
+              <div className="adm-actions">
+                {u.role !== 'client' ? (
+                  <button className="btn btn--ghost btn--sm" onClick={() => setPasswordFor(u)}>
+                    {t('users.setPassword', 'Set password')}
                   </button>
-                </div>
+                ) : null}
+                <button className="btn btn--ghost btn--sm" onClick={() => toggleActive(u)}>
+                  {u.active ? t('users.deactivate', 'Deactivate') : t('users.activate', 'Activate')}
+                </button>
               </div>
               {pwTarget?.id === u.id ? (
-                <div className="stack" style={{ marginTop: 10 }}>
+                <div className="adm-tile">
                   <input
                     className="input"
                     type="text"
@@ -166,11 +170,11 @@ export function UsersScreen() {
                     value={pwValue}
                     onChange={(e) => setPwValue(e.target.value)}
                   />
-                  <div className="row" style={{ gap: 6 }}>
-                    <button className="btn btn--primary" disabled={pwValue.length < 8 || pwSaving} onClick={savePassword}>
+                  <div className="adm-actions">
+                    <button className="btn btn--primary btn--sm" disabled={pwValue.length < 8 || pwSaving} onClick={savePassword}>
                       {pwSaving ? t('common.saving', 'Saving…') : t('users.savePassword', 'Save')}
                     </button>
-                    <button className="btn btn--ghost" onClick={() => { setPwTarget(null); setPwValue(''); }}>
+                    <button className="btn btn--ghost btn--sm" onClick={() => { setPwTarget(null); setPwValue(''); }}>
                       {t('common.cancel', 'Cancel')}
                     </button>
                   </div>

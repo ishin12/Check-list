@@ -10,6 +10,7 @@ import { shareFile, type ShareOutcome } from '@/services/share/ShareService';
 import { completeJob } from '@/domain/job/job';
 import { templateTitle } from '@/domain/template/template';
 import { Icon } from '@/components/Icon';
+import '@/styles/screens/admin.css';
 
 const REPORT_WIDTH = 794;
 const pdfGenerator = new HtmlRasterPdfGenerator();
@@ -27,6 +28,7 @@ export function ReportPreviewScreen() {
   const reportRef = useRef<HTMLDivElement>(null);
   const previewBoxRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [docHeight, setDocHeight] = useState(0);
   const [pdf, setPdf] = useState<File | null>(null);
   const [building, setBuilding] = useState(true);
   const [outcome, setOutcome] = useState<ShareOutcome | null>(null);
@@ -43,11 +45,12 @@ export function ReportPreviewScreen() {
       const box = previewBoxRef.current;
       if (!box) return;
       setScale(Math.min(1, box.clientWidth / REPORT_WIDTH));
+      setDocHeight(reportRef.current?.offsetHeight ?? 0);
     };
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, [job]);
+  }, [job, language]);
 
   // Pre-generate the PDF so the Share tap can call navigator.share synchronously
   // (avoids losing the user gesture on iOS).
@@ -105,34 +108,23 @@ export function ReportPreviewScreen() {
         {banner ? <div className={`banner ${banner.cls}`}>{banner.msg}</div> : null}
 
         <div className="section-title">{t('report.preview')}</div>
-        <div
-          ref={previewBoxRef}
-          style={{
-            width: '100%',
-            overflow: 'hidden',
-            borderRadius: 'var(--radius)',
-            boxShadow: 'var(--shadow)',
-          }}
-        >
-          <div
-            style={{
-              width: REPORT_WIDTH * scale,
-              height: 'auto',
-            }}
-          >
-            <div
-              style={{
-                transform: `scale(${scale})`,
-                transformOrigin: 'top left',
-                width: REPORT_WIDTH,
-              }}
-            >
-              <ReportDocument
-                ref={reportRef}
-                job={job}
-                language={language}
-                labels={labels}
-              />
+        <div className="adm-desk">
+          <div ref={previewBoxRef} className="adm-desk__sheet">
+            <div dir="ltr" style={{ width: REPORT_WIDTH * scale, height: docHeight ? docHeight * scale : 'auto' }}>
+              <div
+                style={{
+                  transform: `scale(${scale})`,
+                  transformOrigin: 'top left',
+                  width: REPORT_WIDTH,
+                }}
+              >
+                <ReportDocument
+                  ref={reportRef}
+                  job={job}
+                  language={language}
+                  labels={labels}
+                />
+              </div>
             </div>
           </div>
         </div>
