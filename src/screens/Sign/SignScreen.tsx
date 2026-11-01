@@ -4,8 +4,11 @@ import { useLanguage } from '@/app/providers/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { getSupabase } from '@/services/supabase/client';
 import { SignaturePadCanvas, type SignaturePadHandle } from '@/components/SignaturePadCanvas';
-import { formatDate, formatDateAndTime } from '@/lib/datetime';
+import { formatDate } from '@/lib/datetime';
 import { Icon } from '@/components/Icon';
+import { VisitWhen } from './VisitWhen';
+import { BrandMark } from '@/screens/Login/BrandMark';
+import '@/styles/screens/first-impression.css';
 
 interface SigningTask {
   task_title: string;
@@ -64,19 +67,19 @@ export function SignScreen() {
   if (state.kind === 'invalid') {
     return (
       <Centered>
-        <div className="sign-brand"><Sprout /><span>{t('app.name', 'Ghsoon Najd')}</span></div>
+        <Brand />
         <h1 className="sign-title">{t('sign.invalidTitle', 'This link is no longer active')}</h1>
-        <p className="hint">{t('sign.invalidBody', 'It may have expired or already been signed. Thank you.')}</p>
+        <p className="sign-body">{t('sign.invalidBody', 'It may have expired or already been signed. Thank you.')}</p>
       </Centered>
     );
   }
   if (state.kind === 'done') {
     return (
       <Centered>
-        <div className="sign-brand"><Sprout /><span>{t('app.name', 'Ghsoon Najd')}</span></div>
+        <Brand />
         <div className="sign-check"><Icon name="check" /></div>
         <h1 className="sign-title">{t('sign.thanksTitle', 'Thank you!')}</h1>
-        <p className="hint">{t('sign.thanksBody', 'Your signature has been recorded.')}</p>
+        <p className="sign-body">{t('sign.thanksBody', 'Your signature has been recorded.')}</p>
       </Centered>
     );
   }
@@ -84,58 +87,54 @@ export function SignScreen() {
   const { task } = state;
   return (
     <div className="sign-page">
-      <div className="sign-card">
-        <div className="sign-brand"><Sprout /><span>{t('app.name', 'Ghsoon Najd')}</span></div>
+      <main className="sign-card">
+        <Brand />
         <h1 className="sign-title">{t('sign.heading', 'Please review and sign')}</h1>
-        <div className="sign-summary">
+        <dl className="sign-summary">
           <Row label={t('sign.visit', 'Visit')} value={task.task_title} />
           <Row label={t('sign.client', 'Client')} value={task.client_name} />
           {task.worker_name ? <Row label={t('sign.worker', 'Technician')} value={task.worker_name} /> : null}
-          <Row label={t('sign.date', 'Date')} value={formatDateAndTime(task.scheduled_at, language)} />
-        </div>
+          <Row label={t('sign.date', 'Date')} value={<VisitWhen iso={task.scheduled_at} language={language} />} />
+        </dl>
 
-        <label className="field__label" style={{ marginTop: 12 }}>{t('sign.signHere', 'Sign below')}</label>
+        <div className="sign-pad-head">
+          <span className="field__label">{t('sign.signHere', 'Sign below')}</span>
+          <button type="button" className="btn btn--text btn--sm" disabled={empty || submitting} onClick={() => padRef.current?.clear()}>
+            {t('common.clear', 'Clear')}
+          </button>
+        </div>
         <SignaturePadCanvas
           ref={padRef}
           placeholder={t('signature.tapToSign', 'Sign here') ?? ''}
           onEmptyChange={setEmpty}
         />
-        <div className="row" style={{ gap: 8, marginTop: 12 }}>
-          <button className="btn btn--ghost" onClick={() => padRef.current?.clear()}>{t('common.clear', 'Clear')}</button>
-          <button className="btn btn--primary btn--block" disabled={empty || submitting} onClick={submit}>
-            {submitting ? t('sign.submitting', 'Submitting…') : t('sign.confirm', 'Confirm signature')}
-          </button>
-        </div>
-        <p className="hint" style={{ marginTop: 10, textAlign: 'center' }}>
+        <button className="btn btn--primary btn--block btn--lg sign-confirm" disabled={empty || submitting} onClick={submit}>
+          {submitting ? t('sign.submitting', 'Submitting…') : t('sign.confirm', 'Confirm signature')}
+        </button>
+        <p className="hint sign-note">
           {t('sign.expiresOn', 'This link expires on {{date}}', { date: formatDate(task.expires_at, language) })}
         </p>
-      </div>
+      </main>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="sign-row">
-      <span className="sign-row__label">{label}</span>
-      <span className="sign-row__value"><bdi>{value}</bdi></span>
+      <dt className="sign-row__label">{label}</dt>
+      <dd className="sign-row__value"><bdi>{value}</bdi></dd>
     </div>
   );
 }
 
 function Centered({ children }: { children: React.ReactNode }) {
-  return <div className="sign-page"><div className="sign-card sign-card--center">{children}</div></div>;
+  return <div className="sign-page"><main className="sign-card sign-card--state">{children}</main></div>;
 }
 
-function Sprout() {
+function Brand() {
+  const { t } = useTranslation();
   return (
-    <svg viewBox="0 0 64 64" width="32" height="32" aria-hidden>
-      <rect width="64" height="64" rx="10" fill="#003C1B" />
-      <g transform="translate(32 34)" fill="#00C481">
-        <path d="M -2 -2 C -16 -4 -22 -16 -14 -24 C -6 -16 -2 -10 -2 -2 Z" />
-        <path d="M 2 -2 C 16 -4 22 -16 14 -24 C 6 -16 2 -10 2 -2 Z" />
-        <rect x="-1.6" y="-3" width="3.2" height="22" rx="1.6" />
-      </g>
-    </svg>
+    <div className="sign-head"><BrandMark size={32} /><span>{t('app.name', 'Ghsoon Najd')}</span></div>
   );
 }

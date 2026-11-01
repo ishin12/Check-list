@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { useAuth } from '@/app/providers/AuthContext';
+import '@/styles/screens/first-impression.css';
 
 export function ResetPasswordScreen() {
   const { t } = useTranslation();
@@ -26,25 +27,25 @@ export function ResetPasswordScreen() {
   }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell auth-page">
       <AppHeader title={t('auth.resetTitle', 'Set a new password')} />
       <main className="app-main">
         {loading ? (
           <p className="hint">{t('auth.signingIn', 'Signing you in…')}</p>
         ) : !user ? (
           <div className="stack">
-            <div className="banner banner--error">
+            <div className="banner banner--error" role="alert">
               {t('auth.resetInvalid', 'This reset link is invalid or has expired. Request a new one from the sign-in page.')}
             </div>
             <Link className="btn btn--block" to="/login">{t('auth.backToSignIn', 'Back to sign in')}</Link>
           </div>
         ) : (
-          <form className="stack" onSubmit={onSubmit}>
+          <form className="stack auth-form" onSubmit={onSubmit}>
             <div className="field">
               <label className="field__label" htmlFor="new-password">{t('auth.newPassword', 'New password')}</label>
               <input
                 id="new-password"
-                className="input"
+                className="input input--ltr"
                 type="password"
                 autoComplete="new-password"
                 minLength={8}
@@ -57,7 +58,7 @@ export function ResetPasswordScreen() {
             <button className="btn btn--primary btn--block btn--lg" type="submit" disabled={pw.length < 8 || saving}>
               {t('auth.savePassword', 'Save password')}
             </button>
-            {error ? <div className="banner banner--error">{error}</div> : null}
+            {error ? <div className="banner banner--error" role="alert">{error}</div> : null}
           </form>
         )}
       </main>

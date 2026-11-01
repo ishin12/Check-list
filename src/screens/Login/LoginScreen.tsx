@@ -5,6 +5,8 @@ import { AppHeader } from '@/components/AppHeader';
 import { useAuth } from '@/app/providers/AuthContext';
 import { isDemoMode } from '@/services/supabase/client';
 import { Icon } from '@/components/Icon';
+import { BrandMark } from './BrandMark';
+import '@/styles/screens/first-impression.css';
 
 interface DemoProfile { id: string; full_name: string; email: string; role: 'manager' | 'worker' | 'client' }
 
@@ -76,39 +78,33 @@ export function LoginScreen() {
     }
   }
 
+  const pickerShown = demo && demoProfiles.length > 0;
+
   return (
-    <div className="app-shell">
-      <AppHeader title={t('auth.signIn', 'Sign in')} />
+    <div className="app-shell auth-page">
+      {demo ? <AppHeader title="" /> : null}
       <main className="app-main">
         {!configured ? (
-          <div className="banner banner--error">
+          <div className="banner banner--error" role="alert">
             {t('auth.notConfigured', 'Supabase is not configured. See .env.example.')}
           </div>
         ) : null}
         <div className="hero hero--brand">
           <div className="hero__brand-row">
-            <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden>
-              <rect width="64" height="64" rx="12" fill="#003C1B"/>
-              <g transform="translate(32 34)" fill="#00C481">
-                <path d="M -2 -2 C -16 -4 -22 -16 -14 -24 C -6 -16 -2 -10 -2 -2 Z"/>
-                <path d="M 2 -2 C 16 -4 22 -16 14 -24 C 6 -16 2 -10 2 -2 Z"/>
-                <rect x="-1.6" y="-3" width="3.2" height="22" rx="1.6"/>
-              </g>
-              <path d="M 22 56 Q 32 50 42 56" fill="none" stroke="#D7CE6D" strokeWidth="3" strokeLinecap="round"/>
-            </svg>
+            <BrandMark size={48} />
             <div className="hero__brand-name">{t('app.name', 'Ghsoon Najd')}</div>
           </div>
-          <div className="hero__title">{t('auth.welcome', 'Welcome back')}</div>
-          <div className="hero__desc">
+          <h1 className="hero__title">{t('auth.welcome', 'Welcome back')}</h1>
+          <p className="hero__desc">
             {demo
               ? t('demo.loginHint', 'Demo mode — pick an account below to see exactly what they see.')
               : t('auth.magicLinkHint', 'Enter your email — we’ll send a one-tap sign-in link.')}
-          </div>
+          </p>
         </div>
 
-        {demo && demoProfiles.length > 0 ? (
-          <section className="stack">
-            <div className="section-title">{t('demo.accountsTitle', 'Demo accounts')}</div>
+        {pickerShown ? (
+          <section className="stack auth-demo">
+            <h2 className="section-title">{t('demo.accountsTitle', 'Demo accounts')}</h2>
             <div className="stack">
               {demoProfiles.map((p) => (
                 <button
@@ -121,7 +117,7 @@ export function LoginScreen() {
                   <div className={`demo-account__role demo-account__role--${p.role}`}>
                     {t(`roles.${p.role}`, p.role)}
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div className="demo-account__body">
                     <div className="card__title">{p.full_name}</div>
                     <div className="card__meta">{t(`demo.blurb.${p.role}`)}</div>
                   </div>
@@ -129,20 +125,21 @@ export function LoginScreen() {
                 </button>
               ))}
             </div>
-            <div className="hint" style={{ textAlign: 'center' }}>
-              {t('demo.orEmail', 'Or sign in with email below:')}
-            </div>
           </section>
         ) : null}
 
-        <form className="stack" onSubmit={onSubmit}>
+        <form className="stack auth-form" onSubmit={onSubmit}>
+          {pickerShown ? <p className="hint">{t('demo.orEmail', 'Or sign in with email below:')}</p> : null}
           <div className="field">
             <label className="field__label" htmlFor="email">{t('auth.email', 'Email')}</label>
             <input
               id="email"
-              className="input"
+              className="input input--ltr"
               type="email"
+              inputMode="email"
               autoComplete="email"
+              autoCapitalize="none"
+              spellCheck={false}
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -155,7 +152,7 @@ export function LoginScreen() {
               <label className="field__label" htmlFor="password">{t('auth.password', 'Password')}</label>
               <input
                 id="password"
-                className="input"
+                className="input input--ltr"
                 type="password"
                 autoComplete="current-password"
                 required
@@ -165,8 +162,9 @@ export function LoginScreen() {
               />
             </div>
           ) : null}
+          {/* With the demo account list on screen, picking an account is the primary action. */}
           <button
-            className="btn btn--primary btn--block btn--lg"
+            className={`btn btn--block btn--lg${pickerShown ? '' : ' btn--primary'}`}
             type="submit"
             disabled={!email || (!demo && !password) || status === 'sending' || !configured}
           >
@@ -178,7 +176,7 @@ export function LoginScreen() {
           {!demo ? (
             <button
               type="button"
-              className="btn btn--block"
+              className="btn btn--text"
               onClick={onForgot}
               disabled={status === 'sending' || !configured}
             >
@@ -187,14 +185,14 @@ export function LoginScreen() {
           ) : null}
 
           {status === 'sent' ? (
-            <div className="banner banner--success">
+            <div className="banner banner--success" role="status">
               {demo
                 ? t('auth.linkSent', 'Check your email and tap the link to continue.')
                 : t('auth.resetSent', 'If that email has an account, a reset link is on its way.')}
             </div>
           ) : null}
           {status === 'error' && error ? (
-            <div className="banner banner--error">{error}</div>
+            <div className="banner banner--error" role="alert">{error}</div>
           ) : null}
         </form>
       </main>

@@ -9,6 +9,7 @@ import {
 import { useCurrentJob } from '@/app/providers/CurrentJobContext';
 import { setSignature } from '@/domain/job/job';
 import { nowIso } from '@/lib/datetime';
+import '@/styles/screens/first-impression.css';
 
 export function SignatureCaptureScreen() {
   const { t } = useTranslation();
@@ -40,32 +41,38 @@ export function SignatureCaptureScreen() {
     <div className="app-shell">
       <AppHeader title={t('signature.title')} showBack />
       <main className="app-main">
-        <p className="hint">{t('signature.instruction')}</p>
-
-        <div className="field">
-          <label className="field__label">{t('signature.signerName')}</label>
-          <input
-            className="input"
-            value={signerName}
-            onChange={(e) => setSignerName(e.target.value)}
-          />
+        <div className="stack">
+          <p className="sigcap-instruction">{t('signature.instruction')}</p>
+          <div className="field">
+            <label className="field__label" htmlFor="signer-name">{t('signature.signerName')}</label>
+            <input
+              id="signer-name"
+              className="input"
+              autoComplete="name"
+              value={signerName}
+              onChange={(e) => setSignerName(e.target.value)}
+            />
+          </div>
         </div>
 
-        <SignaturePadCanvas
-          ref={padRef}
-          placeholder={t('signature.tapToSign')}
-          onEmptyChange={setEmpty}
-        />
-
-        <button
-          type="button"
-          className="btn btn--ghost btn--block"
-          onClick={() => padRef.current?.clear()}
-        >
-          {t('signature.clear')}
-        </button>
-
-        {empty ? <div className="hint">{t('signature.empty')}</div> : null}
+        <div className="sigcap-pad">
+          <SignaturePadCanvas
+            ref={padRef}
+            placeholder={t('signature.tapToSign')}
+            onEmptyChange={setEmpty}
+          />
+          <div className="sigcap-tools">
+            {empty ? <div className="hint">{t('signature.empty')}</div> : null}
+            <button
+              type="button"
+              className="btn btn--text btn--sm"
+              disabled={empty}
+              onClick={() => padRef.current?.clear()}
+            >
+              {t('signature.clear')}
+            </button>
+          </div>
+        </div>
       </main>
 
       <div className="action-bar">
