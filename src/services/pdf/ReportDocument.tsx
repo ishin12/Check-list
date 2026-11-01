@@ -143,7 +143,7 @@ export const ReportDocument = forwardRef<HTMLDivElement, Props>(
                     fontWeight: 700,
                   }}
                 >
-                  {checked ? '✓' : ''}
+                  {checked ? '✓' : ''} {/* taste-skill-ignore: compact PDF checklist state, not app UI */}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 500 }}>
