@@ -10,6 +10,7 @@ import { useDirectory } from '@/app/providers/DirectoryContext';
 import type { AppNotification } from '@/domain/models/ops';
 import { formatDateAndTime } from '@/lib/datetime';
 import { Icon } from '@/components/Icon';
+import '@/styles/screens/field.css';
 
 export function NotificationsScreen() {
   const { t } = useTranslation();
@@ -74,14 +75,18 @@ export function NotificationsScreen() {
                 .filter(Boolean)
                 .join(', ');
               return (
-                <div key={n.id} className={`card ${n.readAt ? '' : 'card--unread'}`}>
+                <div key={n.id} className={`card note-item ${n.readAt ? '' : 'card--unread'}`}>
                   <div className="card__title">{renderKind(n.kind, t)}</div>
-                  <div className="card__meta">{formatDateAndTime(n.createdAt, language)}</div>
                   {payload.title ? (
-                    <div className="card__meta">
+                    <div className="note-item__what">
                       {payload.title}{workerName ? ` · ${workerName}` : ''}
                     </div>
                   ) : null}
+                  <div className="card__meta">
+                    {formatDateAndTime(n.createdAt, language, {
+                      weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                    })}
+                  </div>
                 </div>
               );
             })}

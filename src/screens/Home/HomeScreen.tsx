@@ -10,6 +10,7 @@ import { templateTitle } from '@/domain/template/template';
 import { startJob } from '@/domain/job/job';
 import type { Template } from '@/domain/models/types';
 import { Icon } from '@/components/Icon';
+import '@/styles/screens/field.css';
 
 export function HomeScreen() {
   const { t } = useTranslation();
@@ -53,15 +54,15 @@ export function HomeScreen() {
                 onClick={() => begin(template)}
               >
                 <span className="card__lead"><Icon name="check-circle" /></span>
-                <span style={{ flex: 1 }}>
-                  <span className="card__title" style={{ display: 'block' }}>
+                <span className="visit__body">
+                  <span className="card__title">
                     {templateTitle(template, language)}
                   </span>
-                  <span className="card__meta" style={{ display: 'block' }}>
+                  <span className="card__meta">
                     {t('templates.tasksCount', { count: template.tasks.length })}
                   </span>
                 </span>
-                <span style={{ color: 'var(--color-text-muted)' }}>
+                <span className="visit__go">
                   <Chevron kind="forward" />
                 </span>
               </button>
@@ -69,7 +70,7 @@ export function HomeScreen() {
           </div>
         )}
 
-        <div className="stack" style={{ marginTop: 'auto', paddingTop: 'var(--space-4)' }}>
+        <div className="stack home-foot">
           <button
             type="button"
             className="btn btn--ghost btn--block"

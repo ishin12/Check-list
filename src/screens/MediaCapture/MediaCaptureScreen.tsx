@@ -11,6 +11,7 @@ import { MEDIA_ERROR_TEXT, MediaError, type MediaErrorCode } from '@/services/me
 import { saveProofOnline } from '@/services/media/saveProof';
 import { uploadProof } from '@/services/media/upload';
 import { Icon } from '@/components/Icon';
+import '@/styles/screens/field.css';
 
 type Kind = 'start' | 'finish';
 

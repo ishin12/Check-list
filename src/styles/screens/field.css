@@ -1,0 +1,289 @@
+/* =========================================================================
+   Field-work screens: Today, Home, Calendar, Approvals, Notifications,
+   TaskDetail, TaskNew, JobRunner, MediaCapture.
+   Used one-handed on a phone, outdoors. The visit or step in front of the
+   worker is the one heavy thing; everything else steps back by tone.
+   Follows DESIGN.md: flat, tone steps, 8/12 radii, five type sizes, logical
+   properties. Loaded after global.css; rules that must beat a global rule
+   carry a screen class (.task-detail, .job-run, .capture) for the extra
+   specificity.
+   ========================================================================= */
+
+/* Read by assistive tech, not drawn: the leading card is announced as "Up next"
+   without a label above its title. */
+.sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Visit row ------------------------------------------------------------------
+   Time first (it is what a worker scans for), status on the same line at the
+   end, then what and where. Used by Today, Calendar and Approvals. */
+.visit {
+  align-items: stretch;
+  min-height: 88px;
+}
+.visit__body {
+  flex: 1;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.visit__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.visit__time {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+.visit .card__title { overflow-wrap: anywhere; }
+.visit .card__meta { margin-top: 0; }
+.visit__go {
+  align-self: center;
+  display: inline-flex;
+  color: var(--color-accent);
+}
+
+/* The leading card on Today: the visit to do next. Heading-size time and title,
+   room to breathe, a chevron that says "open it". */
+.visit--lead {
+  padding: var(--space-5);
+  min-height: 132px;
+}
+.visit--lead .visit__time {
+  font-size: var(--fs-md);
+  line-height: 1.25;
+}
+.visit--lead .visit__body { gap: var(--space-2); }
+.visit--lead .card__meta { font-size: var(--fs-base); color: var(--color-text); }
+.visit--lead .who-line { font-size: var(--fs-base); color: var(--color-text); }
+
+/* Today hero ----------------------------------------------------------------- */
+.today-hero { display: flex; flex-direction: column; gap: var(--space-3); }
+.today-hero .hero__desc { margin-top: 0; }
+.today-hero__track {
+  block-size: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  overflow: hidden;
+}
+.today-hero__fill {
+  block-size: 100%;
+  background: var(--color-brand); /* emerald on the dark field only */
+  border-radius: 999px;
+  transition: inline-size 0.2s ease;
+}
+
+/* Calendar filters ------------------------------------------------------------- */
+.calendar-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: var(--space-2);
+}
+.calendar-filters .input { max-inline-size: none; }
+
+/* Inbox ----------------------------------------------------------------------- */
+.note-item { display: flex; flex-direction: column; gap: var(--space-1); }
+.note-item .card__meta { margin-top: 0; }
+.note-item__what { font-size: var(--fs-base); color: var(--color-text); overflow-wrap: anywhere; }
+/* Read items step back: lighter weight, unread keeps the bold title and the tint. */
+.note-item:not(.card--unread) .card__title { font-weight: 600; }
+
+/* Task detail ----------------------------------------------------------------- */
+.task-detail .task-head__when { font-size: var(--fs-md); }
+/* Checklist rows are the work: whole row is the target, 64px, and no UA button
+   outline (TemplateRunner renders each row as a <button>). */
+.task-detail .check-item {
+  min-height: 64px;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+}
+/* The checklist sits inside the white Checklist card: rows step to the tile tone,
+   done rows to the soft green. */
+.task-detail .section-card .check-item { background: var(--color-surface-2); }
+.task-detail .section-card .check-item--done { background: var(--color-accent-soft); }
+.task-detail .checkbox,
+.job-run .checkbox { width: 32px; height: 32px; }
+.task-detail .checkbox .icon,
+.job-run .checkbox .icon { width: 20px; height: 20px; }
+.task-detail .check-item__label,
+.job-run .check-item__label { font-weight: 600; }
+
+/* Client name in the who-line is a link inside a sentence: pad the hit area
+   without moving the line. */
+.task-head .who-line__link {
+  display: inline-block;
+  padding-block: 11px;
+  margin-block: -11px;
+}
+
+/* Proof: each of start / finish is a tile in the Proof card, the word says what
+   is missing, the fill says it is done. */
+.proof-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-surface-2);
+}
+.proof-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.proof-row__state {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-accent);
+}
+.proof-row__state .icon { width: 24px; height: 24px; }
+.proof-row__name { flex: 1 1 7rem; min-inline-size: max-content; font-weight: 700; }
+.proof-row__tag {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
+}
+.proof-row__tag--missing { background: var(--color-danger-soft); color: var(--color-danger); }
+.proof-row__tag--done { background: var(--color-surface); color: var(--color-text); }
+.proof-row .proof-block__media { background: var(--color-surface); }
+.proof-row .btn--icon { background: var(--color-surface); }
+.proof-row .btn--icon:hover { background: var(--color-surface-3); }
+
+.proof-note { display: flex; flex-direction: column; gap: var(--space-2); }
+.proof-note__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+.task-blocker {
+  margin-inline: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.task-blocker__title { font-weight: 700; }
+.task-blocker__list { margin: 0; padding-inline-start: var(--space-5); }
+
+.note-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+.link-result__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.decision-banner__title { font-weight: 700; margin-bottom: var(--space-1); }
+.panel-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.card__text { margin-top: var(--space-2); overflow-wrap: anywhere; }
+
+/* New task form -------------------------------------------------------------- */
+/* Fields of one group sit 12 apart (.stack); groups sit 24 apart (the page gap).
+   The create button rides the sticky action bar, full width of the column. */
+.task-form .action-bar { margin-inline: calc(var(--space-4) * -1); margin-block-end: calc(var(--space-6) * -1); }
+
+/* Job runner ------------------------------------------------------------------ */
+/* Progress stays at the top while the list scrolls under it. */
+.job-run .job-progress {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 4;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  margin-block: calc(var(--space-2) * -1);
+  background: var(--color-bg);
+}
+.job-progress__label {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: var(--tracking-tight);
+}
+.job-run .progress__track { block-size: 12px; background: var(--color-surface-3); }
+.job-run .progress__fill { background: var(--color-ink); }
+.job-run .check-item { min-height: 64px; padding: var(--space-3) var(--space-4); }
+.check-item__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.job-run .check-item__main { flex: 1; width: auto; min-width: 0; min-height: 48px; }
+.job-run .check-item__row .icon-btn { flex: none; color: var(--color-accent); }
+.job-run__hint { font-size: var(--fs-base); color: var(--color-text); }
+.job-run + .action-bar { flex-direction: column; gap: var(--space-2); }
+
+/* Home -------------------------------------------------------------------------- */
+.home-foot {
+  margin-top: auto;
+  padding-top: var(--space-4);
+}
+
+/* Camera -------------------------------------------------------------------------
+   The one dark screen. White controls on black: the forest-ink primary would
+   vanish on black, so inside the camera the primary is a white fill. */
+.capture .btn--primary { background: #fff; color: var(--color-ink); }
+.capture .btn--primary:active { background: rgba(255, 255, 255, 0.8); }
+.capture .btn--primary:disabled { background: rgba(255, 255, 255, 0.18); color: rgba(255, 255, 255, 0.7); }
+@media (hover: hover) {
+  .capture .btn--primary:hover { background: rgba(255, 255, 255, 0.88); }
+}
+.capture .capture__retake { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.capture .capture__retake:active { background: rgba(255, 255, 255, 0.28); }
+@media (hover: hover) {
+  .capture .capture__retake:hover { background: rgba(255, 255, 255, 0.24); }
+}
+.capture .capture__label { font-size: var(--fs-md); letter-spacing: var(--tracking-tight); }
+.capture .capture__placeholder {
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  max-inline-size: 22rem;
+  padding-inline: var(--space-4);
+}
+.capture .capture__placeholder p { font-size: var(--fs-base); line-height: 1.5; text-align: center; }
+.capture .capture__big-icon { opacity: 1; }
+.capture .upload-progress__bar { background: var(--color-brand); }
+.capture .upload-progress__label { color: #fff; }
+.capture .banner--error { background: var(--color-danger-soft); color: var(--color-danger); }
+.capture .banner--info { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.capture .capture__banner-btn { background: var(--color-surface); color: var(--color-ink); }
+.capture .capture__banner-btn:hover { background: var(--color-surface-3); }
+
+/* Desktop: the visit rows get a little more air, nothing else changes. */
+@media (min-width: 1024px) {
+  .visit--lead { min-height: 148px; }
+  .task-form .action-bar { margin-inline: 0; margin-block-end: 0; }
+}
+
+/* Urdu (Nastaliq): rules here mirror the global Urdu block for classes this file
+   adds. The Latin face and a plain line height for figures keep numerals from
+   clipping. */
+html[lang='ur'] .visit__time,
+html[lang='ur'] .job-progress__label,
+html[lang='ur'] .proof-row__name,
+html[lang='ur'] .note-item__what,
+html[lang='ur'] .task-blocker,
+html[lang='ur'] .job-run__hint { line-height: 2; }
+html[lang='ur'] .visit__time { font-family: var(--font-sans); line-height: 1.5; padding-block: 4px; }
+html[lang='ur'] .visit .card__meta { line-height: 2; }
+html[lang='ur'] .visit--lead .visit__time { line-height: 1.5; }
+html[lang='ur'] .proof-row__tag { line-height: 1.9; padding-block: 6px 2px; }
+html[lang='ur'] .today-hero { gap: var(--space-2); }
