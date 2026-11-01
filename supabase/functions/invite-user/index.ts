@@ -12,7 +12,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
 interface InviteBody {
   email: string;
-  role: 'manager' | 'worker' | 'client';
+  role: 'manager' | 'worker' | 'auditor' | 'client';
   full_name?: string;
   phone?: string;
   client_id?: string;

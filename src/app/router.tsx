@@ -25,6 +25,7 @@ import { PortalScreen } from '@/screens/Portal/PortalScreen';
 import { RoleGate } from '@/components/RoleGate';
 import { RootRedirect } from '@/screens/Home/RootRedirect';
 import { SignScreen } from '@/screens/Sign/SignScreen';
+import { ReportsScreen } from '@/screens/Reports/ReportsScreen';
 
 // BASE_URL is '/Check-list/' in production builds, '/' in dev. Browser router
 // needs the basename without the trailing slash.
@@ -51,7 +52,7 @@ export const router = createBrowserRouter([
   { path: '/clients/new',    element: <RoleGate roles={['manager']}><ClientNewScreen /></RoleGate> },
   { path: '/clients/:id',    element: <RoleGate roles={['manager']}><ClientDetailScreen /></RoleGate> },
   { path: '/approvals',      element: <RoleGate roles={['manager']}><ApprovalsScreen /></RoleGate> },
-  { path: '/audit',          element: <RoleGate roles={['manager']}><AuditScreen /></RoleGate> },
+  { path: '/reports',        element: <RoleGate roles={['manager', 'auditor']}><ReportsScreen /></RoleGate> },
   { path: '/users',          element: <RoleGate roles={['manager']}><UsersScreen /></RoleGate> },
 
   // Client portal
@@ -65,7 +66,8 @@ export const router = createBrowserRouter([
   { path: '/job',            element: <RoleGate roles={['worker', 'manager']}><JobRunnerScreen /></RoleGate> },
   { path: '/signature',      element: <RoleGate roles={['worker', 'manager']}><SignatureCaptureScreen /></RoleGate> },
   { path: '/report',         element: <RoleGate roles={['worker', 'manager']}><ReportPreviewScreen /></RoleGate> },
-  { path: '/settings',       element: <RoleGate roles={['worker', 'manager', 'client']}><SettingsScreen /></RoleGate> },
+  { path: '/audit',          element: <RoleGate roles={['manager', 'auditor']}><AuditScreen /></RoleGate> },
+  { path: '/settings',       element: <RoleGate roles={['worker', 'manager', 'auditor', 'client']}><SettingsScreen /></RoleGate> },
 
   { path: '*', element: <Navigate to="/" replace /> },
 ], { basename });

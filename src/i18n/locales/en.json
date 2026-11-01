@@ -118,7 +118,9 @@
     "approvals": "Approvals",
     "clients": "Clients",
     "notifications": "Inbox",
-    "me": "Me"
+    "me": "Me",
+    "reports": "Reports",
+    "audit": "Audit"
   },
   "auth": {
     "signIn": "Sign in",
@@ -446,8 +448,22 @@
   },
   "roles": {
     "worker": "Worker",
-    "manager": "Manager",
+    "manager": "Administrator",
+    "auditor": "Financial auditor",
     "client": "Client"
+  },
+  "reports": {
+    "title": "Reports",
+    "summary": "Operational summary",
+    "readOnly": "Read-only view for reporting and accountability.",
+    "totalTasks": "Total tasks",
+    "approved": "Approved",
+    "pending": "Open or pending",
+    "completionRate": "Completion",
+    "recentWork": "Recent work",
+    "exportCsv": "Export CSV",
+    "noTasks": "No tasks found.",
+    "noAmounts": "This report contains operational totals, not monetary accounting."
   },
   "setup": {
     "notConfigured": "Supabase isn’t configured. Copy <c>.env.example</c> to <c>.env.local</c>.",

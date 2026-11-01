@@ -8,7 +8,7 @@ import { Icon } from '@/components/Icon';
 import { BrandMark } from './BrandMark';
 import '@/styles/screens/first-impression.css';
 
-interface DemoProfile { id: string; full_name: string; email: string; role: 'manager' | 'worker' | 'client' }
+interface DemoProfile { id: string; full_name: string; email: string; role: 'manager' | 'worker' | 'auditor' | 'client' }
 
 
 export function LoginScreen() {

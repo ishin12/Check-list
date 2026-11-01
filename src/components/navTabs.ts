@@ -14,8 +14,10 @@ export const NAV_TABS: NavTab[] = [
   { to: '/calendar',      i18n: 'tabs.calendar',      fallback: 'Calendar',  icon: 'calendar', roles: ['worker', 'manager'] },
   { to: '/approvals',     i18n: 'tabs.approvals',     fallback: 'Approvals', icon: 'approvals', roles: ['manager'] },
   { to: '/clients',       i18n: 'tabs.clients',       fallback: 'Clients',   icon: 'clients', roles: ['manager'] },
+  { to: '/reports',       i18n: 'tabs.reports',       fallback: 'Reports',   icon: 'list', roles: ['manager', 'auditor'] },
+  { to: '/audit',         i18n: 'tabs.audit',         fallback: 'Audit',     icon: 'clock', roles: ['manager', 'auditor'] },
   { to: '/notifications', i18n: 'tabs.notifications', fallback: 'Inbox',     icon: 'inbox', roles: ['worker', 'manager'] },
-  { to: '/settings',      i18n: 'tabs.me',            fallback: 'Me',        icon: 'me', roles: ['worker', 'manager'] },
+  { to: '/settings',      i18n: 'tabs.me',            fallback: 'Me',        icon: 'me', roles: ['worker', 'manager', 'auditor'] },
 ];
 
 export function tabsForRole(role: Role): NavTab[] {

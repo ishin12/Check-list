@@ -84,7 +84,7 @@ async function loadAll(): Promise<void> {
     if (v) blobs.set(String(k), v);
   }
   const seeded = await conn.get('meta', 'seeded');
-  if (seeded !== 'v5') await seedDemo();
+  if (seeded !== 'v6') await seedDemo();
   else if (state.task_workers.length === 0 && state.tasks.length > 0) {
     // Demo data created before multi-worker tasks: mirror migration 0006's backfill.
     for (const t of state.tasks) addTaskWorker(t.id, t.assigned_worker_id, false);
@@ -818,6 +818,7 @@ async function seedDemo(): Promise<void> {
     { id: 'u-mgr', role: 'manager', full_name: 'Faisal (Manager)', email: 'faisal@demo.com', phone: null, client_id: null, active: true },
     { id: 'u-wa', role: 'worker',  full_name: 'Ahmed',            email: 'ahmed@demo.com',   phone: null, client_id: null, active: true },
     { id: 'u-wb', role: 'worker',  full_name: 'Sara',             email: 'sara@demo.com',    phone: null, client_id: null, active: true },
+    { id: 'u-aud', role: 'auditor', full_name: 'Finance auditor', email: 'auditor@demo.com', phone: null, client_id: null, active: true },
     { id: 'u-cli', role: 'client', full_name: 'Khaled Al-Saud',   email: 'khaled@demo.com',  phone: null, client_id: 'c-1', active: true },
   ];
 
