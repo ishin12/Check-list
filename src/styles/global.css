@@ -1,8 +1,9 @@
 /* =========================================================================
-   Ghsoon Najd — global styles
-   Principles: flat surfaces (tone step + 1px border, no resting shadows),
-   one accent (forest/emerald), semantic status colours, 5 type sizes,
-   logical properties only (works in LTR and RTL), AA contrast.
+   Ghsoon Najd: global styles
+   Principles: flat surfaces separated by a step in tone (no outlines, no resting
+   shadows), one accent (forest/emerald), semantic status colours, 5 type sizes,
+   two radii, logical properties only (works in LTR and RTL), AA contrast.
+   Full write-up: DESIGN.md.
    ========================================================================= */
 :root {
   color-scheme: light;
@@ -13,29 +14,32 @@
   --color-ink-press: #002B13;
   --color-brand: #00C481;          /* emerald: logo glyph + dark-surface accents only */
   --color-accent: #00704A;         /* AA accent for text, icons, active states */
-  --color-accent-soft: #E2F2E8;    /* accent tone step */
-  --color-accent-line: #BFDCCB;
+  --color-accent-soft: #CFE9DA;    /* accent tone step (selected, "up next") */
+  --color-accent-line: #B4D6C3;    /* accent hairline: kept for older rules, not used for boxes */
 
   /* Neutrals, all tinted toward the brand green */
-  --color-bg: #F3F6F2;
-  --color-bg-deep: #E6ECE4;
-  --color-surface: #FFFFFF;
-  --color-surface-2: #E8EEE6;      /* tone step above surface/bg */
-  --color-surface-3: #DCE5D9;      /* hover on surface-2 */
-  --color-border: #D3DCD0;
-  --color-border-strong: #829683;  /* inputs, outlined buttons (3:1) */
+  /* Surfaces step by tone, never by outline: page < cards (white) < tiles inside
+     cards (surface-2) < control fills (surface-3) < their hover (surface-4). */
+  --color-bg: #EBF0E9;             /* page */
+  --color-bg-deep: #E0E7DE;        /* desktop backdrop, public pages */
+  --color-surface: #FFFFFF;        /* cards, bars, sheets */
+  --color-surface-2: #E1E9DF;      /* tiles inside cards, tracks */
+  --color-surface-3: #D2DDD0;      /* secondary button fill, hover on surface-2 */
+  --color-surface-4: #C4D1C1;      /* hover/press on surface-3 */
+  --color-border: #D3DCD0;         /* legacy: real tables and form fields only */
+  --color-border-strong: #829683;  /* form fields, checkboxes (3:1) */
   --color-text: #003C1B;
   --color-text-muted: #4A6357;
-  --color-disabled-bg: #E3E8E1;
+  --color-disabled-bg: #E4EAE2;
   --color-disabled-fg: #6A766F;
   --color-link: #00704A;
   --color-focus: #00704A;
 
   --color-danger: #8E2222;
-  --color-danger-soft: #F9DEDE;
-  --color-danger-hover: #F3CBCB;
+  --color-danger-soft: #F7D9D9;
+  --color-danger-hover: #F0C4C4;
   --color-success: #0B5B2D;
-  --color-success-soft: #D3EEDD;
+  --color-success-soft: #CBEBD6;
 
   /* Legacy aliases (kept so older rules/inline styles keep resolving) */
   --color-primary: var(--color-ink);
@@ -45,43 +49,51 @@
   --color-brand-soft: var(--color-accent-soft);
   --color-sand: var(--color-bg-deep);
   --color-gold: #C9A14A;
-  --color-gold-soft: #FBEACB;
+  --color-gold-soft: #F6E4B8;
   --color-ink-soft: var(--color-ink-hover);
 
   /* Status: not started neutral, in progress amber, submitted blue (waiting),
      approved green, rejected red. All text >= 6:1 on its fill. */
-  --status-not_started-bg: #E4EAE2;  --status-not_started-fg: #3D5446;
-  --status-in_progress-bg: #FBEACB;  --status-in_progress-fg: #7A4A00;
-  --status-submitted-bg:   #DCE9F6;  --status-submitted-fg:   #1C4E80;
-  --status-approved-bg:    #D3EEDD;  --status-approved-fg:    #0B5B2D;
-  --status-rejected-bg:    #F9DEDE;  --status-rejected-fg:    #8E2222;
+  --status-not_started-bg: #DDE5DB;  --status-not_started-fg: #3D5446;
+  --status-in_progress-bg: #F6E4B8;  --status-in_progress-fg: #6E4200;
+  --status-submitted-bg:   #D3E4F5;  --status-submitted-fg:   #1C4E80;
+  --status-approved-bg:    #CBEBD6;  --status-approved-fg:    #0B5B2D;
+  --status-rejected-bg:    #F7D9D9;  --status-rejected-fg:    #8E2222;
 
-  /* Radius scale: inner elements tighter than their containers */
-  --radius-xs: 6px;    /* checkbox, tiny chips */
+  /* Radius: two shapes. 8px for everything you touch or sits inside a card
+     (buttons, inputs, tiles, list rows, tab indicator, tags at 6px);
+     12px for the surfaces that hold them (cards, hero, dialog). Full round is
+     reserved for dots, the progress track and the camera shutter. */
+  --radius-xs: 6px;    /* tags: status, repeat, count; checkbox */
   --radius-sm: 8px;    /* tiles inside cards */
-  --radius: 12px;      /* buttons, inputs */
-  --radius-lg: 16px;   /* cards, hero, modals */
+  --radius: 8px;       /* THE button radius: buttons, inputs, rows */
+  --radius-lg: 12px;   /* cards, hero, dialog */
 
+  /* Spacing: 4px base. Inside a group 8-12, between groups 24, between
+     sections 32+. */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
   --space-6: 32px;
+  --space-7: 48px;
 
-  /* Only floating layers (menus, dialogs) get a shadow. */
+  /* Only layers that float over content get a shadow: menus, dialogs and the
+     sticky bottom bars. Nothing at rest. */
   --shadow-float: 0 8px 24px rgba(0, 43, 19, 0.16);
+  --shadow-bar: 0 -6px 20px rgba(0, 43, 19, 0.07);
   --shadow-sm: none;
   --shadow: none;
   --shadow-lg: var(--shadow-float);
 
   /* Type scale: five sizes */
-  --fs-xs: 0.75rem;     /* 12: tab labels, coordinates */
-  --fs-sm: 0.875rem;    /* 14: labels, meta, pills */
-  --fs-base: 1rem;      /* 16: body, buttons, inputs */
-  --fs-md: 1.125rem;    /* 18: card titles, header title */
-  --fs-lg: 1.5rem;      /* 24: hero / page heading */
-  --tracking-tight: -0.015em;
+  --fs-xs: 0.75rem;     /* 12: tab labels (six per row) and coordinates only */
+  --fs-sm: 0.875rem;    /* 14: labels, meta, tags */
+  --fs-base: 1rem;      /* 16: body, buttons, inputs, list titles */
+  --fs-md: 1.25rem;     /* 20: page title, section heading, dialog title */
+  --fs-lg: 1.75rem;     /* 28: the one display line on a screen */
+  --tracking-tight: -0.02em;
 
   --font-sans: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-ar: 'Cairo', system-ui, sans-serif;
@@ -108,6 +120,18 @@ body,
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  scrollbar-color: var(--color-surface-4) transparent;
+  accent-color: var(--color-ink);
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-ink);
+}
+
+input,
+textarea {
+  caret-color: var(--color-accent);
 }
 
 body {
@@ -144,6 +168,10 @@ h3,
   text-wrap: balance;
   letter-spacing: var(--tracking-tight);
 }
+/* Display and page titles: tight leading, never more than two lines. */
+.hero__title,
+.sign-title,
+.app-header__title { line-height: 1.2; }
 
 button {
   font-family: inherit;
@@ -239,14 +267,15 @@ html[dir='rtl'] .icon--dir {
   padding: var(--space-2) var(--space-4);
   padding-top: max(var(--space-2), env(safe-area-inset-top));
   min-height: var(--header-h);
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  /* Same tone as the page: white cards sliding under it read as a step, so no
+     rule is needed under the bar. */
+  background: var(--color-bg);
 }
 
 .app-header__title {
   font-size: var(--fs-md);
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.2;
   flex: 1 1 9rem;
   min-width: 0;
   display: -webkit-box;
@@ -257,7 +286,7 @@ html[dir='rtl'] .icon--dir {
 }
 .app-header .lang-toggle { margin-inline-start: auto; }
 
-html[dir='rtl'] .app-header__title { line-height: 1.7; }
+html[dir='rtl'] .app-header__title { line-height: 1.6; }
 
 .app-main {
   flex: 1;
@@ -266,12 +295,14 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   padding-bottom: var(--space-6);
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  /* Between groups: 24. Inside a group (.stack) it is 12. */
+  gap: var(--space-5);
 }
 
-/* Headings that sit directly in the page flow: more room above than below. */
+/* Headings that sit directly in the page flow: more room above than below, so
+   a heading belongs to the list under it (8px) and not to the one above (32px). */
 .app-main > .section-title {
-  margin-block: var(--space-3) calc(var(--space-2) * -1);
+  margin-block: var(--space-2) calc(var(--space-4) * -1);
 }
 
 .action-bar {
@@ -283,7 +314,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   padding: var(--space-3) var(--space-4);
   padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
   background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  box-shadow: var(--shadow-bar); /* taste-skill-ignore: sticky bar floats over scrolling content */
 }
 /* The fixed tab bar sits at the bottom: keep the action bar above it. */
 .app-shell--with-nav .action-bar {
@@ -295,28 +326,29 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 .action-bar .btn--primary { flex: 2 1 0; }
 
 /* Buttons -------------------------------------------------------------------
-   Primary: filled forest, white text.   Secondary (default): tone-step surface.
-   Ghost: outlined.   Text: tertiary.   Danger: soft red.   Min 44px targets. */
+   One radius (--radius, 8px). No outlines: every button is a fill.
+   Primary: forest, white text.   Secondary (default) and ghost: tone-step fill.
+   Text: tertiary, no fill.   Danger: soft red.   Min 44px targets. */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--radius);
   padding: var(--space-3) var(--space-4);
   font-size: var(--fs-base);
   font-weight: 600;
   line-height: 1.25;
   min-height: 48px;
-  background: var(--color-surface-2);
+  background: var(--color-surface-3);
   color: var(--color-text);
   transition: background-color var(--ease), border-color var(--ease), color var(--ease), transform 100ms ease;
   text-decoration: none;
   text-align: center;
 }
 
-.btn--secondary { background: var(--color-surface-2); }
+.btn--secondary { background: var(--color-surface-3); }
 
 .btn--primary {
   background: var(--color-ink);
@@ -328,10 +360,8 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   color: #fff;
 }
 
-.btn--ghost {
-  background: var(--color-surface);
-  border-color: var(--color-border-strong);
-}
+/* Ghost keeps its name for existing markup; it is the secondary fill. */
+.btn--ghost { background: var(--color-surface-3); }
 
 .btn--text {
   background: transparent;
@@ -345,19 +375,19 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 }
 
 @media (hover: hover) {
-  .btn:hover { background: var(--color-surface-3); }
+  .btn:hover,
+  .btn--ghost:hover { background: var(--color-surface-4); }
   .btn--primary:hover,
   .btn--success:hover { background: var(--color-ink-hover); }
-  .btn--ghost:hover { background: var(--color-surface-2); }
   .btn--text:hover { background: var(--color-surface-2); }
   .btn--danger:hover { background: var(--color-danger-hover); }
 }
 
-.btn:active { transform: scale(0.98); background: var(--color-surface-3); }
+.btn:active,
+.btn--ghost:active { transform: scale(0.98); background: var(--color-surface-4); }
 .btn--primary:active,
 .btn--success:active { background: var(--color-ink-press); }
-.btn--ghost:active { background: var(--color-surface-2); }
-.btn--text:active { background: var(--color-surface-2); }
+.btn--text:active { background: var(--color-surface-3); }
 .btn--danger:active { background: var(--color-danger-hover); }
 
 /* Disabled: neutral grey, flat, clearly inert (never a pale primary). */
@@ -369,7 +399,6 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 .btn--danger:disabled {
   background: var(--color-disabled-bg);
   color: var(--color-disabled-fg);
-  border-color: transparent;
   cursor: not-allowed;
   transform: none;
 }
@@ -413,15 +442,15 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 }
 .icon-btn .icon { width: 22px; height: 22px; }
 @media (hover: hover) {
-  .icon-btn:hover { background: var(--color-surface-2); color: var(--color-text); }
+  .icon-btn:hover { background: var(--color-surface-3); color: var(--color-text); }
 }
-.icon-btn:active { background: var(--color-surface-3); }
+.icon-btn:active { background: var(--color-surface-4); }
 .icon-btn:disabled { color: var(--color-disabled-fg); cursor: not-allowed; background: transparent; }
 
-/* Cards: flat. Tone step + 1px border, no resting shadow. ------------------- */
+/* Cards: flat white on the page tone. No outline, no resting shadow. -------- */
 .card {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 0; /* cards can be <button>s: drop the UA outline */
   border-radius: var(--radius-lg);
   padding: var(--space-4);
 }
@@ -433,18 +462,21 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   text-align: start;
   width: 100%;
   min-height: 64px;
-  transition: background-color var(--ease), border-color var(--ease);
+  transition: background-color var(--ease);
 }
 @media (hover: hover) {
-  .card--tap:hover { background: var(--color-bg); border-color: var(--color-border-strong); }
+  .card--tap:hover { background: var(--color-surface-2); }
 }
-.card--tap:active { background: var(--color-surface-2); }
+.card--tap:active { background: var(--color-surface-3); }
 
+/* List titles are body size, carried by weight; the one card that leads the
+   screen (.card--accent) steps up to the heading size. */
 .card__title {
-  font-size: var(--fs-md);
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: var(--fs-base);
+  font-weight: 700;
+  line-height: 1.35;
 }
+.card--accent .card__title { font-size: var(--fs-md); line-height: 1.25; }
 
 .card__meta {
   font-size: var(--fs-sm);
@@ -477,13 +509,15 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 
 /* Section headings: one style everywhere. */
 .section-title {
-  font-size: var(--fs-base);
+  font-size: var(--fs-md);
   font-weight: 700;
+  line-height: 1.25;
   letter-spacing: var(--tracking-tight);
   color: var(--color-text);
   margin: 0;
 }
-/* Small label above a card title ("Up next"): sentence case, still >= 14px. */
+/* Legacy modifier: a label above a title is folded into the card, not kept as a
+   kicker. Rendered as plain card meta until the screen drops the class. */
 .section-title--eyebrow {
   font-size: var(--fs-sm);
   font-weight: 600;
@@ -520,13 +554,13 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 .field__label {
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: var(--color-text-muted);
+  color: var(--color-text);
 }
 
 .input,
 .textarea {
   width: 100%;
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-strong); /* taste-skill-ignore: real form field */
   border-radius: var(--radius);
   padding: var(--space-3);
   font-size: var(--fs-base);
@@ -577,22 +611,16 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   flex-direction: column;
   gap: var(--space-2);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: var(--space-3);
   min-height: 56px;
   justify-content: center;
-  transition: border-color var(--ease), background-color var(--ease);
+  transition: background-color var(--ease);
 }
 
-.check-item--done {
-  border-color: var(--color-accent-line);
-  background: var(--color-accent-soft);
-}
+.check-item--done { background: var(--color-accent-soft); }
 
-.check-item--required-missing {
-  border-color: var(--color-border-strong);
-}
+/* A required item that is still open is marked by its ink badge, not an outline. */
 .check-item--required-missing .badge {
   background: var(--color-ink);
   color: #fff;
@@ -641,8 +669,8 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   display: inline-block;
   font-size: var(--fs-sm);
   font-weight: 600;
-  padding: 2px 10px;
-  border-radius: 999px;
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
   background: var(--color-surface-2);
   color: var(--color-text);
 }
@@ -674,27 +702,24 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 }
 
 /* Empty / loading states --------------------------------------------------- */
+/* A tone-step tile that says what is missing, aligned to the reading edge. */
 .empty {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-3);
-  text-align: center;
-  padding: var(--space-6) var(--space-4);
-  color: var(--color-text-muted);
+  text-align: start;
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+  color: var(--color-text);
 }
 
 .empty__icon {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 999px;
-  background: var(--color-surface-2);
-  color: var(--color-text-muted);
+  color: var(--color-accent);
 }
-.empty__icon .icon { width: 28px; height: 28px; }
+.empty__icon .icon { width: 32px; height: 32px; }
 
 /* Quiet loading text: same voice everywhere. */
 .app-main > .hint:only-child { padding-block: var(--space-5); text-align: center; }
@@ -710,12 +735,13 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 .hero__title {
   font-size: var(--fs-lg);
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.2;
+  letter-spacing: var(--tracking-tight);
 }
 
 .hero__desc {
   margin-top: var(--space-2);
-  color: rgba(255, 255, 255, 0.86);
+  color: #fff;
   font-size: var(--fs-base);
 }
 
@@ -749,20 +775,21 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 /* Language toggle ---------------------------------------------------------- */
 .lang-toggle {
   display: inline-flex;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 999px;
-  overflow: hidden;
-  background: var(--color-surface);
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius);
+  background: var(--color-surface-3);
 }
 
 .lang-toggle button {
   border: none;
+  border-radius: var(--radius-xs);
   background: transparent;
+  color: var(--color-text);
   padding: 6px 14px;
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: var(--color-text-muted);
-  min-height: 44px;
+  min-height: 40px;
   min-width: 44px;
   transition: background-color var(--ease), color var(--ease);
 }
@@ -813,17 +840,17 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   padding: var(--space-5);
   width: 100%;
   max-width: 360px;
-  box-shadow: var(--shadow-float);
+  box-shadow: var(--shadow-float); /* taste-skill-ignore: dialog floats over the page */
 }
 
 .modal__title {
   font-size: var(--fs-md);
   font-weight: 700;
+  line-height: 1.25;
 }
 
 .modal__body {
   margin-top: var(--space-2);
-  color: var(--color-text-muted);
   font-size: var(--fs-base);
 }
 
@@ -847,7 +874,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
   background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  box-shadow: var(--shadow-bar); /* taste-skill-ignore: fixed bar floats over scrolling content */
   padding-bottom: env(safe-area-inset-bottom);
   z-index: 20;
   max-width: 560px;
@@ -876,8 +903,8 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   align-items: center;
   justify-content: center;
   width: 56px;
-  height: 30px;
-  border-radius: 999px;
+  height: 32px;
+  border-radius: var(--radius);
   transition: background-color var(--ease);
 }
 .tab-bar__icon .icon { width: 24px; height: 24px; }
@@ -899,6 +926,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 .tab-bar__item--active .icon { stroke-width: 2.1; }
 
 /* Status pills ------------------------------------------------------------- */
+/* Status is a fill colour plus the word. No dot, no outline. */
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -906,16 +934,9 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   font-size: var(--fs-sm);
   font-weight: 600;
   line-height: 1.25;
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
   white-space: nowrap;
-}
-.status-pill::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: currentColor;
 }
 .status-pill--not_started { background: var(--status-not_started-bg); color: var(--status-not_started-fg); }
 .status-pill--in_progress { background: var(--status-in_progress-bg); color: var(--status-in_progress-fg); }
@@ -923,8 +944,8 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 .status-pill--approved    { background: var(--status-approved-bg);    color: var(--status-approved-fg);    }
 .status-pill--rejected    { background: var(--status-rejected-bg);    color: var(--status-rejected-fg);    }
 
-/* Auto-approved (no client response): outlined so it never reads as a real
-   signature. */
+/* Auto-approved (no client response): the one dashed outline in the system. It
+   exists so this never reads as a real signature (kept deliberately). */
 .status-pill--auto {
   background: transparent;
   color: var(--status-in_progress-fg);
@@ -945,7 +966,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 .approval-line__icon .icon { width: 18px; height: 18px; }
 .approval-line--signed  { background: var(--color-success-soft); color: var(--color-success); }
 .approval-line--manager { background: var(--color-surface-2); color: var(--color-text-muted); }
-.approval-line--auto    { background: var(--color-gold-soft); color: var(--status-in_progress-fg); border: 1px dashed var(--color-gold); }
+.approval-line--auto    { background: var(--color-gold-soft); color: var(--status-in_progress-fg); outline: 1px dashed var(--color-gold); outline-offset: -1px; } /* dashed on purpose: not a real signature */
 
 /* Public sign page --------------------------------------------------------- */
 .sign-page {
@@ -960,7 +981,6 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   width: 100%;
   max-width: 460px;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-5);
   margin-block: var(--space-5);
@@ -976,7 +996,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   margin-bottom: var(--space-4);
 }
 .sign-card--center .sign-brand { justify-content: center; }
-.sign-title { font-size: var(--fs-lg); font-weight: 700; line-height: 1.25; margin-bottom: var(--space-2); }
+.sign-title { font-size: var(--fs-lg); font-weight: 700; margin-bottom: var(--space-2); }
 .sign-summary {
   display: flex;
   flex-direction: column;
@@ -984,7 +1004,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   background: var(--color-surface-2);
   border-radius: var(--radius);
   padding: var(--space-3);
-  margin-block: var(--space-3);
+  margin-block: var(--space-4);
 }
 .sign-row { display: flex; justify-content: space-between; gap: 12px; font-size: var(--fs-base); }
 .sign-row__label { color: var(--color-text-muted); }
@@ -992,7 +1012,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 .sign-check {
   width: 64px; height: 64px;
   margin: var(--space-3) auto;
-  border-radius: 999px;
+  border-radius: 50%;
   background: var(--color-ink);
   color: #fff;
   display: flex; align-items: center; justify-content: center;
@@ -1030,9 +1050,9 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   font-size: var(--fs-sm);
   font-weight: 600;
   line-height: 1.25;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--color-surface-2);
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-3);
   color: var(--color-text);
   white-space: nowrap;
 }
@@ -1060,7 +1080,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 /* Task detail header + manager actions ------------------------------------- */
 .task-head { display: flex; flex-direction: column; gap: var(--space-2); }
 .task-head__pills { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-.task-head__when { font-size: var(--fs-md); font-weight: 600; letter-spacing: var(--tracking-tight); }
+.task-head__when { font-size: var(--fs-md); font-weight: 700; line-height: 1.25; letter-spacing: var(--tracking-tight); }
 .task-head .who-line { font-size: var(--fs-base); margin-top: 0; }
 
 .task-actions { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-2); }
@@ -1134,37 +1154,31 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 }
 
 .agenda__date {
-  font-size: var(--fs-base);
+  font-size: var(--fs-md);
   font-weight: 700;
+  line-height: 1.25;
   color: var(--color-text);
 }
 .agenda__count {
   margin-inline-start: auto;
   font-size: var(--fs-sm);
   font-weight: 600;
-  background: var(--color-surface-2);
+  background: var(--color-surface-3);
   color: var(--color-text);
-  padding: 2px 10px;
-  border-radius: 999px;
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
 }
 
 /* Cards: accent + unread variants (tone step, never a thick side border) ----- */
-.card--accent {
-  background: var(--color-accent-soft);
-  border-color: var(--color-accent-line);
-}
+.card--accent { background: var(--color-accent-soft); }
 .card--accent:hover { background: var(--color-accent-soft); }
 
-.card--unread {
-  background: var(--color-accent-soft);
-  border-color: var(--color-accent-line);
-}
+.card--unread { background: var(--color-accent-soft); }
 .card--unread .card__title { font-weight: 700; }
 
 /* Open-note card ----------------------------------------------------------- */
 .note-card {
   background: var(--color-gold-soft);
-  border: 1px solid #E6D3A0;
   border-radius: var(--radius);
   padding: var(--space-3) var(--space-4);
 }
@@ -1185,7 +1199,6 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   gap: var(--space-3);
   padding: var(--space-3);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius);
   position: relative;
   padding-inline-start: 36px;
@@ -1243,7 +1256,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 }
 .capture__media {
   max-width: 100%;
-  max-height: 60vh;
+  max-height: 60dvh;
   border-radius: var(--radius);
 }
 .capture__shutter {
@@ -1368,10 +1381,10 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--color-accent-line);
+  border: 0;
   background: var(--color-accent-soft);
   color: var(--color-success);
-  border-radius: 999px;
+  border-radius: var(--radius);
   padding: 4px 12px;
   font-size: var(--fs-sm);
   font-weight: 600;
@@ -1387,9 +1400,8 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   inset-block-start: calc(100% + 6px);
   inset-inline-end: 0;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-float);
+  box-shadow: var(--shadow-float); /* taste-skill-ignore: menu floats over the page */
   padding: 6px;
   z-index: 30;
   min-width: 220px;
@@ -1429,7 +1441,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 .worker-select__list {
   list-style: none; margin: 0; padding: 0;
   max-block-size: 220px; overflow-y: auto;
-  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); /* taste-skill-ignore: form field keeps its outline */
   background: var(--color-surface);
 }
 .worker-select__item {
@@ -1461,8 +1473,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
 
   .app-shell--with-nav .app-shell__main {
     background: var(--color-bg);
-    border-inline-start: 1px solid var(--color-border);
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .app-shell--with-nav .tab-bar { display: none; }
@@ -1475,7 +1486,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   }
 
   .app-header { padding-inline: var(--space-6); }
-  .app-header__title { font-size: var(--fs-lg); }
+  .app-header__title { font-size: var(--fs-lg); line-height: 1.15; }
 
   /* Side nav ------------------------------------------------------------- */
   .side-nav {
@@ -1485,7 +1496,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
     padding: var(--space-5) var(--space-4);
     position: sticky;
     top: 0;
-    height: 100vh;
+    height: 100dvh;
     background: var(--color-surface);
   }
   .side-nav__brand {
@@ -1541,8 +1552,10 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 12px;
-    border-top: 1px solid var(--color-border);
+    padding: var(--space-3);
+    margin-inline: calc(var(--space-2) * -1);
+    border-radius: var(--radius);
+    background: var(--color-surface-2);
   }
   .side-nav__who { flex: 1; min-width: 0; }
   .side-nav__name {
@@ -1576,7 +1589,7 @@ html[dir='rtl'] .app-header__title { line-height: 1.7; }
   .app-shell--with-nav .action-bar {
     position: static;
     border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border);
+    --shadow-bar: none;
     width: calc(100% - 2 * var(--space-6));
     max-width: 960px;
     align-self: center;
