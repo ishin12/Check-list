@@ -13,6 +13,7 @@ import {
 } from '@/domain/job/job';
 import { taskLabel, templateTitle } from '@/domain/template/template';
 import { Icon } from '@/components/Icon';
+import '@/styles/screens/field.css';
 
 export function JobRunnerScreen() {
   const { t } = useTranslation();
@@ -36,7 +37,7 @@ export function JobRunnerScreen() {
   return (
     <div className="app-shell">
       <AppHeader title={templateTitle(job.templateSnapshot, language)} showBack />
-      <main className="app-main">
+      <main className="app-main job-run">
         <div className="card stack">
           <div className="field">
             <label className="field__label">{t('job.customerName')}</label>
@@ -59,8 +60,8 @@ export function JobRunnerScreen() {
           </div>
         </div>
 
-        <div className="progress">
-          <div className="progress__label">
+        <div className="progress job-progress">
+          <div className="job-progress__label">
             {t('job.progress', { done, total: tasks.length })}
           </div>
           <div className="progress__track">
@@ -82,21 +83,34 @@ export function JobRunnerScreen() {
                 key={task.id}
                 className={`check-item ${checked ? 'check-item--done' : ''}`}
               >
-                <button
-                  type="button"
-                  className="check-item__main"
-                  onClick={() => setJob(setTaskChecked(job, task.id, !checked))}
-                >
-                  <span className={`checkbox ${checked ? 'checkbox--checked' : ''}`}>
-                    <Icon name="check" />
-                  </span>
-                  <span className="check-item__label">
-                    {taskLabel(task, language)}
-                  </span>
-                  {task.required ? (
-                    <span className="badge">{t('job.requiredBadge')}</span>
-                  ) : null}
-                </button>
+                <div className="check-item__row">
+                  <button
+                    type="button"
+                    className="check-item__main"
+                    onClick={() => setJob(setTaskChecked(job, task.id, !checked))}
+                  >
+                    <span className={`checkbox ${checked ? 'checkbox--checked' : ''}`}>
+                      <Icon name="check" />
+                    </span>
+                    <span className="check-item__label">
+                      {taskLabel(task, language)}
+                    </span>
+                    {task.required ? (
+                      <span className="badge">{t('job.requiredBadge')}</span>
+                    ) : null}
+                  </button>
+                  {openNote === task.id || result?.note ? null : (
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      aria-label={t('job.addNote')}
+                      title={t('job.addNote')}
+                      onClick={() => setOpenNote(task.id)}
+                    >
+                      <Icon name="note" />
+                    </button>
+                  )}
+                </div>
 
                 {openNote === task.id || result?.note ? (
                   <textarea
@@ -105,30 +119,16 @@ export function JobRunnerScreen() {
                     value={result?.note ?? ''}
                     onChange={(e) => setJob(setTaskNote(job, task.id, e.target.value))}
                   />
-                ) : (
-                  <button
-                    type="button"
-                    className="hint"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      textAlign: 'start',
-                      padding: 0,
-                    }}
-                    onClick={() => setOpenNote(task.id)}
-                  >
-                    <Icon name="plus" />{t('job.addNote')}
-                  </button>
-                )}
+                ) : null}
               </div>
             );
           })}
         </div>
       </main>
 
-      <div className="action-bar" style={{ flexDirection: 'column', gap: 'var(--space-2)' }}>
+      <div className="action-bar">
         {!canContinue ? (
-          <div className="hint" style={{ textAlign: 'center' }}>
+          <div className="job-run__hint">
             {t('job.requiredRemaining')}
           </div>
         ) : null}

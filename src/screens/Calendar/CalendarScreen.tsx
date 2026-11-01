@@ -14,6 +14,7 @@ import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
 import { formatDate, formatTime } from '@/lib/datetime';
 import { Icon } from '@/components/Icon';
+import '@/styles/screens/field.css';
 
 interface Option { id: string; label: string }
 
@@ -80,12 +81,11 @@ export function CalendarScreen() {
         {error ? <div className="banner banner--error">{error}</div> : null}
 
         {isManager ? (
-          <div className="row" style={{ gap: 8 }}>
+          <div className="calendar-filters">
             <select
               className="input"
               value={filterKind}
               onChange={(e) => { setFilterKind(e.target.value as 'worker' | 'client'); setFilterId('all'); }}
-              style={{ maxWidth: 160 }}
             >
               <option value="worker">{t('calendar.byWorker', 'By worker')}</option>
               <option value="client">{t('calendar.byClient', 'By client')}</option>
@@ -115,15 +115,17 @@ export function CalendarScreen() {
               </header>
               <div className="stack">
                 {items.map((x) => (
-                  <Link key={x.id} to={`/tasks/${x.id}`} className="card card--tap">
-                    <div style={{ flex: 1 }}>
+                  <Link key={x.id} to={`/tasks/${x.id}`} className="card card--tap visit">
+                    <div className="visit__body">
+                      <div className="visit__top">
+                        <span className="visit__time">
+                          {formatTime(x.scheduledAt, language, { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
+                      </div>
                       <div className="card__title">{x.title}</div>
                       <TaskWhoLine task={x} hideWorker={!isManager} />
-                      <div className="card__meta">
-                        {formatTime(x.scheduledAt, language, { hour: '2-digit', minute: '2-digit' })}
-                      </div>
                     </div>
-                    <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
                   </Link>
                 ))}
               </div>

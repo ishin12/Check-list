@@ -32,6 +32,7 @@ import {
 import type { WorkerOption } from '@/domain/workerSelect';
 import { formatDate, formatDateAndTime, formatTime } from '@/lib/datetime';
 import { Icon } from '@/components/Icon';
+import '@/styles/screens/field.css';
 
 export function TaskDetailScreen() {
   const { t } = useTranslation();
@@ -144,7 +145,7 @@ export function TaskDetailScreen() {
     }
     await updateTaskStatus(task.id, patch);
     if (action === 'submit') {
-      // Send the WhatsApp signing link to the client (awaited — surface failures).
+      // Send the WhatsApp signing link to the client (awaited, so failures surface).
       await sendSigningLink();
     }
     if (action === 'approve' && task.recurrence !== 'none') {
@@ -179,7 +180,7 @@ export function TaskDetailScreen() {
   return (
     <AppShell>
       <AppHeader title={task.title} showBack />
-      <main className="app-main">
+      <main className="app-main task-detail">
         {error ? <div className="banner banner--error">{error}</div> : null}
 
         <header className="task-head">
@@ -214,7 +215,7 @@ export function TaskDetailScreen() {
           <div className={`banner banner--${linkResult.ok ? 'info' : 'error'}`}>
             <div>{linkResult.message}</div>
             {!linkResult.ok ? (
-              <div className="row" style={{ gap: 8, marginTop: 8 }}>
+              <div className="link-result__actions">
                 <button className="btn btn--ghost" disabled={sendingLink} onClick={sendSigningLink}>
                   {t('sign.resend', 'Resend link')}
                 </button>
@@ -228,6 +229,18 @@ export function TaskDetailScreen() {
           </div>
         ) : null}
 
+        {/* Manager's decision note for a previously rejected/approved task. */}
+        {task.decisionNote && (task.status === 'rejected' || task.status === 'approved') ? (
+          <div className={`banner banner--${task.status === 'rejected' ? 'error' : 'success'}`}>
+            <div className="decision-banner__title">
+              {task.status === 'rejected'
+                ? t('task.rejectedNote', 'Rejected. Manager said:')
+                : t('task.approvedNote', 'Approved. Manager said:')}
+            </div>
+            <div>{task.decisionNote}</div>
+          </div>
+        ) : null}
+
         {openNotes.length > 0 ? (
           <section className="section">
             <div className="section-title">{t('notes.openFromBefore', 'Notes left for this visit')}</div>
@@ -235,7 +248,7 @@ export function TaskDetailScreen() {
               {openNotes.map((n) => (
                 <div key={n.id} className="note-card">
                   <div dir="auto">{n.body}</div>
-                  <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
+                  <div className="note-card__row">
                     <span className="card__meta">{formatDate(n.createdAt, language)}</span>
                     <button
                       className="btn btn--ghost"
@@ -253,19 +266,7 @@ export function TaskDetailScreen() {
         {task.description ? (
           <div className="card">
             <div className="card__title">{t('task.description', 'Description')}</div>
-            <p style={{ marginTop: 8 }}>{task.description}</p>
-          </div>
-        ) : null}
-
-        {/* Manager's decision note for a previously rejected/approved task. */}
-        {task.decisionNote && (task.status === 'rejected' || task.status === 'approved') ? (
-          <div className={`banner banner--${task.status === 'rejected' ? 'error' : 'success'}`}>
-            <div style={{ fontWeight: 700, marginBottom: 4 }}>
-              {task.status === 'rejected'
-                ? t('task.rejectedNote', 'Rejected — manager said:')
-                : t('task.approvedNote', 'Approved — manager said:')}
-            </div>
-            <div>{task.decisionNote}</div>
+            <p className="card__text">{task.description}</p>
           </div>
         ) : null}
 
@@ -279,19 +280,6 @@ export function TaskDetailScreen() {
           />
         ) : null}
 
-        <ExtraWorkLog
-          taskId={task.id}
-          entries={task.extraWork}
-          canEdit={
-            task.status !== 'approved' &&
-            ((role === 'worker' && isOnTask(task, user?.id)) || role === 'manager')
-          }
-          currentUserId={user?.id}
-          currentUserName={user?.fullName ?? user?.email}
-          lockedHint={task.status === 'approved' ? t('extras.lockedAfterApproval', 'Locked after approval.') : undefined}
-          onChange={load}
-        />
-
         <section className="card section-card">
           <div className="section-card__head">
             <span className="section-title">{t('proof.title', 'Proof')}</span>
@@ -304,6 +292,19 @@ export function TaskDetailScreen() {
             <ProofRow kind="finish" proofs={proofs} taskId={task.id} canEdit={canEditProofs} queued={queued} onOpen={setViewing} />
           </div>
         </section>
+
+        <ExtraWorkLog
+          taskId={task.id}
+          entries={task.extraWork}
+          canEdit={
+            task.status !== 'approved' &&
+            ((role === 'worker' && isOnTask(task, user?.id)) || role === 'manager')
+          }
+          currentUserId={user?.id}
+          currentUserName={user?.fullName ?? user?.email}
+          lockedHint={task.status === 'approved' ? t('extras.lockedAfterApproval', 'Locked after approval.') : undefined}
+          onChange={load}
+        />
 
         <section className="section">
           <div className="section-title">{t('notes.newForNext', 'Leave a note for next time')}</div>
@@ -333,11 +334,11 @@ export function TaskDetailScreen() {
       </main>
 
       {submitBlocked && actions.includes('submit') ? (
-        <div className="banner banner--info" style={{ margin: '0 var(--space-4) 0' }}>
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>
+        <div className="banner banner--info task-blocker">
+          <div className="task-blocker__title">
             {t('task.requiredRemaining', 'Complete the required items below before submitting:')}
           </div>
-          <ul style={{ margin: 0, paddingInlineStart: 18 }}>
+          <ul className="task-blocker__list">
             {missingRequired.map((it) => <li key={it.id}>{it.label}</li>)}
           </ul>
         </div>
@@ -416,7 +417,7 @@ function EditWorkers({ task, onSaved }: { task: FieldTask; onSaved: () => Promis
       <div className="section-title">{t('workers.editTitle', 'Edit workers')}</div>
       {err ? <div className="banner banner--error">{err}</div> : null}
       <WorkerMultiSelect options={options} value={value} onChange={setValue} />
-      <div className="row" style={{ gap: 8 }}>
+      <div className="panel-actions">
         <button type="button" className="btn btn--primary" disabled={saving || value.length === 0} onClick={() => void save()}>
           {saving ? t('common.saving', 'Saving…') : t('workers.save', 'Save workers')}
         </button>
@@ -465,7 +466,7 @@ function LocationCard({ task, canEdit, onSaved }: { task: FieldTask; canEdit: bo
           disabled={saving}
           onChange={(loc, s) => { setDraft(loc); setState(s); }}
         />
-        <div className="row" style={{ gap: 8 }}>
+        <div className="panel-actions">
           <button type="button" className="btn btn--primary" disabled={saving || state === 'invalid'} onClick={() => void save()}>
             {saving ? t('common.saving', 'Saving…') : t('location.save')}
           </button>
@@ -531,17 +532,21 @@ function ProofRow({ kind, proofs, taskId, canEdit, queued, onOpen }: {
   const retakeUrl = `/tasks/${taskId}/capture/${kind}?replace=1`;
 
   return (
-    <div className="proof-block">
-      <div className="row" style={{ alignItems: 'center' }}>
-        <span className={`proof-dot proof-dot--${found ? 'on' : 'off'}`} aria-hidden />
-        <span style={{ flex: 1, fontWeight: 600 }}>
+    <div className="proof-block proof-row">
+      <div className="proof-row__head">
+        <span className="proof-row__state" aria-hidden>
+          <Icon name={found ? 'check-circle' : 'camera'} />
+        </span>
+        <span className="proof-row__name">
           {kind === 'start' ? t('proof.start', 'Start proof') : t('proof.finish', 'Finish proof')}
         </span>
-        <span className="card__meta">
-          {found
-            ? formatTime(found.capturedAt, language, { hour: '2-digit', minute: '2-digit' })
-            : t('proof.missing', 'Missing')}
-        </span>
+        {found ? (
+          <span className="proof-row__tag proof-row__tag--done">
+            {formatTime(found.capturedAt, language, { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        ) : (
+          <span className="proof-row__tag proof-row__tag--missing">{t('proof.missing', 'Missing')}</span>
+        )}
         {canEdit && found ? (
           <button type="button" className="btn btn--ghost btn--icon" onClick={() => navigate(retakeUrl)} aria-label={t('photo.retake', 'Retake')}>
             <Icon name="refresh" />
@@ -571,13 +576,13 @@ function ProofRow({ kind, proofs, taskId, canEdit, queued, onOpen }: {
         >
           <div>
             {q.lastError
-              ? `${t('photo.uploadFailed', 'Upload failed')} — ${t(MEDIA_ERROR_TEXT[q.lastError].key, MEDIA_ERROR_TEXT[q.lastError].fallback)}`
+              ? `${t('photo.uploadFailed', 'Upload failed')}: ${t(MEDIA_ERROR_TEXT[q.lastError].key, MEDIA_ERROR_TEXT[q.lastError].fallback)}`
               : q.uploading
                 ? t('photo.uploadingNow', 'Uploading…')
                 : t('photo.waiting', 'Waiting to upload')}
           </div>
           {q.lastError ? (
-            <div className="row upload-note__actions">
+            <div className="proof-note__actions">
               <button type="button" className="btn btn--ghost" onClick={() => void flushQueue()}>
                 {t('photo.retry', 'Retry')}
               </button>

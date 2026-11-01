@@ -11,6 +11,7 @@ import { WorkerMultiSelect } from '@/components/WorkerMultiSelect';
 import { LocationInput } from '@/components/LocationInput';
 import type { TaskLocation } from '@/domain/location';
 import { RECURRENCE_OPTIONS, recurrenceLabel, type Recurrence } from '@/domain/job/recurrence';
+import '@/styles/screens/field.css';
 
 interface Option { id: string; label: string }
 interface TemplateOpt extends Option { /* same shape, kept distinct for readability */ }
@@ -77,64 +78,72 @@ export function TaskNewScreen() {
   return (
     <AppShell>
       <AppHeader title={t('taskNew.title', 'New task')} showBack />
-      <form className="app-main" onSubmit={onSubmit}>
+      <form className="app-main task-form" onSubmit={onSubmit}>
         {error ? <div className="banner banner--error">{error}</div> : null}
-        <div className="field">
-          <label className="field__label">{t('taskNew.title', 'Title')}</label>
-          <input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} />
+        <div className="stack">
+          <div className="field">
+            <label className="field__label">{t('taskNew.title', 'Title')}</label>
+            <input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div className="field">
+            <label className="field__label">{t('taskNew.description', 'Description')}</label>
+            <textarea className="textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+          <div className="field">
+            <label className="field__label">{t('taskNew.client', 'Client')}</label>
+            <select className="input" required value={clientId} onChange={(e) => setClientId(e.target.value)}>
+              <option value="">—</option>
+              {clients.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+          </div>
         </div>
-        <div className="field">
-          <label className="field__label">{t('taskNew.description', 'Description')}</label>
-          <textarea className="textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
+        <div className="stack">
+          <div className="field">
+            <label className="field__label">{t('taskNew.worker', 'Assign to')}</label>
+            <WorkerMultiSelect options={workers} value={workerIds} onChange={setWorkerIds} />
+            {workerIds.length === 0 ? (
+              <div className="hint">{t('workers.atLeastOne', 'Select at least one worker.')}</div>
+            ) : null}
+          </div>
+          <div className="field">
+            <label className="field__label">{t('taskNew.when', 'Scheduled at')}</label>
+            <input className="input" type="datetime-local" required value={when} onChange={(e) => setWhen(e.target.value)} />
+          </div>
         </div>
-        <div className="field">
-          <label className="field__label">{t('taskNew.client', 'Client')}</label>
-          <select className="input" required value={clientId} onChange={(e) => setClientId(e.target.value)}>
-            <option value="">—</option>
-            {clients.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-          </select>
+        <div className="stack">
+          <div className="field">
+            <label className="field__label">{t('taskNew.template', 'Checklist template')}</label>
+            <select className="input" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+              <option value="">{t('taskNew.noTemplate', '— none —')}</option>
+              {templates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.label}</option>)}
+            </select>
+            <div className="hint">{t('taskNew.templateHint', 'The worker sees this checklist on the task and ticks items off as they go.')}</div>
+          </div>
+          <div className="field">
+            <label className="field__label">{t('taskNew.repeats', 'Repeats')}</label>
+            <select
+              className="input"
+              value={recurrence}
+              onChange={(e) => setRecurrence(e.target.value as Recurrence)}
+            >
+              {RECURRENCE_OPTIONS.map((opt) => {
+                const lbl = recurrenceLabel(opt);
+                return <option key={opt} value={opt}>{t(lbl.i18n, lbl.fallback)}</option>;
+              })}
+            </select>
+          </div>
+          <div className="field">
+            <label className="field__label">
+              {t('location.label')} <span className="hint">({t('location.optional')})</span>
+            </label>
+            <LocationInput onChange={(loc, state) => { setLocation(loc); setLocationInvalid(state === 'invalid'); }} />
+          </div>
         </div>
-        <div className="field">
-          <label className="field__label">{t('taskNew.worker', 'Assign to')}</label>
-          <WorkerMultiSelect options={workers} value={workerIds} onChange={setWorkerIds} />
-          {workerIds.length === 0 ? (
-            <div className="hint">{t('workers.atLeastOne', 'Select at least one worker.')}</div>
-          ) : null}
+        <div className="action-bar">
+          <button className="btn btn--primary btn--block btn--lg" disabled={!ready || saving} type="submit">
+            {saving ? t('common.saving', 'Saving…') : t('taskNew.create', 'Create task')}
+          </button>
         </div>
-        <div className="field">
-          <label className="field__label">{t('taskNew.when', 'Scheduled at')}</label>
-          <input className="input" type="datetime-local" required value={when} onChange={(e) => setWhen(e.target.value)} />
-        </div>
-        <div className="field">
-          <label className="field__label">{t('taskNew.template', 'Checklist template')}</label>
-          <select className="input" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
-            <option value="">{t('taskNew.noTemplate', '— none —')}</option>
-            {templates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.label}</option>)}
-          </select>
-          <div className="hint">{t('taskNew.templateHint', 'The worker sees this checklist on the task and ticks items off as they go.')}</div>
-        </div>
-        <div className="field">
-          <label className="field__label">{t('taskNew.repeats', 'Repeats')}</label>
-          <select
-            className="input"
-            value={recurrence}
-            onChange={(e) => setRecurrence(e.target.value as Recurrence)}
-          >
-            {RECURRENCE_OPTIONS.map((opt) => {
-              const lbl = recurrenceLabel(opt);
-              return <option key={opt} value={opt}>{t(lbl.i18n, lbl.fallback)}</option>;
-            })}
-          </select>
-        </div>
-        <div className="field">
-          <label className="field__label">
-            {t('location.label')} <span className="hint">({t('location.optional')})</span>
-          </label>
-          <LocationInput onChange={(loc, state) => { setLocation(loc); setLocationInvalid(state === 'invalid'); }} />
-        </div>
-        <button className="btn btn--primary btn--block btn--lg" disabled={!ready || saving} type="submit">
-          {saving ? t('common.saving', 'Saving…') : t('taskNew.create', 'Create task')}
-        </button>
       </form>
     </AppShell>
   );

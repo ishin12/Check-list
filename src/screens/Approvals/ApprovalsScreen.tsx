@@ -10,6 +10,7 @@ import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
 import { formatDateAndTime } from '@/lib/datetime';
 import { Icon } from '@/components/Icon';
+import '@/styles/screens/field.css';
 
 export function ApprovalsScreen() {
   const { t } = useTranslation();
@@ -32,13 +33,19 @@ export function ApprovalsScreen() {
         ) : (
           <div className="stack">
             {tasks.map((x) => (
-              <Link key={x.id} to={`/tasks/${x.id}`} className="card card--tap">
-                <div style={{ flex: 1 }}>
+              <Link key={x.id} to={`/tasks/${x.id}`} className="card card--tap visit">
+                <div className="visit__body">
+                  <div className="visit__top">
+                    <span className="visit__time">
+                      {formatDateAndTime(x.scheduledAt, language, {
+                        weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                      })}
+                    </span>
+                    <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
+                  </div>
                   <div className="card__title">{x.title}</div>
                   <TaskWhoLine task={x} />
-                  <div className="card__meta">{formatDateAndTime(x.scheduledAt, language)}</div>
                 </div>
-                <StatusPill status={x.status} approvalMethod={x.approvalMethod} />
               </Link>
             ))}
           </div>
