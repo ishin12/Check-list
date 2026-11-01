@@ -13,7 +13,7 @@ import type { TaskLocation } from '@/domain/location';
 import { RECURRENCE_OPTIONS, recurrenceLabel, type Recurrence } from '@/domain/job/recurrence';
 import '@/styles/screens/field.css';
 
-interface Option { id: string; label: string }
+interface Option { id: string; label: string; location?: TaskLocation | null }
 interface TemplateOpt extends Option { /* same shape, kept distinct for readability */ }
 
 export function TaskNewScreen() {
@@ -40,11 +40,16 @@ export function TaskNewScreen() {
       const sb = getSupabase();
       const [{ data: ws }, { data: cs }, { data: ts }] = await Promise.all([
         sb.from('profiles').select('id, full_name, email').eq('role', 'worker').eq('active', true),
-        sb.from('clients').select('id, name').order('name'),
+        sb.from('clients').select('id, name, location_url, location_lat, location_lng').order('name'),
         sb.from('templates').select('id, title').order('updated_at', { ascending: false }),
       ]);
       setWorkers((ws ?? []).map((w) => ({ id: w.id, label: w.full_name ?? w.email ?? w.id })));
-      setClients((cs ?? []).map((c) => ({ id: c.id, label: c.name })));
+      setClients((cs ?? []).map((c) => ({
+        id: c.id, label: c.name,
+        location: c.location_url || c.location_lat != null || c.location_lng != null
+          ? { locationUrl: c.location_url, locationLat: c.location_lat, locationLng: c.location_lng }
+          : null,
+      })));
       setTemplates((ts ?? []).map((tpl) => ({
         id: tpl.id,
         label: localizedText(tpl.title, language) || 'Untitled',
@@ -91,7 +96,12 @@ export function TaskNewScreen() {
           </div>
           <div className="field">
             <label className="field__label">{t('taskNew.client', 'Client')}</label>
-            <select className="input" required value={clientId} onChange={(e) => setClientId(e.target.value)}>
+            <select className="input" required value={clientId} onChange={(e) => {
+              const nextId = e.target.value;
+              setClientId(nextId);
+              setLocation(clients.find((client) => client.id === nextId)?.location ?? null);
+              setLocationInvalid(false);
+            }}>
               <option value="">—</option>
               {clients.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
             </select>
@@ -136,7 +146,7 @@ export function TaskNewScreen() {
             <label className="field__label">
               {t('location.label')} <span className="hint">({t('location.optional')})</span>
             </label>
-            <LocationInput onChange={(loc, state) => { setLocation(loc); setLocationInvalid(state === 'invalid'); }} />
+            <LocationInput key={clientId} initial={location} onChange={(loc, state) => { setLocation(loc); setLocationInvalid(state === 'invalid'); }} />
           </div>
         </div>
         <div className="action-bar">

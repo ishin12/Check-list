@@ -295,7 +295,12 @@
     "upcoming": "الزيارات القادمة",
     "noUpcoming": "لا شيء مُجدول.",
     "history": "سجل الزيارات",
-    "noHistory": "لا توجد زيارات سابقة."
+    "noHistory": "لا توجد زيارات سابقة.",
+    "location": "موقع العميل",
+    "noLocation": "لا يوجد موقع محفوظ للعميل.",
+    "updateExistingLocationTitle": "تحديث الأعمال الحالية؟",
+    "updateExistingLocationBody": "تم حفظ موقع العميل. هل تريد أيضًا تحديث الموقع في كل الأعمال الحالية لهذا العميل؟",
+    "updateExistingLocationConfirm": "تحديث كل الأعمال"
   },
   "clientNew": {
     "title": "عميل جديد",
@@ -428,6 +433,7 @@
     "save": "حفظ الموقع",
     "cancel": "إلغاء",
     "saveFailed": "تعذّر حفظ الموقع.",
+    "mapTitle": "خريطة الموقع",
     "errors": {
       "invalid": "هذا ليس رابط Google Maps ولا إحداثيات صحيحة.",
       "not_https": "يجب أن يبدأ الرابط بـ https://.",

@@ -124,6 +124,12 @@ export function directionsLinkFor(loc: TaskLocation): string | null {
   return `https://www.google.com/maps/dir/?api=1&destination=${loc.locationLat},${loc.locationLng}`;
 }
 
+/** Google’s no-key embedded map, including its native pan and zoom controls. */
+export function embedMapLinkFor(loc: TaskLocation): string | null {
+  if (!hasCoords(loc)) return null;
+  return `https://www.google.com/maps?q=${loc.locationLat},${loc.locationLng}&z=16&output=embed`;
+}
+
 export function hasLocation(loc: TaskLocation): boolean {
   return mapsLinkFor(loc) !== null;
 }

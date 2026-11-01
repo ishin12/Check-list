@@ -20,6 +20,10 @@ export interface Client {
   phone?: string;
   address?: string;
   notes?: string;
+  /** Default site location copied into a job when this client is selected. */
+  locationUrl?: string;
+  locationLat?: number;
+  locationLng?: number;
   createdAt: string;
   updatedAt: string;
 }

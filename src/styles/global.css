@@ -1100,6 +1100,8 @@ html[dir='rtl'] .app-header__title { line-height: 1.6; }
 .location-card__actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .location-card__actions .btn { flex: 1 1 auto; justify-content: center; }
 .location-card__coords { font-size: var(--fs-xs); color: var(--color-text-muted); unicode-bidi: isolate; }
+.location-map { overflow: hidden; border-radius: var(--radius); background: var(--color-surface-2); min-block-size: 220px; }
+.location-map iframe { display: block; inline-size: 100%; block-size: 220px; border: 0; }
 
 /* Extra-work entries ------------------------------------------------------- */
 .extra-entry {
@@ -1693,4 +1695,3 @@ html[lang='ur'] .check-item__label { line-height: 2; }
 html[lang='ur'] .agenda__date { line-height: 2.1; }
 html[lang='ur'] .demo-switcher__item,
 html[lang='ur'] .demo-switcher__chip { line-height: 1.9; }
-

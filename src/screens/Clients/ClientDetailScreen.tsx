@@ -4,9 +4,15 @@ import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { LocationInput, type LocationInputState } from '@/components/LocationInput';
+import { LocationMap } from '@/components/LocationMap';
+import { useAuth } from '@/app/providers/AuthContext';
 import { StatusPill } from '@/components/StatusPill';
 import { getSupabase } from '@/services/supabase/client';
 import { listTasks } from '@/services/data/tasks';
+import { applyClientLocationToTasks, updateClientLocation } from '@/services/data/clients';
+import { directionsLinkFor, mapsLinkFor, type TaskLocation } from '@/domain/location';
 import type { Client, ClientNote, FieldTask } from '@/domain/models/ops';
 import { NoteComposer, resolveNote } from '@/components/NoteComposer';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
@@ -17,9 +23,16 @@ export function ClientDetailScreen() {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { id } = useParams();
+  const { user } = useAuth();
   const [client, setClient] = useState<Client | null>(null);
   const [tasks, setTasks] = useState<FieldTask[]>([]);
   const [notes, setNotes] = useState<ClientNote[]>([]);
+  const [editingLocation, setEditingLocation] = useState(false);
+  const [locationDraft, setLocationDraft] = useState<TaskLocation | null>(null);
+  const [locationState, setLocationState] = useState<LocationInputState>('empty');
+  const [savingLocation, setSavingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [confirmExistingJobs, setConfirmExistingJobs] = useState(false);
 
   async function load() {
     if (!id) return;
@@ -33,6 +46,7 @@ export function ClientDetailScreen() {
       setClient({
         id: c.id, name: c.name, email: c.email ?? undefined, phone: c.phone ?? undefined,
         address: c.address ?? undefined, notes: c.notes ?? undefined,
+        locationUrl: c.location_url ?? undefined, locationLat: c.location_lat ?? undefined, locationLng: c.location_lng ?? undefined,
         createdAt: c.created_at, updatedAt: c.updated_at,
       });
     }
@@ -60,6 +74,38 @@ export function ClientDetailScreen() {
   const upcoming = tasks.filter((x) => x.status === 'not_started' || x.status === 'in_progress');
   const history  = tasks.filter((x) => x.status !== 'not_started');
   const openNotes = notes.filter((n) => n.status === 'open');
+  const canManage = user?.role === 'manager' || user?.role === 'supervisor';
+  const mapsLink = mapsLinkFor(client);
+  const directions = directionsLinkFor(client);
+
+  async function saveClientLocation() {
+    if (!client || !id) return;
+    setSavingLocation(true); setLocationError(null);
+    try {
+      await updateClientLocation(id, locationDraft);
+      setEditingLocation(false);
+      if (tasks.length) setConfirmExistingJobs(true);
+      else await load();
+    } catch (error) {
+      setLocationError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setSavingLocation(false);
+    }
+  }
+
+  async function applyToExistingJobs() {
+    if (!id) return;
+    setSavingLocation(true); setLocationError(null);
+    try {
+      await applyClientLocationToTasks(id, locationDraft);
+      setConfirmExistingJobs(false);
+      await load();
+    } catch (error) {
+      setLocationError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setSavingLocation(false);
+    }
+  }
 
   const contactBits = [client.phone, client.email, client.address].filter(Boolean) as string[];
   return (
@@ -69,6 +115,31 @@ export function ClientDetailScreen() {
         <div className={`card adm-contact${contactBits.length ? '' : ' adm-contact--empty'}`}>
           {contactBits.length ? contactBits.map((v, i) => <bdi key={i}>{v}</bdi>) : '—'}
         </div>
+
+        <section className="section">
+          <div className="section-title">{t('clients.location', 'Site location')}</div>
+          {locationError ? <div className="banner banner--error">{locationError}</div> : null}
+          {editingLocation ? (
+            <div className="card adm-card">
+              <LocationInput initial={client} disabled={savingLocation} onChange={(value, state) => { setLocationDraft(value); setLocationState(state); }} />
+              <div className="adm-actions">
+                <button className="btn btn--primary" type="button" disabled={savingLocation || locationState === 'invalid'} onClick={() => void saveClientLocation()}>
+                  {savingLocation ? t('common.saving', 'Saving…') : t('location.save', 'Save location')}
+                </button>
+                <button className="btn btn--ghost" type="button" disabled={savingLocation} onClick={() => setEditingLocation(false)}>{t('common.cancel', 'Cancel')}</button>
+              </div>
+            </div>
+          ) : mapsLink ? (
+            <div className="card location-card">
+              <LocationMap location={client} />
+              <div className="location-card__actions">
+                <a className="btn" href={mapsLink} target="_blank" rel="noopener noreferrer">{t('location.open', 'Open in Google Maps')}</a>
+                {directions ? <a className="btn btn--ghost" href={directions} target="_blank" rel="noopener noreferrer">{t('location.directions', 'Directions')}</a> : null}
+              </div>
+            </div>
+          ) : <p className="hint">{t('clients.noLocation', 'No site location saved.')}</p>}
+          {canManage && !editingLocation ? <button className="btn btn--ghost" type="button" onClick={() => { setLocationDraft(client); setLocationState('valid'); setLocationError(null); setEditingLocation(true); }}>{mapsLink ? t('location.edit', 'Edit location') : t('location.add', 'Add location')}</button> : null}
+        </section>
 
         <section className="section">
           <div className="section-title">{t('notes.open', 'Open notes')}</div>
@@ -135,6 +206,14 @@ export function ClientDetailScreen() {
           )}
         </section>
       </main>
+      <ConfirmDialog
+        open={confirmExistingJobs}
+        title={t('clients.updateExistingLocationTitle', 'Update existing jobs?')}
+        body={t('clients.updateExistingLocationBody', 'The client location is saved. Do you also want to update the location on every existing job for this client?')}
+        confirmLabel={t('clients.updateExistingLocationConfirm', 'Update all jobs')}
+        onConfirm={() => void applyToExistingJobs()}
+        onCancel={() => { setConfirmExistingJobs(false); void load(); }}
+      />
     </AppShell>
   );
 }

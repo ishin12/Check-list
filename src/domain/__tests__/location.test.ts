@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { directionsLinkFor, hasLocation, mapsLinkFor, parseMapsInput } from '../location';
+import { directionsLinkFor, embedMapLinkFor, hasLocation, mapsLinkFor, parseMapsInput } from '../location';
 
 describe('parseMapsInput', () => {
   it('parses raw coordinates in several shapes', () => {
@@ -97,6 +97,12 @@ describe('links', () => {
     expect(directionsLinkFor({ locationLat: -1.5, locationLng: 36.8 }))
       .toBe('https://www.google.com/maps/dir/?api=1&destination=-1.5,36.8');
     expect(directionsLinkFor({ locationUrl: 'https://maps.app.goo.gl/x' })).toBeNull();
+  });
+
+  it('builds an interactive map only with coordinates', () => {
+    expect(embedMapLinkFor({ locationLat: 24.7136, locationLng: 46.6753 }))
+      .toBe('https://www.google.com/maps?q=24.7136,46.6753&z=16&output=embed');
+    expect(embedMapLinkFor({ locationUrl: 'https://maps.app.goo.gl/x' })).toBeNull();
   });
 
   it('ignores half-set or out-of-range coordinates', () => {

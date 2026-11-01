@@ -287,7 +287,12 @@
     "upcoming": "آنے والے وزٹ",
     "noUpcoming": "کچھ طے نہیں ہے۔",
     "history": "وزٹ کا ریکارڈ",
-    "noHistory": "ابھی کوئی پرانا وزٹ نہیں ہے۔"
+    "noHistory": "ابھی کوئی پرانا وزٹ نہیں ہے۔",
+    "location": "کلائنٹ کی لوکیشن",
+    "noLocation": "کلائنٹ کی لوکیشن محفوظ نہیں ہے۔",
+    "updateExistingLocationTitle": "موجودہ کام تبدیل کریں؟",
+    "updateExistingLocationBody": "کلائنٹ کی لوکیشن محفوظ ہو گئی ہے۔ کیا آپ اس کلائنٹ کے تمام موجودہ کاموں کی لوکیشن بھی تبدیل کرنا چاہتے ہیں؟",
+    "updateExistingLocationConfirm": "تمام کام تبدیل کریں"
   },
   "clientNew": {
     "title": "نیا کلائنٹ",
@@ -428,6 +433,7 @@
     "save": "لوکیشن محفوظ کریں",
     "cancel": "منسوخ کریں",
     "saveFailed": "لوکیشن محفوظ نہیں ہو سکی۔",
+    "mapTitle": "لوکیشن کا نقشہ",
     "errors": {
       "invalid": "یہ Google Maps کا لنک یا لوکیشن کے نمبر نہیں ہیں۔",
       "not_https": "لنک https:// سے شروع ہونا چاہیے۔",

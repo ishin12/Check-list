@@ -26,6 +26,7 @@ import { TaskWhoLine } from '@/components/TaskWhoLine';
 import { ApprovalBadge } from '@/components/ApprovalBadge';
 import { WorkerMultiSelect } from '@/components/WorkerMultiSelect';
 import { LocationInput, type LocationInputState } from '@/components/LocationInput';
+import { LocationMap } from '@/components/LocationMap';
 import {
   directionsLinkFor, formatCoords, mapsLinkFor, type TaskLocation,
 } from '@/domain/location';
@@ -490,6 +491,7 @@ function LocationCard({ task, canEdit, onSaved }: { task: FieldTask; canEdit: bo
     <>
       {mapsLink ? (
         <section className="card location-card task-actions__panel">
+          <LocationMap location={task} />
           <div className="location-card__actions">
             <a className="btn" href={mapsLink} target="_blank" rel="noopener noreferrer">
               <Icon name="pin" />{t('location.open')}

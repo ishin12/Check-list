@@ -20,6 +20,7 @@ export function ClientsScreen() {
       setClients((data ?? []).map((r) => ({
         id: r.id, name: r.name, email: r.email ?? undefined, phone: r.phone ?? undefined,
         address: r.address ?? undefined, notes: r.notes ?? undefined,
+        locationUrl: r.location_url ?? undefined, locationLat: r.location_lat ?? undefined, locationLng: r.location_lng ?? undefined,
         createdAt: r.created_at, updatedAt: r.updated_at,
       })));
     })();

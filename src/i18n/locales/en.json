@@ -287,7 +287,12 @@
     "upcoming": "Upcoming visits",
     "noUpcoming": "Nothing scheduled.",
     "history": "Visit history",
-    "noHistory": "No past visits yet."
+    "noHistory": "No past visits yet.",
+    "location": "Site location",
+    "noLocation": "No site location saved.",
+    "updateExistingLocationTitle": "Update existing jobs?",
+    "updateExistingLocationBody": "The client location is saved. Do you also want to update the location on every existing job for this client?",
+    "updateExistingLocationConfirm": "Update all jobs"
   },
   "clientNew": {
     "title": "New client",
@@ -428,6 +433,7 @@
     "save": "Save location",
     "cancel": "Cancel",
     "saveFailed": "Couldn’t save the location.",
+    "mapTitle": "Location map",
     "errors": {
       "invalid": "This isn’t a Google Maps link or a pair of coordinates.",
       "not_https": "The link must start with https://.",
