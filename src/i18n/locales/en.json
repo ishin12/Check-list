@@ -449,7 +449,7 @@
   "roles": {
     "worker": "Worker",
     "manager": "Administrator",
-    "auditor": "Financial auditor",
+    "auditor": "Accountant",
     "client": "Client"
   },
   "reports": {

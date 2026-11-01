@@ -138,7 +138,9 @@
     "approvals": "الموافقات",
     "clients": "العملاء",
     "notifications": "الصندوق",
-    "me": "حسابي"
+    "me": "حسابي",
+    "reports": "التقارير",
+    "audit": "سجل التدقيق"
   },
   "auth": {
     "signIn": "تسجيل الدخول",
@@ -447,7 +449,21 @@
   "roles": {
     "worker": "عامل",
     "manager": "مدير",
+    "auditor": "محاسب",
     "client": "عميل"
+  },
+  "reports": {
+    "title": "التقارير",
+    "summary": "الملخص التشغيلي",
+    "readOnly": "عرض للقراءة فقط للتقارير والمساءلة.",
+    "totalTasks": "إجمالي المهام",
+    "approved": "معتمدة",
+    "pending": "مفتوحة أو معلقة",
+    "completionRate": "نسبة الإنجاز",
+    "recentWork": "الأعمال الأخيرة",
+    "exportCsv": "تصدير CSV",
+    "noTasks": "لا توجد مهام.",
+    "noAmounts": "هذا التقرير يعرض إجماليات تشغيلية فقط، ولا يتضمن محاسبة مالية."
   },
   "setup": {
     "notConfigured": "Supabase غير مهيأ. انسخ <c>.env.example</c> إلى <c>.env.local</c>.",

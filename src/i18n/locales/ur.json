@@ -118,7 +118,9 @@
     "approvals": "منظوریاں",
     "clients": "کلائنٹس",
     "notifications": "اطلاعات",
-    "me": "میرا اکاؤنٹ"
+    "me": "میرا اکاؤنٹ",
+    "reports": "رپورٹس",
+    "audit": "آڈٹ"
   },
   "auth": {
     "signIn": "لاگ اِن کریں",
@@ -447,7 +449,21 @@
   "roles": {
     "worker": "ورکر",
     "manager": "مینیجر",
+    "auditor": "اکاؤنٹنٹ",
     "client": "کلائنٹ"
+  },
+  "reports": {
+    "title": "رپورٹس",
+    "summary": "عملی خلاصہ",
+    "readOnly": "رپورٹنگ اور جواب دہی کے لیے صرف پڑھنے کا منظر۔",
+    "totalTasks": "کل کام",
+    "approved": "منظور شدہ",
+    "pending": "کھلے یا زیر التوا",
+    "completionRate": "تکمیل",
+    "recentWork": "حالیہ کام",
+    "exportCsv": "CSV برآمد کریں",
+    "noTasks": "کوئی کام نہیں ملا۔",
+    "noAmounts": "یہ رپورٹ عملی اعداد دکھاتی ہے، مالی حساب کتاب نہیں۔"
   },
   "setup": {
     "notConfigured": "Supabase سیٹ اپ نہیں ہے۔ <c>.env.example</c> کو <c>.env.local</c> میں کاپی کریں۔",
