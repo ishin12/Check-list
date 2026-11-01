@@ -15,6 +15,7 @@ import type { FieldTask } from '@/domain/models/ops';
 import { formatDate, formatTime } from '@/lib/datetime';
 import { Icon } from '@/components/Icon';
 import '@/styles/screens/field.css';
+import { isAdministrator } from '@/domain/permissions';
 
 interface Option { id: string; label: string }
 
@@ -29,7 +30,7 @@ export function CalendarScreen() {
   const [filterId, setFilterId] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
 
-  const isManager = user?.role === 'manager';
+  const isManager = user ? isAdministrator(user.role) : false;
 
   // Load reference lists for the manager filter dropdown.
   useEffect(() => {

@@ -119,6 +119,7 @@ export function UsersScreen() {
               <select className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>
                 <option value="worker">{t('roles.worker', 'Worker')}</option>
                 <option value="manager">{t('roles.manager', 'Manager')}</option>
+                <option value="supervisor">{t('roles.supervisor', 'Supervisor')}</option>
                 <option value="auditor">{t('roles.auditor', 'Accountant')}</option>
                 <option value="client">{t('roles.client', 'Client')}</option>
               </select>

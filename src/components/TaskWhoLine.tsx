@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useClientName, useDirectory } from '@/app/providers/DirectoryContext';
 import { useAuth } from '@/app/providers/AuthContext';
+import { isAdministrator } from '@/domain/permissions';
 import type { FieldTask } from '@/domain/models/ops';
 import { summarizeNames } from '@/domain/workerSelect';
 
@@ -38,7 +39,7 @@ export function TaskWhoLine({ task, hideWorker, hideClient, linkClient }: Props)
     );
   if (!hideClient) {
     parts.push(
-      linkClient && user?.role === 'manager' ? (
+      linkClient && user && isAdministrator(user.role) ? (
         <Link
           key="c"
           to={`/clients/${task.clientId}`}

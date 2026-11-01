@@ -20,8 +20,15 @@ export type Permission =
   | 'view_portal'
   | 'change_own_password';
 
+export const ADMIN_ROLES: Role[] = ['manager', 'supervisor'];
+
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   manager: [
+    'manage_users', 'manage_clients', 'manage_tasks', 'manage_templates',
+    'approve_tasks', 'view_reports', 'view_financials', 'view_audit',
+    'view_notifications', 'change_own_password',
+  ],
+  supervisor: [
     'manage_users', 'manage_clients', 'manage_tasks', 'manage_templates',
     'approve_tasks', 'view_reports', 'view_financials', 'view_audit',
     'view_notifications', 'change_own_password',
@@ -42,7 +49,7 @@ export function hasPermission(role: Role, permission: Permission): boolean {
 }
 
 export function isAdministrator(role: Role): boolean {
-  return role === 'manager';
+  return ADMIN_ROLES.includes(role);
 }
 
 /** Read-only operational reporting, including completion and approval summaries. */

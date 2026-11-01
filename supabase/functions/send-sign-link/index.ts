@@ -29,7 +29,7 @@ Deno.serve(async (req: Request) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const appUrl = Deno.env.get('APP_URL') ?? '';
 
-    // Verify the caller may act on this task (worker on it, or manager).
+    // Verify the caller may act on this task (worker on it, or administrator).
     const caller = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: callerProfile } = await admin
       .from('profiles').select('role').eq('id', callerUser.user.id).maybeSingle();
-    const isManager = callerProfile?.role === 'manager';
+    const isManager = callerProfile?.role === 'manager' || callerProfile?.role === 'supervisor';
     let isTaskWorker = task.assigned_worker_id === callerUser.user.id;
     if (!isManager && !isTaskWorker) {
       const { data: membership } = await admin

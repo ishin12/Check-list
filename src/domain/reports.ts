@@ -23,6 +23,13 @@ export function reportCsv(tasks: Pick<FieldTask, 'id' | 'title' | 'clientId' | '
   return ['id,title,client_id,status,scheduled_at', ...rows].join('\n');
 }
 
+/** Excel-compatible tabular export without adding a spreadsheet dependency. */
+export function reportExcel(tasks: Pick<FieldTask, 'id' | 'title' | 'clientId' | 'status' | 'scheduledAt'>[]): string {
+  const cell = (value: string) => value.replace(/[\t\r\n]/g, ' ');
+  const rows = tasks.map((task) => [task.id, task.title, task.clientId, task.status, task.scheduledAt].map(cell).join('\t'));
+  return ['id\ttitle\tclient_id\tstatus\tscheduled_at', ...rows].join('\n');
+}
+
 export const REPORT_STATUSES: readonly FieldTaskStatus[] = [
   'not_started', 'in_progress', 'submitted', 'approved', 'rejected',
 ];

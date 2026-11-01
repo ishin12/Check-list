@@ -5,7 +5,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { Icon } from '@/components/Icon';
 import { listTasks } from '@/services/data/tasks';
 import { getSupabase } from '@/services/supabase/client';
-import { reportCsv, summarizeTasks } from '@/domain/reports';
+import { reportExcel, summarizeTasks } from '@/domain/reports';
 import type { FieldTask } from '@/domain/models/ops';
 import '@/styles/screens/admin.css';
 
@@ -36,11 +36,11 @@ export function ReportsScreen() {
 
   const summary = summarizeTasks(tasks);
   function downloadCsv() {
-    const csv = reportCsv(tasks);
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const excel = reportExcel(tasks);
+    const url = URL.createObjectURL(new Blob([excel], { type: 'application/vnd.ms-excel;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `check-list-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `check-list-report-${new Date().toISOString().slice(0, 10)}.xls`;
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -60,7 +60,7 @@ export function ReportsScreen() {
             <div><strong>{summary.completionRate}%</strong><span>{t('reports.completionRate', 'Completion')}</span></div>
           </div>
           <button className="btn btn--primary" type="button" onClick={downloadCsv} disabled={!tasks.length}>
-            <Icon name="share" /> {t('reports.exportCsv', 'Export CSV')}
+            <Icon name="share" /> {t('reports.exportExcel', 'Export Excel')}
           </button>
           <p className="hint">{t('reports.noAmounts', 'This report contains operational totals, not monetary accounting.')}</p>
         </section>

@@ -84,7 +84,7 @@ async function loadAll(): Promise<void> {
     if (v) blobs.set(String(k), v);
   }
   const seeded = await conn.get('meta', 'seeded');
-  if (seeded !== 'v6') await seedDemo();
+  if (seeded !== 'v7') await seedDemo();
   else if (state.task_workers.length === 0 && state.tasks.length > 0) {
     // Demo data created before multi-worker tasks: mirror migration 0006's backfill.
     for (const t of state.tasks) addTaskWorker(t.id, t.assigned_worker_id, false);
@@ -226,7 +226,7 @@ function onTaskUpdate(prev: Row, next: Row): void {
   if (prev.status !== next.status) {
     audit(`task.${next.status}`, 'task', next.id, { status: next.status });
     if (next.status === 'submitted') {
-      for (const m of state.profiles.filter((p) => p.role === 'manager' && p.active)) {
+      for (const m of state.profiles.filter((p) => (p.role === 'manager' || p.role === 'supervisor') && p.active)) {
         notify(m.id, 'task.submitted', {
           task_id: next.id, title: next.title, worker_id: next.assigned_worker_id,
           worker_ids: workerIdsFor(next),
@@ -614,7 +614,7 @@ export function getMockClient(): MockClient {
 }
 
 function isManagerUser(): boolean {
-  return state.profiles.some((p) => p.id === activeUserId && p.role === 'manager' && p.active);
+  return state.profiles.some((p) => p.id === activeUserId && (p.role === 'manager' || p.role === 'supervisor') && p.active);
 }
 
 function parseFilterString(s: string | undefined): Subscription['filter'] {
@@ -816,6 +816,7 @@ async function seedDemo(): Promise<void> {
 
   state.profiles = [
     { id: 'u-mgr', role: 'manager', full_name: 'Faisal (Manager)', email: 'faisal@demo.com', phone: null, client_id: null, active: true },
+    { id: 'u-sup', role: 'supervisor', full_name: 'Site supervisor', email: 'supervisor@demo.com', phone: null, client_id: null, active: true },
     { id: 'u-wa', role: 'worker',  full_name: 'Ahmed',            email: 'ahmed@demo.com',   phone: null, client_id: null, active: true },
     { id: 'u-wb', role: 'worker',  full_name: 'Sara',             email: 'sara@demo.com',    phone: null, client_id: null, active: true },
     { id: 'u-aud', role: 'auditor', full_name: 'Finance auditor', email: 'auditor@demo.com', phone: null, client_id: null, active: true },

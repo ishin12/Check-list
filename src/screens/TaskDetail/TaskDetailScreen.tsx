@@ -32,6 +32,7 @@ import {
 import type { WorkerOption } from '@/domain/workerSelect';
 import { formatDate, formatDateAndTime, formatTime } from '@/lib/datetime';
 import { Icon } from '@/components/Icon';
+import { isAdministrator } from '@/domain/permissions';
 import '@/styles/screens/field.css';
 
 export function TaskDetailScreen() {
@@ -104,12 +105,13 @@ export function TaskDetailScreen() {
   }
 
   const role = user?.role ?? 'worker';
+  const isAdmin = isAdministrator(role);
   const actions = availableActions(task.status, role);
   const { needsStartProof, needsFinishProof } = proofRequirements(task.status, proofs);
   // Worker can retake on their own task at any stage; manager can always retake.
   const canEditProofs =
     (role === 'worker' && isOnTask(task, user?.id)) ||
-    role === 'manager';
+    isAdmin;
   // Missing required checklist items block Submit.
   const missingRequired = requiredItems.filter(
     (item) => !task.results.find((r) => r.taskId === item.id && r.checked),
@@ -128,6 +130,10 @@ export function TaskDetailScreen() {
     }
     if (action === 'submit' && submitBlocked) {
       // UI also disables the button, but guard here in case of stale state.
+      return;
+    }
+    if (action === 'reject' && !decisionNote.trim()) {
+      setError(t('task.rejectReasonRequired', 'Write a reason before rejecting this work.'));
       return;
     }
     if (action === 'submit' && needsFinishProof) {
@@ -202,8 +208,8 @@ export function TaskDetailScreen() {
         </header>
 
         <div className="task-actions">
-          {role === 'manager' ? <EditWorkers task={task} onSaved={load} /> : null}
-          <LocationCard task={task} canEdit={role === 'manager'} onSaved={load} />
+          {isAdmin ? <EditWorkers task={task} onSaved={load} /> : null}
+          <LocationCard task={task} canEdit={isAdmin} onSaved={load} />
         </div>
 
         {task.status === 'approved'
@@ -233,8 +239,8 @@ export function TaskDetailScreen() {
         {task.decisionNote && (task.status === 'rejected' || task.status === 'approved') ? (
           <div className={`banner banner--${task.status === 'rejected' ? 'error' : 'success'}`}>
             <div className="decision-banner__title">
-              {task.status === 'rejected'
-                ? t('task.rejectedNote', 'Rejected. Manager said:')
+                {task.status === 'rejected'
+                ? t('task.rejectedNote', 'Rejected. Reason:')
                 : t('task.approvedNote', 'Approved. Manager said:')}
             </div>
             <div>{task.decisionNote}</div>
@@ -298,7 +304,7 @@ export function TaskDetailScreen() {
           entries={task.extraWork}
           canEdit={
             task.status !== 'approved' &&
-            ((role === 'worker' && isOnTask(task, user?.id)) || role === 'manager')
+            ((role === 'worker' && isOnTask(task, user?.id)) || isAdmin)
           }
           currentUserId={user?.id}
           currentUserName={user?.fullName ?? user?.email}
@@ -320,14 +326,15 @@ export function TaskDetailScreen() {
           />
         ) : null}
 
-        {role === 'manager' && task.status === 'submitted' ? (
+        {actions.includes('reject') ? (
           <div className="field">
-            <label className="field__label">{t('task.decisionNote', 'Note (optional)')}</label>
+            <label className="field__label">{t('task.decisionNote', 'Reason for rejection')}</label>
             <textarea
               className="textarea"
               value={decisionNote}
               onChange={(e) => setDecisionNote(e.target.value)}
-              placeholder={t('task.decisionPlaceholder', 'Add a reason if rejecting…') ?? ''}
+              placeholder={t('task.decisionPlaceholder', 'Explain why this work is being rejected…') ?? ''}
+              required
             />
           </div>
         ) : null}
@@ -346,7 +353,7 @@ export function TaskDetailScreen() {
       {actions.length > 0 ? (
         <div className="action-bar">
           {actions.map((a) => {
-            const disabled = a === 'submit' && submitBlocked;
+            const disabled = (a === 'submit' && submitBlocked) || (a === 'reject' && !decisionNote.trim());
             return (
               <button
                 key={a}

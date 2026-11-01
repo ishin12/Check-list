@@ -68,7 +68,7 @@ export function NotificationsScreen() {
         ) : (
           <div className="stack">
             {items.map((n) => {
-              const payload = n.payload as { title?: string; worker_id?: string; worker_ids?: string[] };
+              const payload = n.payload as { title?: string; reason?: string; worker_id?: string; worker_ids?: string[] };
               const ids = payload.worker_ids?.length ? payload.worker_ids : payload.worker_id ? [payload.worker_id] : [];
               const workerName = ids
                 .map((id) => workers.get(id)?.fullName ?? workers.get(id)?.email)
@@ -82,6 +82,7 @@ export function NotificationsScreen() {
                       {payload.title}{workerName ? ` · ${workerName}` : ''}
                     </div>
                   ) : null}
+                  {payload.reason ? <div className="card__text">{payload.reason}</div> : null}
                   <div className="card__meta">
                     {formatDateAndTime(n.createdAt, language, {
                       weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
@@ -103,6 +104,7 @@ function renderKind(kind: string, t: TFunction): string {
     case 'task.submitted':  return t('notifications.kind.submitted', 'Task submitted for approval');
     case 'task.approved':   return t('notifications.kind.approved', 'Your task was approved');
     case 'task.rejected':   return t('notifications.kind.rejected', 'Your task was rejected');
+    case 'task.worker_rejected': return t('notifications.kind.workerRejected', 'Worker rejected assigned work');
     default: return kind;
   }
 }

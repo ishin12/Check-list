@@ -9,6 +9,7 @@ import { useAuth } from '@/app/providers/AuthContext';
 import { isDemoMode } from '@/services/supabase/client';
 import { getAppSettings, saveAppSettings } from '@/services/data/appSettings';
 import '@/styles/screens/admin.css';
+import { isAdministrator } from '@/domain/permissions';
 
 export function SettingsScreen() {
   const { t } = useTranslation();
@@ -27,7 +28,7 @@ export function SettingsScreen() {
   const [winMsg, setWinMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.role !== 'manager') return;
+    if (!user || !isAdministrator(user.role)) return;
     void getAppSettings().then((s) => {
       setExpiryDays(s.signingExpiryDays);
       setReminderHours(s.signingReminderHours);
@@ -71,7 +72,7 @@ export function SettingsScreen() {
           </div>
         ) : null}
 
-        {user?.role === 'manager' ? (
+        {user && isAdministrator(user.role) ? (
           <div className="card adm-links">
             <Link to="/templates" className="adm-link"><span>{t('nav.templates', 'Templates')}</span><Chevron kind="forward" /></Link>
             <Link to="/users" className="adm-link"><span>{t('users.title', 'Team & clients')}</span><Chevron kind="forward" /></Link>
@@ -121,7 +122,7 @@ export function SettingsScreen() {
               value={pw}
               onChange={(e) => setPw(e.target.value)}
             />
-            <button className={`btn ${user.role === 'manager' ? 'btn--ghost' : 'btn--primary'}`} disabled={pw.length < 8 || pwSaving} onClick={changePassword}>
+            <button className={`btn ${isAdministrator(user.role) ? 'btn--ghost' : 'btn--primary'}`} disabled={pw.length < 8 || pwSaving} onClick={changePassword}>
               {pwSaving ? t('common.saving', 'Saving…') : t('settings.updatePassword', 'Update password')}
             </button>
             {pwMsg ? <div className={`banner banner--${pwMsg.ok ? 'success' : 'error'}`}>{pwMsg.text}</div> : null}
@@ -129,7 +130,7 @@ export function SettingsScreen() {
         ) : null}
 
         {/* Signing window — manager only. */}
-        {user?.role === 'manager' ? (
+        {user && isAdministrator(user.role) ? (
           <div className="card adm-card">
             <div>
               <div className="adm-card__title">{t('settings.signingWindow', 'Client signing window')}</div>

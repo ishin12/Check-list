@@ -325,7 +325,8 @@
       "assigned": "تم إسناد مهمة جديدة إليك",
       "submitted": "تم إرسال المهمة للاعتماد",
       "approved": "تم اعتماد مهمتك",
-      "rejected": "تم رفض مهمتك"
+      "rejected": "تم رفض مهمتك",
+      "workerRejected": "رفض العامل المهمة المسندة إليه"
     }
   },
   "portal": {
@@ -449,6 +450,7 @@
   "roles": {
     "worker": "عامل",
     "manager": "مدير",
+    "supervisor": "مشرف",
     "auditor": "محاسب",
     "client": "عميل"
   },
@@ -462,6 +464,7 @@
     "completionRate": "نسبة الإنجاز",
     "recentWork": "الأعمال الأخيرة",
     "exportCsv": "تصدير CSV",
+    "exportExcel": "تصدير Excel",
     "noTasks": "لا توجد مهام.",
     "noAmounts": "هذا التقرير يعرض إجماليات تشغيلية فقط، ولا يتضمن محاسبة مالية."
   },

@@ -317,7 +317,8 @@
       "assigned": "New task assigned to you",
       "submitted": "Task submitted for approval",
       "approved": "Your task was approved",
-      "rejected": "Your task was rejected"
+      "rejected": "Your task was rejected",
+      "workerRejected": "Worker rejected assigned work"
     }
   },
   "portal": {
@@ -449,6 +450,7 @@
   "roles": {
     "worker": "Worker",
     "manager": "Administrator",
+    "supervisor": "Supervisor",
     "auditor": "Accountant",
     "client": "Client"
   },
@@ -462,6 +464,7 @@
     "completionRate": "Completion",
     "recentWork": "Recent work",
     "exportCsv": "Export CSV",
+    "exportExcel": "Export Excel",
     "noTasks": "No tasks found.",
     "noAmounts": "This report contains operational totals, not monetary accounting."
   },

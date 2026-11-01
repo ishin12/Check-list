@@ -5,8 +5,9 @@ The database role `manager` is the administrator account for compatibility with 
 | Role | Purpose | Access | Cannot do |
 | --- | --- | --- | --- |
 | Administrator (`manager`) | Own the workspace | All features, users, clients, tasks, templates, approvals, reports and audit | — |
+| Supervisor (`supervisor`) | Run day-to-day operations | Same full access as the administrator | — |
 | Worker (`worker`) | Perform assigned field work | Assigned tasks, task updates, proofs, notes, notifications and own report | Manage users, clients, templates, approvals or audit |
-| Accountant (`auditor`) | Independent read-only oversight | Operational reports, audit history and read-only task/client/proof/note data | Change data, approve tasks, invite users or manage settings |
+| Accountant (`auditor`) | Independent read-only oversight | Operational reports, audit history and read-only task/client/proof/note data, with export | Change data, approve tasks, invite users or manage settings |
 | Client (`client`) | External customer portal | Own portal records and password change | Internal operations and other clients |
 
 The changeable source of truth is `src/domain/permissions.ts` for the UI and `public.has_permission` in migration `0008_auditor_permissions.sql` for database enforcement.

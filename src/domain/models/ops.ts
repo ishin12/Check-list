@@ -1,7 +1,7 @@
 import type { Signature, TaskResult } from './types';
 import type { Recurrence } from '@/domain/job/recurrence';
 
-export type Role = 'manager' | 'worker' | 'auditor' | 'client';
+export type Role = 'manager' | 'supervisor' | 'worker' | 'auditor' | 'client';
 
 export interface AppUser {
   id: string;

@@ -12,7 +12,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
 interface InviteBody {
   email: string;
-  role: 'manager' | 'worker' | 'auditor' | 'client';
+  role: 'manager' | 'supervisor' | 'worker' | 'auditor' | 'client';
   full_name?: string;
   phone?: string;
   client_id?: string;
@@ -70,7 +70,7 @@ Deno.serve(async (req: Request) => {
     if (!callerUser?.user) return cors(new Response('Unauthorized', { status: 401 }));
     const { data: callerProfile } = await callerClient
       .from('profiles').select('role').eq('id', callerUser.user.id).maybeSingle();
-    if (callerProfile?.role !== 'manager') {
+    if (callerProfile?.role !== 'manager' && callerProfile?.role !== 'supervisor') {
       return cors(new Response('Forbidden', { status: 403 }));
     }
 

@@ -35,6 +35,12 @@ describe('canTransition', () => {
     expect(canTransition('submitted', 'approve', 'worker')).toBeNull();
   });
 
+  it('worker can reject assigned work and supervisors can approve or reject submissions', () => {
+    expect(canTransition('not_started', 'reject', 'worker')).toBe('rejected');
+    expect(canTransition('submitted', 'approve', 'supervisor')).toBe('approved');
+    expect(canTransition('submitted', 'reject', 'supervisor')).toBe('rejected');
+  });
+
   it('manager can approve a submitted task', () => {
     expect(canTransition('submitted', 'approve', 'manager')).toBe('approved');
   });
@@ -55,7 +61,7 @@ describe('canTransition', () => {
 
 describe('availableActions', () => {
   it('lists worker actions on an in-progress task', () => {
-    expect(availableActions('in_progress', 'worker')).toEqual(['submit']);
+    expect(availableActions('in_progress', 'worker').sort()).toEqual(['reject', 'submit']);
   });
 
   it('lists manager actions on a submitted task', () => {

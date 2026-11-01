@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { reportCsv, summarizeTasks } from './reports';
+import { reportCsv, reportExcel, summarizeTasks } from './reports';
 
 describe('operational reports', () => {
   it('summarizes completion without inventing monetary data', () => {
@@ -11,5 +11,10 @@ describe('operational reports', () => {
   it('escapes CSV values', () => {
     expect(reportCsv([{ id: '1', title: 'A, "B"', clientId: 'c', status: 'approved', scheduledAt: '2026-01-01' }]))
       .toContain('"A, ""B"""');
+  });
+
+  it('exports every task in an Excel-compatible table', () => {
+    expect(reportExcel([{ id: '1', title: 'Visit', clientId: 'c', status: 'approved', scheduledAt: '2026-01-01' }]))
+      .toBe('id\ttitle\tclient_id\tstatus\tscheduled_at\n1\tVisit\tc\tapproved\t2026-01-01');
   });
 });

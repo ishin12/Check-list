@@ -4,6 +4,7 @@ import type { Role } from '@/domain/models/ops';
 import { useAuth } from '@/app/providers/AuthContext';
 import { tabsForRole } from './navTabs';
 import { Icon } from './Icon';
+import { isAdministrator } from '@/domain/permissions';
 
 export function SideNav({ role }: { role: Role }) {
   const { t } = useTranslation();
@@ -27,7 +28,7 @@ export function SideNav({ role }: { role: Role }) {
         <span className="side-nav__brand-name">{t('app.name', 'Ghsoon Najd')}</span>
       </div>
 
-      {role === 'manager' ? (
+      {isAdministrator(role) ? (
         <Link to="/tasks/new" className="btn btn--primary side-nav__cta">
           <Icon name="plus" />
           <span>{t('calendar.add', 'Add task')}</span>

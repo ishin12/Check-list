@@ -26,6 +26,7 @@ import { RoleGate } from '@/components/RoleGate';
 import { RootRedirect } from '@/screens/Home/RootRedirect';
 import { SignScreen } from '@/screens/Sign/SignScreen';
 import { ReportsScreen } from '@/screens/Reports/ReportsScreen';
+import { ADMIN_ROLES } from '@/domain/permissions';
 
 // BASE_URL is '/Check-list/' in production builds, '/' in dev. Browser router
 // needs the basename without the trailing slash.
@@ -40,34 +41,34 @@ export const router = createBrowserRouter([
   { path: '/sign/:token', element: <SignScreen /> },
 
   // Worker + manager surfaces
-  { path: '/today',          element: <RoleGate roles={['worker', 'manager']}><TodayScreen /></RoleGate> },
-  { path: '/calendar',       element: <RoleGate roles={['worker', 'manager']}><CalendarScreen /></RoleGate> },
-  { path: '/tasks/new',      element: <RoleGate roles={['manager']}><TaskNewScreen /></RoleGate> },
-  { path: '/tasks/:id',      element: <RoleGate roles={['worker', 'manager']}><TaskDetailScreen /></RoleGate> },
-  { path: '/tasks/:id/capture/:kind', element: <RoleGate roles={['worker', 'manager']}><MediaCaptureScreen /></RoleGate> },
-  { path: '/notifications',  element: <RoleGate roles={['worker', 'manager']}><NotificationsScreen /></RoleGate> },
+  { path: '/today',          element: <RoleGate roles={['worker', ...ADMIN_ROLES]}><TodayScreen /></RoleGate> },
+  { path: '/calendar',       element: <RoleGate roles={['worker', ...ADMIN_ROLES]}><CalendarScreen /></RoleGate> },
+  { path: '/tasks/new',      element: <RoleGate roles={ADMIN_ROLES}><TaskNewScreen /></RoleGate> },
+  { path: '/tasks/:id',      element: <RoleGate roles={['worker', ...ADMIN_ROLES]}><TaskDetailScreen /></RoleGate> },
+  { path: '/tasks/:id/capture/:kind', element: <RoleGate roles={['worker', ...ADMIN_ROLES]}><MediaCaptureScreen /></RoleGate> },
+  { path: '/notifications',  element: <RoleGate roles={['worker', ...ADMIN_ROLES]}><NotificationsScreen /></RoleGate> },
 
   // Manager-only
-  { path: '/clients',        element: <RoleGate roles={['manager']}><ClientsScreen /></RoleGate> },
-  { path: '/clients/new',    element: <RoleGate roles={['manager']}><ClientNewScreen /></RoleGate> },
-  { path: '/clients/:id',    element: <RoleGate roles={['manager']}><ClientDetailScreen /></RoleGate> },
-  { path: '/approvals',      element: <RoleGate roles={['manager']}><ApprovalsScreen /></RoleGate> },
-  { path: '/reports',        element: <RoleGate roles={['manager', 'auditor']}><ReportsScreen /></RoleGate> },
-  { path: '/users',          element: <RoleGate roles={['manager']}><UsersScreen /></RoleGate> },
+  { path: '/clients',        element: <RoleGate roles={ADMIN_ROLES}><ClientsScreen /></RoleGate> },
+  { path: '/clients/new',    element: <RoleGate roles={ADMIN_ROLES}><ClientNewScreen /></RoleGate> },
+  { path: '/clients/:id',    element: <RoleGate roles={ADMIN_ROLES}><ClientDetailScreen /></RoleGate> },
+  { path: '/approvals',      element: <RoleGate roles={ADMIN_ROLES}><ApprovalsScreen /></RoleGate> },
+  { path: '/reports',        element: <RoleGate roles={[...ADMIN_ROLES, 'auditor']}><ReportsScreen /></RoleGate> },
+  { path: '/users',          element: <RoleGate roles={ADMIN_ROLES}><UsersScreen /></RoleGate> },
 
   // Client portal
   { path: '/portal',         element: <RoleGate roles={['client']}><PortalScreen /></RoleGate> },
 
   // Existing manager-only checklist authoring & legacy flows
-  { path: '/home',           element: <RoleGate roles={['manager']}><HomeScreen /></RoleGate> },
-  { path: '/templates',      element: <RoleGate roles={['manager']}><TemplateListScreen /></RoleGate> },
-  { path: '/templates/new',  element: <RoleGate roles={['manager']}><TemplateEditorScreen /></RoleGate> },
-  { path: '/templates/:id',  element: <RoleGate roles={['manager']}><TemplateEditorScreen /></RoleGate> },
-  { path: '/job',            element: <RoleGate roles={['worker', 'manager']}><JobRunnerScreen /></RoleGate> },
-  { path: '/signature',      element: <RoleGate roles={['worker', 'manager']}><SignatureCaptureScreen /></RoleGate> },
-  { path: '/report',         element: <RoleGate roles={['worker', 'manager']}><ReportPreviewScreen /></RoleGate> },
-  { path: '/audit',          element: <RoleGate roles={['manager', 'auditor']}><AuditScreen /></RoleGate> },
-  { path: '/settings',       element: <RoleGate roles={['worker', 'manager', 'auditor', 'client']}><SettingsScreen /></RoleGate> },
+  { path: '/home',           element: <RoleGate roles={ADMIN_ROLES}><HomeScreen /></RoleGate> },
+  { path: '/templates',      element: <RoleGate roles={ADMIN_ROLES}><TemplateListScreen /></RoleGate> },
+  { path: '/templates/new',  element: <RoleGate roles={ADMIN_ROLES}><TemplateEditorScreen /></RoleGate> },
+  { path: '/templates/:id',  element: <RoleGate roles={ADMIN_ROLES}><TemplateEditorScreen /></RoleGate> },
+  { path: '/job',            element: <RoleGate roles={['worker', ...ADMIN_ROLES]}><JobRunnerScreen /></RoleGate> },
+  { path: '/signature',      element: <RoleGate roles={['worker', ...ADMIN_ROLES]}><SignatureCaptureScreen /></RoleGate> },
+  { path: '/report',         element: <RoleGate roles={['worker', ...ADMIN_ROLES]}><ReportPreviewScreen /></RoleGate> },
+  { path: '/audit',          element: <RoleGate roles={[...ADMIN_ROLES, 'auditor']}><AuditScreen /></RoleGate> },
+  { path: '/settings',       element: <RoleGate roles={['worker', ...ADMIN_ROLES, 'auditor', 'client']}><SettingsScreen /></RoleGate> },
 
   { path: '*', element: <Navigate to="/" replace /> },
 ], { basename });
