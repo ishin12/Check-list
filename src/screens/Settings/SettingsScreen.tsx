@@ -8,6 +8,7 @@ import { useLanguage } from '@/app/providers/LanguageContext';
 import { useAuth } from '@/app/providers/AuthContext';
 import { isDemoMode } from '@/services/supabase/client';
 import { getAppSettings, saveAppSettings } from '@/services/data/appSettings';
+import '@/styles/screens/admin.css';
 
 export function SettingsScreen() {
   const { t } = useTranslation();
@@ -62,20 +63,28 @@ export function SettingsScreen() {
   return (
     <AppShell>
       <AppHeader title={t('settings.title')} showBack />
-      <main className="app-main">
+      <main className="app-main adm-narrow">
         {user ? (
-          <div className="card">
-            <div className="card__title">{user.fullName ?? user.email}</div>
+          <div className="card adm-who">
+            <div className="adm-who__name">{user.fullName ?? user.email}</div>
             <div className="card__meta">{t(`roles.${user.role}`, user.role)}</div>
           </div>
         ) : null}
 
-        <div className="card stack">
-          <div>
-            <div className="card__title">{t('settings.language')}</div>
-            <div className="card__meta">{t('settings.languageDesc')}</div>
+        {user?.role === 'manager' ? (
+          <div className="card adm-links">
+            <Link to="/templates" className="adm-link"><span>{t('nav.templates', 'Templates')}</span><Chevron kind="forward" /></Link>
+            <Link to="/users" className="adm-link"><span>{t('users.title', 'Team & clients')}</span><Chevron kind="forward" /></Link>
+            <Link to="/audit" className="adm-link"><span>{t('audit.title', 'Audit log')}</span><Chevron kind="forward" /></Link>
           </div>
-          <div className="row">
+        ) : null}
+
+        <div className="card adm-card">
+          <div>
+            <div className="adm-card__title">{t('settings.language')}</div>
+            <div className="adm-card__lede">{t('settings.languageDesc')}</div>
+          </div>
+          <div className="adm-seg">
             <button
               type="button"
               className={`btn btn--block ${language === 'en' ? 'btn--primary' : 'btn--ghost'}`}
@@ -102,8 +111,8 @@ export function SettingsScreen() {
 
         {/* Change my password (hidden in demo since auth is simulated). */}
         {user && !isDemoMode() ? (
-          <div className="card stack">
-            <div className="card__title">{t('settings.changePassword', 'Change my password')}</div>
+          <div className="card adm-card">
+            <div className="adm-card__title">{t('settings.changePassword', 'Change my password')}</div>
             <input
               className="input"
               type="password"
@@ -112,7 +121,7 @@ export function SettingsScreen() {
               value={pw}
               onChange={(e) => setPw(e.target.value)}
             />
-            <button className="btn btn--primary" disabled={pw.length < 8 || pwSaving} onClick={changePassword}>
+            <button className={`btn ${user.role === 'manager' ? 'btn--ghost' : 'btn--primary'}`} disabled={pw.length < 8 || pwSaving} onClick={changePassword}>
               {pwSaving ? t('common.saving', 'Saving…') : t('settings.updatePassword', 'Update password')}
             </button>
             {pwMsg ? <div className={`banner banner--${pwMsg.ok ? 'success' : 'error'}`}>{pwMsg.text}</div> : null}
@@ -121,20 +130,22 @@ export function SettingsScreen() {
 
         {/* Signing window — manager only. */}
         {user?.role === 'manager' ? (
-          <div className="card stack">
+          <div className="card adm-card">
             <div>
-              <div className="card__title">{t('settings.signingWindow', 'Client signing window')}</div>
-              <div className="card__meta">{t('settings.signingWindowDesc', 'How long the client has to sign before the task auto-approves.')}</div>
+              <div className="adm-card__title">{t('settings.signingWindow', 'Client signing window')}</div>
+              <div className="adm-card__lede">{t('settings.signingWindowDesc', 'How long the client has to sign before the task auto-approves.')}</div>
             </div>
-            <div className="field">
-              <label className="field__label">{t('settings.expiryDays', 'Days to sign')}</label>
-              <input className="input" type="number" min={1} max={30} value={expiryDays}
-                onChange={(e) => setExpiryDays(Math.max(1, Number(e.target.value)))} />
-            </div>
-            <div className="field">
-              <label className="field__label">{t('settings.reminderHours', 'Reminder before expiry (hours)')}</label>
-              <input className="input" type="number" min={1} max={120} value={reminderHours}
-                onChange={(e) => setReminderHours(Math.max(1, Number(e.target.value)))} />
+            <div className="adm-fields adm-fields--md-2">
+              <div className="field">
+                <label className="field__label">{t('settings.expiryDays', 'Days to sign')}</label>
+                <input className="input" type="number" min={1} max={30} value={expiryDays}
+                  onChange={(e) => setExpiryDays(Math.max(1, Number(e.target.value)))} />
+              </div>
+              <div className="field">
+                <label className="field__label">{t('settings.reminderHours', 'Reminder before expiry (hours)')}</label>
+                <input className="input" type="number" min={1} max={120} value={reminderHours}
+                  onChange={(e) => setReminderHours(Math.max(1, Number(e.target.value)))} />
+              </div>
             </div>
             <button className="btn btn--primary" disabled={winSaving} onClick={saveWindow}>
               {winSaving ? t('common.saving', 'Saving…') : t('settings.saveWindow', 'Save')}
@@ -143,19 +154,13 @@ export function SettingsScreen() {
           </div>
         ) : null}
 
-        {user?.role === 'manager' ? (
-          <div className="stack">
-            <Link to="/templates" className="card card--tap"><div className="card__title" style={{ flex: 1 }}>{t('nav.templates', 'Templates')}</div><Chevron kind="forward" /></Link>
-            <Link to="/users" className="card card--tap"><div className="card__title" style={{ flex: 1 }}>{t('users.title', 'Team & clients')}</div><Chevron kind="forward" /></Link>
-            <Link to="/audit" className="card card--tap"><div className="card__title" style={{ flex: 1 }}>{t('audit.title', 'Audit log')}</div><Chevron kind="forward" /></Link>
-          </div>
-        ) : null}
-
         {isDemoMode() ? (
-          <div className="card stack">
-            <div className="card__title">{t('settings.demoTitle', 'Demo mode')}</div>
-            <div className="card__meta">
-              <Trans i18nKey="settings.demoDesc" components={{ c: <code dir="ltr" /> }} />
+          <div className="card adm-card">
+            <div>
+              <div className="adm-card__title">{t('settings.demoTitle', 'Demo mode')}</div>
+              <div className="adm-card__lede">
+                <Trans i18nKey="settings.demoDesc" components={{ c: <code dir="ltr" /> }} />
+              </div>
             </div>
             <button
               type="button"
@@ -167,9 +172,11 @@ export function SettingsScreen() {
           </div>
         ) : null}
 
-        <div className="card stack">
-          <div className="card__title">{t('settings.install')}</div>
-          <div className="card__meta">{t('settings.installHint')}</div>
+        <div className="card adm-card">
+          <div>
+            <div className="adm-card__title">{t('settings.install')}</div>
+            <div className="adm-card__lede">{t('settings.installHint')}</div>
+          </div>
         </div>
 
         {user ? (

@@ -6,6 +6,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
 import { formatDateAndTime } from '@/lib/datetime';
 import { Icon } from '@/components/Icon';
+import '@/styles/screens/admin.css';
 
 interface Row {
   id: string;
@@ -75,10 +76,10 @@ export function AuditScreen() {
       <main className="app-main">
         {error ? <div className="banner banner--error">{error}</div> : null}
 
-        <section className="card stack">
-          <div className="section-title">{t('audit.filters', 'Filters')}</div>
-          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-            <div className="field" style={{ minWidth: 140, flex: 1 }}>
+        <section className="card adm-card">
+          <div className="adm-card__title">{t('audit.filters', 'Filters')}</div>
+          <div className="adm-fields adm-fields--2 adm-fields--md-4">
+            <div className="field">
               <label className="field__label">{t('audit.entity', 'Type')}</label>
               <select className="input" value={entity} onChange={(e) => setEntity(e.target.value)}>
                 {ENTITY_OPTIONS.map((opt) => (
@@ -86,7 +87,7 @@ export function AuditScreen() {
                 ))}
               </select>
             </div>
-            <div className="field" style={{ minWidth: 140, flex: 1 }}>
+            <div className="field">
               <label className="field__label">{t('audit.actor', 'Who')}</label>
               <select className="input" value={actor} onChange={(e) => setActor(e.target.value)}>
                 <option value="">{t('audit.anyone', 'Anyone')}</option>
@@ -95,11 +96,11 @@ export function AuditScreen() {
                 ))}
               </select>
             </div>
-            <div className="field" style={{ minWidth: 140, flex: 1 }}>
+            <div className="field">
               <label className="field__label">{t('audit.from', 'From')}</label>
               <input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
             </div>
-            <div className="field" style={{ minWidth: 140, flex: 1 }}>
+            <div className="field">
               <label className="field__label">{t('audit.to', 'To')}</label>
               <input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
             </div>
@@ -109,16 +110,14 @@ export function AuditScreen() {
         {rows.length === 0 ? (
           <div className="empty"><div className="empty__icon"><Icon name="clock" /></div><p>{t('audit.empty', 'Nothing logged yet.')}</p></div>
         ) : (
-          <div className="stack">
+          <div className="adm-log">
             {rows.map((r) => (
-              <div key={r.id} className="card">
-                <div className="row" style={{ justifyContent: 'space-between' }}>
-                  <span className="card__title">{r.action}</span>
-                  <span className="card__meta">{formatDateAndTime(r.at, language)}</span>
-                </div>
-                <div className="card__meta">
-                  {r.actor?.[0]?.full_name ?? r.actor?.[0]?.email ?? r.actor_id ?? t('audit.system', 'system')} · {r.entity}
-                </div>
+              <div key={r.id} className="adm-log__row">
+                <span className="adm-log__what"><bdi>{r.action}</bdi></span>
+                <span className="adm-log__when"><bdi>{formatDateAndTime(r.at, language)}</bdi></span>
+                <span className="adm-log__who">
+                  {r.actor?.[0]?.full_name ?? r.actor?.[0]?.email ?? r.actor_id ?? t('audit.system', 'system')} · <bdi>{r.entity}</bdi>
+                </span>
               </div>
             ))}
           </div>

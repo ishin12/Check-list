@@ -8,6 +8,7 @@ import { useLanguage } from '@/app/providers/LanguageContext';
 import { duplicateTemplate, templateTitle } from '@/domain/template/template';
 import type { Template } from '@/domain/models/types';
 import { Icon } from '@/components/Icon';
+import '@/styles/screens/admin.css';
 
 export function TemplateListScreen() {
   const { t } = useTranslation();
@@ -48,11 +49,15 @@ export function TemplateListScreen() {
             <p className="hint">{t('templates.emptyHint')}</p>
           </div>
         ) : (
-          <div className="stack">
+          <div className="adm-list">
             {templates.map((template) => (
-              <div key={template.id} className="card">
-                <div className="row">
-                  <div style={{ flex: 1, minWidth: 0 }}>
+              <div key={template.id} className="adm-row">
+                <button
+                  type="button"
+                  className="adm-row__main"
+                  onClick={() => navigate(`/templates/${template.id}`)}
+                >
+                  <div className="adm-row__text">
                     <div className="card__title">
                       {templateTitle(template, language)}
                     </div>
@@ -60,33 +65,31 @@ export function TemplateListScreen() {
                       {t('templates.tasksCount', { count: template.tasks.length })}
                     </div>
                   </div>
-                </div>
-                <div className="row" style={{ marginTop: 'var(--space-3)' }}>
-                  <button
-                    type="button"
-                    className="btn btn--ghost"
-                    style={{ flex: 1 }}
-                    onClick={() => navigate(`/templates/${template.id}`)}
-                  >
-                    <Icon name="edit" />{t('common.edit')}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--ghost"
-                    onClick={() => onDuplicate(template)}
-                    aria-label={t('common.duplicate')}
-                  >
-                    <Icon name="copy" />
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--danger"
-                    onClick={() => setPendingDelete(template)}
-                    aria-label={t('common.delete')}
-                  >
-                    <Icon name="trash" />
-                  </button>
-                </div>
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => navigate(`/templates/${template.id}`)}
+                  aria-label={t('common.edit')}
+                >
+                  <Icon name="edit" />
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => onDuplicate(template)}
+                  aria-label={t('common.duplicate')}
+                >
+                  <Icon name="copy" />
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn adm-danger"
+                  onClick={() => setPendingDelete(template)}
+                  aria-label={t('common.delete')}
+                >
+                  <Icon name="trash" />
+                </button>
               </div>
             ))}
           </div>
