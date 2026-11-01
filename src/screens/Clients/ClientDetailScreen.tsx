@@ -8,10 +8,11 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { LocationInput, type LocationInputState } from '@/components/LocationInput';
 import { LocationMap } from '@/components/LocationMap';
 import { useAuth } from '@/app/providers/AuthContext';
+import { useDirectory } from '@/app/providers/DirectoryContext';
 import { StatusPill } from '@/components/StatusPill';
 import { getSupabase } from '@/services/supabase/client';
 import { listTasks } from '@/services/data/tasks';
-import { applyClientLocationToTasks, updateClientLocation } from '@/services/data/clients';
+import { applyClientLocationToTasks, updateClientDetails, updateClientLocation } from '@/services/data/clients';
 import { directionsLinkFor, mapsLinkFor, type TaskLocation } from '@/domain/location';
 import type { Client, ClientNote, FieldTask } from '@/domain/models/ops';
 import { NoteComposer, resolveNote } from '@/components/NoteComposer';
@@ -24,6 +25,7 @@ export function ClientDetailScreen() {
   const { language } = useLanguage();
   const { id } = useParams();
   const { user } = useAuth();
+  const directory = useDirectory();
   const [client, setClient] = useState<Client | null>(null);
   const [tasks, setTasks] = useState<FieldTask[]>([]);
   const [notes, setNotes] = useState<ClientNote[]>([]);
@@ -33,6 +35,10 @@ export function ClientDetailScreen() {
   const [savingLocation, setSavingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [confirmExistingJobs, setConfirmExistingJobs] = useState(false);
+  const [editingClient, setEditingClient] = useState(false);
+  const [clientDraft, setClientDraft] = useState({ name: '', email: '', phone: '', address: '' });
+  const [savingClient, setSavingClient] = useState(false);
+  const [clientError, setClientError] = useState<string | null>(null);
 
   async function load() {
     if (!id) return;
@@ -107,14 +113,80 @@ export function ClientDetailScreen() {
     }
   }
 
+  function startEditingClient(clientToEdit: Client) {
+    setClientDraft({
+      name: clientToEdit.name,
+      email: clientToEdit.email ?? '',
+      phone: clientToEdit.phone ?? '',
+      address: clientToEdit.address ?? '',
+    });
+    setClientError(null);
+    setEditingClient(true);
+  }
+
+  async function saveClientDetails(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id || !clientDraft.name.trim()) return;
+    setSavingClient(true); setClientError(null);
+    try {
+      await updateClientDetails(id, {
+        name: clientDraft.name.trim(),
+        email: clientDraft.email.trim() || null,
+        phone: clientDraft.phone.trim() || null,
+        address: clientDraft.address.trim() || null,
+      });
+      await directory.refresh();
+      setEditingClient(false);
+      await load();
+    } catch (error) {
+      setClientError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setSavingClient(false);
+    }
+  }
+
   const contactBits = [client.phone, client.email, client.address].filter(Boolean) as string[];
   return (
     <AppShell>
       <AppHeader title={client.name} showBack />
       <main className="app-main">
-        <div className={`card adm-contact${contactBits.length ? '' : ' adm-contact--empty'}`}>
-          {contactBits.length ? contactBits.map((v, i) => <bdi key={i}>{v}</bdi>) : '—'}
-        </div>
+        <section className="section">
+          <div className="adm-section-head">
+            <div className="section-title">{t('clients.details', 'Client details')}</div>
+            {canManage && !editingClient ? <button className="btn btn--ghost" type="button" onClick={() => startEditingClient(client)}>{t('clients.edit', 'Edit client')}</button> : null}
+          </div>
+          {clientError ? <div className="banner banner--error">{clientError}</div> : null}
+          {editingClient ? (
+            <form className="card adm-card" onSubmit={saveClientDetails}>
+              <div className="field">
+                <label className="field__label" htmlFor="client-name">{t('clientNew.name', 'Name')}</label>
+                <input id="client-name" className="input" required disabled={savingClient} value={clientDraft.name} onChange={(e) => setClientDraft((draft) => ({ ...draft, name: e.target.value }))} />
+              </div>
+              <div className="adm-fields adm-fields--md-2">
+                <div className="field">
+                  <label className="field__label" htmlFor="client-email">{t('auth.email', 'Email')}</label>
+                  <input id="client-email" className="input" type="email" disabled={savingClient} value={clientDraft.email} onChange={(e) => setClientDraft((draft) => ({ ...draft, email: e.target.value }))} />
+                </div>
+                <div className="field">
+                  <label className="field__label" htmlFor="client-phone">{t('clientNew.phone', 'Phone')}</label>
+                  <input id="client-phone" className="input" type="tel" disabled={savingClient} value={clientDraft.phone} onChange={(e) => setClientDraft((draft) => ({ ...draft, phone: e.target.value }))} />
+                </div>
+              </div>
+              <div className="field">
+                <label className="field__label" htmlFor="client-address">{t('clientNew.address', 'Address')}</label>
+                <textarea id="client-address" className="textarea" disabled={savingClient} value={clientDraft.address} onChange={(e) => setClientDraft((draft) => ({ ...draft, address: e.target.value }))} />
+              </div>
+              <div className="adm-actions">
+                <button className="btn btn--primary" type="submit" disabled={savingClient || !clientDraft.name.trim()}>{savingClient ? t('common.saving', 'Saving…') : t('clients.save', 'Save client')}</button>
+                <button className="btn btn--ghost" type="button" disabled={savingClient} onClick={() => setEditingClient(false)}>{t('common.cancel', 'Cancel')}</button>
+              </div>
+            </form>
+          ) : (
+            <div className={`card adm-contact${contactBits.length ? '' : ' adm-contact--empty'}`}>
+              {contactBits.length ? contactBits.map((v, i) => <bdi key={i}>{v}</bdi>) : '—'}
+            </div>
+          )}
+        </section>
 
         <section className="section">
           <div className="section-title">{t('clients.location', 'Site location')}</div>

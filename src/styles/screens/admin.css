@@ -130,6 +130,7 @@
 .adm-person .card__meta { overflow-wrap: anywhere; }
 
 /* Client detail: contact lines, one per line. */
+.adm-section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .adm-contact { display: flex; flex-direction: column; gap: var(--space-1); color: var(--color-text); }
 .adm-contact--empty { color: var(--color-text-muted); }
 .adm-after { margin-block-start: var(--space-1); }

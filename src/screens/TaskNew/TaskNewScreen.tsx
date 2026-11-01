@@ -9,8 +9,10 @@ import { getSupabase } from '@/services/supabase/client';
 import { createTask } from '@/services/data/tasks';
 import { WorkerMultiSelect } from '@/components/WorkerMultiSelect';
 import { LocationInput } from '@/components/LocationInput';
+import { LocationMap } from '@/components/LocationMap';
 import type { TaskLocation } from '@/domain/location';
 import { RECURRENCE_OPTIONS, recurrenceLabel, type Recurrence } from '@/domain/job/recurrence';
+import { clientLocationForSelection } from './clientLocation';
 import '@/styles/screens/field.css';
 
 interface Option { id: string; label: string; location?: TaskLocation | null }
@@ -99,7 +101,7 @@ export function TaskNewScreen() {
             <select className="input" required value={clientId} onChange={(e) => {
               const nextId = e.target.value;
               setClientId(nextId);
-              setLocation(clients.find((client) => client.id === nextId)?.location ?? null);
+              setLocation(clientLocationForSelection(clients, nextId));
               setLocationInvalid(false);
             }}>
               <option value="">—</option>
@@ -147,6 +149,7 @@ export function TaskNewScreen() {
               {t('location.label')} <span className="hint">({t('location.optional')})</span>
             </label>
             <LocationInput key={clientId} initial={location} onChange={(loc, state) => { setLocation(loc); setLocationInvalid(state === 'invalid'); }} />
+            {location ? <LocationMap location={location} /> : null}
           </div>
         </div>
         <div className="action-bar">

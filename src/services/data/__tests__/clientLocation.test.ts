@@ -17,7 +17,7 @@ vi.mock('idb', () => {
 });
 
 import { getSupabase } from '@/services/supabase/client';
-import { applyClientLocationToTasks, getClientLocation, updateClientLocation } from '../clients';
+import { applyClientLocationToTasks, getClientLocation, updateClientDetails, updateClientLocation } from '../clients';
 import { getTask } from '../tasks';
 
 describe('client location', () => {
@@ -35,5 +35,23 @@ describe('client location', () => {
     await applyClientLocationToTasks('c-1', location);
     expect((await getTask('k-7'))?.locationLat).toBe(24.7136);
     expect((await getTask('k-3'))?.locationLat).toBeUndefined();
+  });
+
+  it('updates editable client contact details without changing its saved location', async () => {
+    await updateClientDetails('c-1', {
+      name: 'Updated client',
+      email: 'updated@example.com',
+      phone: '+966500000000',
+      address: 'Riyadh',
+    });
+
+    const { data } = await getSupabase().from('clients').select('*').eq('id', 'c-1').maybeSingle();
+    expect(data).toMatchObject({
+      name: 'Updated client',
+      email: 'updated@example.com',
+      phone: '+966500000000',
+      address: 'Riyadh',
+    });
+    expect(data?.location_lat).toBe(24.7136);
   });
 });
