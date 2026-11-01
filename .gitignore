@@ -11,3 +11,4 @@ dev-dist
 *.log
 *.tsbuildinfo
 e2e/shots*/
+.worktrees/
