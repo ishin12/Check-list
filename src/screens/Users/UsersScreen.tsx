@@ -143,6 +143,7 @@ export function UsersScreen() {
               <div className="row" style={{ justifyContent: 'space-between' }}>
                 <div>
                   <div className="card__title"><bdi>{u.fullName ?? u.email ?? u.id}</bdi></div>
+                  {u.fullName && u.email ? <div className="card__meta"><bdi>{u.email}</bdi></div> : null}
                   <div className="card__meta">{t(`roles.${u.role}`, u.role)}{u.active ? '' : ` · ${t('users.inactive', 'inactive')}`}</div>
                 </div>
                 <div className="row" style={{ gap: 6 }}>
