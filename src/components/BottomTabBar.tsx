@@ -1,12 +1,11 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { Role } from '@/domain/models/ops';
-import { tabsForRole } from './navTabs';
+import { tabsFor, type NavUser } from './navTabs';
 import { Icon } from './Icon';
 
-export function BottomTabBar({ role }: { role: Role }) {
+export function BottomTabBar({ user }: { user: NavUser }) {
   const { t } = useTranslation();
-  const visible = tabsForRole(role);
+  const visible = tabsFor(user, 'bottom');
   return (
     <nav className="tab-bar" aria-label={t('a11y.primaryNav', 'Primary')}>
       {visible.map((tab) => (

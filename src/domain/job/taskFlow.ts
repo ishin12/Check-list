@@ -10,13 +10,11 @@ interface Transition {
 }
 
 const TRANSITIONS: Transition[] = [
-  { from: 'not_started', to: 'in_progress', roles: ['worker', 'manager', 'supervisor'], action: 'start' },
-  { from: 'in_progress', to: 'submitted',   roles: ['worker', 'manager', 'supervisor'], action: 'submit' },
-  { from: 'not_started', to: 'rejected',    roles: ['worker'],             action: 'reject' },
-  { from: 'in_progress', to: 'rejected',    roles: ['worker'],             action: 'reject' },
-  { from: 'submitted',   to: 'approved',    roles: ['manager', 'supervisor'], action: 'approve' },
-  { from: 'submitted',   to: 'rejected',    roles: ['manager', 'supervisor'], action: 'reject' },
-  { from: 'rejected',    to: 'in_progress', roles: ['worker', 'manager', 'supervisor'], action: 'reopen' },
+  { from: 'not_started', to: 'in_progress', roles: ['worker', 'manager'], action: 'start' },
+  { from: 'in_progress', to: 'submitted',   roles: ['worker', 'manager'], action: 'submit' },
+  { from: 'submitted',   to: 'approved',    roles: ['manager'],           action: 'approve' },
+  { from: 'submitted',   to: 'rejected',    roles: ['manager'],           action: 'reject' },
+  { from: 'rejected',    to: 'in_progress', roles: ['worker', 'manager'], action: 'reopen' },
 ];
 
 export function canTransition(
@@ -58,7 +56,7 @@ export function dailySummary(
   tasks: FieldTask[],
 ): DailySummary {
   const day = tasks.filter((t) => {
-    if (t.assignedWorkerId !== workerId && !t.workerIds.includes(workerId)) return false;
+    if (t.assignedWorkerId !== workerId) return false;
     return t.scheduledAt.slice(0, 10) === date;
   });
   const completed = day.filter((t) => t.status === 'submitted' || t.status === 'approved');

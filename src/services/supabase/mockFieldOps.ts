@@ -1,0 +1,579 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * Demo-mode mirror of supabase/migrations/0006_field_ops.sql triggers.
+ *
+ * The rules come from the same domain functions the UI uses, so the demo
+ * rejects exactly what Postgres rejects (BR-001/002/009/010/014, state
+ * machines, recurring roll-forward). RLS is not emulated.
+ */
+import { STAGE_CHECKLISTS } from './stageChecklists';
+import { localToday, riyadhDate } from '@/lib/dates';
+import { checkAllocation, isMonthClosed } from '@/domain/labor/allocation';
+import { canCorrectCompleted, canMoveProject, canMoveTask, canMoveVisit, nextDueDate } from '@/domain/fieldops/fieldOps';
+import type { LaborAllocation } from '@/domain/models/ops';
+
+export const FIELD_OPS_TABLES = [
+  'project_types',
+  'project_stages',
+  'projects',
+  'employees',
+  'visits',
+  'project_tasks',
+  'project_recurring_items',
+  'task_photos',
+  'month_closes',
+  'labor_allocations',
+  'visit_reports',
+  'work_types',
+  'operational_targets',
+] as const;
+
+interface Row { id: string; [k: string]: any }
+type State = Record<string, Row[]>;
+type Op = 'INSERT' | 'UPDATE' | 'DELETE';
+
+export interface GuardContext {
+  state: State;
+  actorId: string;
+  audit(action: string, entity: string, entityId: string | null, payload: Record<string, unknown>): void;
+}
+
+class RuleError extends Error {}
+
+function fail(msg: string): never {
+  throw new RuleError(msg);
+}
+
+function toAllocation(r: Row): LaborAllocation & { changeReason?: string } {
+  return {
+    id: r.id,
+    workDate: String(r.work_date).slice(0, 10),
+    employeeId: r.employee_id,
+    projectId: r.project_id ?? undefined,
+    operationalTargetId: r.operational_target_id ?? undefined,
+    workTypeId: r.work_type_id ?? undefined,
+    visitId: r.visit_id ?? undefined,
+    duration: Number(r.duration) as LaborAllocation['duration'],
+    supervisorId: r.supervisor_id,
+    changeReason: r.change_reason ?? undefined,
+    voidedAt: r.voided_at ?? undefined,
+    voidReason: r.void_reason ?? undefined,
+  };
+}
+
+function actorIsManager(ctx: GuardContext): boolean {
+  const p = ctx.state.profiles.find((x) => x.id === ctx.actorId);
+  return !!p && p.active && p.role === 'manager';
+}
+
+function actorHasFinance(ctx: GuardContext): boolean {
+  const p = ctx.state.profiles.find((x) => x.id === ctx.actorId);
+  return !!p && p.active && (p.role === 'finance' || p.finance_access === true);
+}
+
+const NO_DELETE = new Set(['projects', 'employees', 'labor_allocations', 'month_closes', 'visit_reports', 'project_tasks', 'work_types', 'operational_targets']);
+
+/** Fills column defaults the SQL schema would. */
+export function fieldOpsDefaults(table: string, row: Row, actorId: string, state: State): Row {
+  const now = new Date().toISOString();
+  const r = { ...row };
+  switch (table) {
+    case 'projects':
+      r.status ??= 'active';
+      break;
+    case 'employees':
+      r.status ??= 'active';
+      break;
+    case 'visits':
+      r.status ??= 'planned';
+      r.visit_date ??= now.slice(0, 10);
+      break;
+    case 'project_tasks':
+      r.status ??= 'open';
+      r.source ??= 'manual';
+      r.photo_required ??= false;
+      r.required ??= true;
+      break;
+    case 'project_recurring_items':
+      r.active ??= true;
+      r.photo_required ??= false;
+      break;
+    case 'task_photos':
+      r.uploaded_at ??= now;
+      r.uploaded_by ??= actorId;
+      return r;
+    case 'month_closes':
+      r.id ??= r.month;                 // IDB needs an id; Postgres keys on month
+      r.closed_at ??= now;
+      r.closed_by ??= actorId;
+      return r;
+    case 'visit_reports': {
+      r.report_number ??= state.visit_reports.reduce((max, x) => Math.max(max, Number(x.report_number) || 0), 0) + 1;
+      r.signature_status ??= 'unsigned';
+      r.generated_at ??= now;
+      r.created_by ??= actorId;
+      return r;
+    }
+    case 'project_types':
+    case 'project_stages':
+    case 'work_types':
+    case 'operational_targets':
+      r.active ??= true;
+      r.created_at ??= now;
+      return r;
+  }
+  r.created_at ??= now;
+  r.updated_at ??= now;
+  r.created_by ??= actorId;
+  return r;
+}
+
+/** Mirrors 0008 stage_missing_items / projects_stage_guard: the first stage (from `from` up to, not including, `to`) with a required item not completed. */
+function stageGateBlocker(state: State, projectId: string, typeId: string, from: string, to: string): string | null {
+  const order = (id: string) => Number(state.project_stages.find((s) => s.id === id)?.sort_order ?? 0);
+  const [a, b] = [order(from), order(to)];
+  if (b <= a) return null;
+  const stages = state.project_stages
+    .filter((s) => s.project_type_id === typeId && Number(s.sort_order) >= a && Number(s.sort_order) < b)
+    .sort((x, y) => Number(x.sort_order) - Number(y.sort_order));
+  for (const stage of stages) {
+    const missing = state.templates
+      .filter((t) => t.stage_id === stage.id && t.active !== false)
+      .some((t) => ((t.tasks as Row[]) ?? []).some((item) => item.required === true
+        && (!item.recurrence || item.recurrence === 'none')
+        && !state.project_tasks.some((pt) => pt.project_id === projectId && pt.template_id === t.id
+          && pt.template_item_id === item.id && pt.status === 'completed'
+          && (!pt.completed_in_visit_id || state.visits.some((v) => v.id === pt.completed_in_visit_id && v.status === 'completed')))));
+    if (missing) return String((stage.name as Row | undefined)?.en ?? stage.code);
+  }
+  return null;
+}
+
+/**
+ * Runs the BEFORE-trigger logic. May adjust `next` in place (timestamps).
+ * Throws with the same rule code as Postgres when the write is refused.
+ */
+export function fieldOpsBefore(table: string, op: Op, prev: Row | null, next: Row | null, ctx: GuardContext): void {
+  if (op === 'DELETE' && NO_DELETE.has(table)) {
+    fail(`BR-014: ${table} rows cannot be deleted; archive, close or void instead`);
+  }
+  if (op === 'UPDATE' && table === 'month_closes') {
+    fail('BR-014: month_closes rows cannot be changed');
+  }
+
+  // 0009: list names in English and Arabic, one entry per name.
+  if ((table === 'work_types' || table === 'operational_targets') && op !== 'DELETE') {
+    const name = (next!.name ?? {}) as Record<string, string | undefined>;
+    if (!name.en?.trim() || !name.ar?.trim()) fail(`new row violates check constraint "${table}_names"`);
+    const dup = ctx.state[table].find((x) => x.id !== next!.id && (
+      String(x.name?.en ?? '').trim().toLowerCase() === name.en!.trim().toLowerCase()
+      || String(x.name?.ar ?? '').trim() === name.ar!.trim()));
+    if (dup) fail(`duplicate key value violates unique constraint "${table}_name_unique"`);
+  }
+  switch (table) {
+    case 'visits': {
+      if (op === 'DELETE') {
+        const hasLabor = ctx.state.labor_allocations.some((a) => a.visit_id === prev!.id);
+        if (prev!.status !== 'planned' || hasLabor) fail('BR-014: only a planned visit with no labor can be deleted');
+        return;
+      }
+      // 0008 visits_project_open_guard (BR-008 / UAT I04)
+      if (op === 'INSERT' || (op === 'UPDATE' && prev!.status === 'planned' && next!.status === 'in_progress')) {
+        const project = ctx.state.projects.find((p) => p.id === next!.project_id);
+        if (project && (project.status === 'completed' || project.status === 'closed')) {
+          fail(`BR-008: project is ${project.status} and cannot take new visits`);
+        }
+      }
+      // 0009 visits_v22_guard: a started visit has a work type; not in a closed month.
+      if (next!.status === 'in_progress' && (op === 'INSERT' || prev!.status !== 'in_progress')) {
+        if (!next!.work_type_id) fail('WORK-TYPE: choose the work type of the visit first');
+        if (isMonthClosed(String(next!.visit_date).slice(0, 10), ctx.state.month_closes.map((m) => ({ month: String(m.month) })))) {
+          fail('BR-009: labor for this month is closed');
+        }
+      }
+      if (next!.work_type_id && (op === 'INSERT' || next!.work_type_id !== prev!.work_type_id)
+          && !ctx.state.work_types.some((w) => w.id === next!.work_type_id && w.active !== false)) {
+        fail('WORK-TYPE: this work type is switched off');
+      }
+      // 0009 visits_work_type_flow: the crew follows the visit's work type, under the labor rules.
+      if (op === 'UPDATE' && next!.work_type_id && next!.work_type_id !== prev!.work_type_id) {
+        const closes = ctx.state.month_closes.map((m) => ({ month: String(m.month) }));
+        const all = ctx.state.labor_allocations.map(toAllocation);
+        for (const row of ctx.state.labor_allocations.filter((a) => a.visit_id === next!.id && !a.voided_at)) {
+          const before = toAllocation(row);
+          const err = checkAllocation(before, all, closes, { hasFinance: actorHasFinance(ctx) }, before);
+          if (err?.code === 'BR-009') fail('BR-009: labor for this month is closed');
+          if (err?.code === 'BR-010') fail('BR-010: a reason is required to change labor after month close');
+        }
+      }
+      // 0008 visits_start_date_guard (UAT D-13)
+      if (next!.status === 'in_progress' && (op === 'INSERT' || prev!.status !== 'in_progress')
+          && String(next!.visit_date).slice(0, 10) > localToday()) {
+        fail('A visit cannot start before its date');
+      }
+      if (op === 'UPDATE' && prev!.status !== next!.status) {
+        if (!canMoveVisit(prev!.status, next!.status)) fail(`Visit cannot move from ${prev!.status} to ${next!.status}`);
+        const now = new Date().toISOString();
+        if (next!.status === 'in_progress') next!.started_at ??= now;
+        if (next!.status === 'completed') next!.completed_at ??= now;
+      }
+      // 0007 visits_supervisor_guard (runs after trg_visits_guard, as in Postgres)
+      if (op === 'UPDATE' && !actorIsManager(ctx)) {
+        if (prev!.status === 'completed') fail('A completed visit cannot be changed');
+        if (next!.supervisor_id !== prev!.supervisor_id && next!.supervisor_id !== ctx.actorId) {
+          fail('A supervisor can only assign a visit to themselves');
+        }
+        if (String(next!.visit_date) !== String(prev!.visit_date) && prev!.status !== 'planned') {
+          fail('The date of a started visit cannot be changed');
+        }
+      }
+      return;
+    }
+    case 'project_tasks': {
+      if (op === 'INSERT') {
+        // 0007 project_tasks_insert_guard
+        if (!actorIsManager(ctx)) {
+          next!.status = 'open';
+          next!.completed_at = null;
+          next!.completed_in_visit_id = null;
+        }
+        next!.was_follow_up = next!.status === 'needs_follow_up';
+        return;
+      }
+      if (op === 'UPDATE' && prev!.status !== next!.status) {
+        if (prev!.status === 'completed') {
+          const visit = ctx.state.visits.find((v) => v.id === prev!.completed_in_visit_id);
+          if (!canCorrectCompleted({ status: 'completed', completedInVisitId: prev!.completed_in_visit_id ?? undefined }, visit?.status)) {
+            fail('A completed task cannot be reopened');
+          }
+          // 0008 project_tasks_guard
+          if (next!.status === 'open' && prev!.was_follow_up) {
+            if ((prev!.follow_up_visit_id ?? null) === (prev!.completed_in_visit_id ?? null)) {
+              next!.was_follow_up = false;
+              next!.follow_up_visit_id = null;
+            } else {
+              next!.status = 'needs_follow_up';
+            }
+          }
+          if (next!.status === 'needs_follow_up' && !prev!.was_follow_up) {
+            next!.was_follow_up = true;
+            next!.follow_up_visit_id = prev!.completed_in_visit_id;
+          }
+          next!.completed_at = null;
+          next!.completed_in_visit_id = null;
+          return;
+        }
+        if (prev!.status === 'needs_follow_up' && next!.status === 'open') {
+          const fu = ctx.state.visits.find((v) => v.id === prev!.follow_up_visit_id);
+          if (!fu || fu.status !== 'in_progress') fail('A follow-up task cannot go back to open');
+          next!.was_follow_up = false;
+          next!.follow_up_visit_id = null;
+          return;
+        }
+        if (!canMoveTask(prev!.status, next!.status)) fail('A follow-up task cannot go back to open');
+        if (next!.status === 'completed') next!.completed_at ??= new Date().toISOString();
+        if (next!.status === 'needs_follow_up') {
+          next!.was_follow_up = true;
+          next!.follow_up_visit_id = next!.last_visit_id ?? prev!.last_visit_id ?? null;
+        }
+      }
+      return;
+    }
+    case 'visit_reports': {
+      // 0007 visit_reports_guard: issued content is frozen for non-managers.
+      if (op === 'UPDATE' && prev!.content && JSON.stringify(next!.content) !== JSON.stringify(prev!.content) && !actorIsManager(ctx)) {
+        fail('An issued report cannot be rewritten');
+      }
+      return;
+    }
+    case 'projects': {
+      // 0008 projects_stage_guard (§9 / UAT I01)
+      if (op === 'UPDATE' && prev!.stage_id && next!.stage_id && prev!.stage_id !== next!.stage_id) {
+        const blocked = stageGateBlocker(ctx.state, String(next!.id), String(next!.project_type_id), String(prev!.stage_id), String(next!.stage_id));
+        if (blocked) fail(`STAGE-GATE: required checklist items of stage "${blocked}" are not completed`);
+      }
+      if (op === 'UPDATE' && prev!.status !== next!.status) {
+        if (!canMoveProject(prev!.status, next!.status)) fail(`Project is ${prev!.status} and cannot change status`);
+        if (next!.status === 'completed' || next!.status === 'closed') {
+          const open = ctx.state.project_tasks.some((t) => t.project_id === next!.id && t.status !== 'completed');
+          if (open) fail('Project has open or follow-up tasks and cannot be closed');
+          // 0008 projects_open_visit_guard (UAT D-07)
+          if (ctx.state.visits.some((v) => v.project_id === next!.id && v.status === 'in_progress')) {
+            fail('Project has a visit in progress and cannot be closed');
+          }
+          next!.closed_at ??= new Date().toISOString();
+        }
+      }
+      return;
+    }
+    case 'labor_allocations': {
+      if (op === 'DELETE') return;
+      // 0009: a project OR an operational target; a visit's crew takes its work type.
+      if ([next!.project_id, next!.operational_target_id].filter((x) => x != null && x !== '').length !== 1) {
+        fail('new row violates check constraint "labor_project_or_target"');
+      }
+      if (next!.visit_id) {
+        const visit = ctx.state.visits.find((v) => v.id === next!.visit_id);
+        if (!next!.project_id) fail('new row violates check constraint "labor_visit_needs_project"');
+        if (visit && visit.project_id !== next!.project_id) fail('Labor on a visit must be on that visit\'s project');
+        if (!visit?.work_type_id) fail('WORK-TYPE: choose the work type of the visit first');
+        next!.work_type_id = visit.work_type_id;
+      }
+      if (!next!.work_type_id) fail('WORK-TYPE: a work type is required');
+      if ((op === 'INSERT' || next!.work_type_id !== prev!.work_type_id)
+          && !ctx.state.work_types.some((w) => w.id === next!.work_type_id && w.active !== false)) {
+        fail('WORK-TYPE: this work type is switched off');
+      }
+      if (next!.operational_target_id && (op === 'INSERT' || next!.operational_target_id !== prev!.operational_target_id)
+          && !ctx.state.operational_targets.some((o) => o.id === next!.operational_target_id && o.active !== false)) {
+        fail('TARGET: this operational target is switched off');
+      }
+      const cand = toAllocation(next!);
+      if (Number(next!.duration) !== 0.5 && Number(next!.duration) !== 1) {
+        fail('new row violates check constraint "duration_full_or_half"');
+      }
+      if (next!.voided_at && !next!.void_reason) fail('new row violates check constraint "void_needs_reason"');
+      const others = ctx.state.labor_allocations.map(toAllocation);
+      const closes = ctx.state.month_closes.map((m) => ({ month: String(m.month) }));
+      const err = checkAllocation(cand, others, closes, { hasFinance: actorHasFinance(ctx) }, prev ? toAllocation(prev) : undefined);
+      if (err) {
+        switch (err.code) {
+          case 'BR-009': fail('BR-009: labor for this month is closed');
+          case 'BR-010': fail('BR-010: a reason is required to change labor after month close');
+          case 'BR-001': fail(`BR-001: employee already has ${err.existing} day(s) on ${err.workDate}; adding ${err.requested} would exceed 1.0`);
+          case 'DUPLICATE_IN_VISIT': fail('duplicate key value violates unique constraint "labor_one_per_visit"');
+          case 'BR-002': fail('new row violates check constraint "duration_full_or_half"');
+        }
+      }
+      if (op === 'UPDATE' && next!.voided_at && !prev!.voided_at) next!.voided_by = ctx.actorId;
+      return;
+    }
+    case 'month_closes': {
+      if (op === 'INSERT' && !actorHasFinance(ctx)) fail('new row violates row-level security policy for table "month_closes"');
+      if (op === 'INSERT' && isMonthClosed(String(next!.month), ctx.state.month_closes.map((m) => ({ month: String(m.month) })))) {
+        fail('duplicate key value violates unique constraint "month_closes_pkey"');
+      }
+      // 0009 month_close_open_visits_guard (§36A)
+      if (op === 'INSERT') {
+        const m = String(next!.month).slice(0, 7);
+        const open = ctx.state.visits.filter((v) => v.status === 'in_progress' && String(v.visit_date).slice(0, 7) === m).length;
+        if (open > 0) fail(`MONTH-OPEN-VISITS: ${open} visit(s) in this month are still in progress`);
+      }
+      return;
+    }
+  }
+}
+
+const AUDITED = new Set(['projects', 'employees', 'visits', 'project_tasks', 'labor_allocations', 'month_closes', 'work_types', 'operational_targets']);
+
+/** AFTER-trigger logic: audit old/new and roll recurring items. */
+export function fieldOpsAfter(table: string, op: Op, prev: Row | null, next: Row | null, ctx: GuardContext): void {
+  // 0009: list entries are audited only when something actually changed.
+  const unchanged = op === 'UPDATE' && (table === 'work_types' || table === 'operational_targets')
+    && JSON.stringify({ ...prev, updated_at: null, updated_by: null }) === JSON.stringify({ ...next, updated_at: null, updated_by: null });
+  if (AUDITED.has(table) && !unchanged) {
+    const id = (next ?? prev)!.id;
+    ctx.audit(`${table}.${op.toLowerCase()}`, table, table === 'month_closes' ? null : id, {
+      old: op === 'INSERT' ? null : prev,
+      new: op === 'DELETE' ? null : next,
+    });
+  }
+  const roll = (itemId: string, completedAt: string | null) => {
+    const item = ctx.state.project_recurring_items.find((r) => r.id === itemId);
+    if (!item) return;
+    // 0008: a visit's date, or the Riyadh date of the completion.
+    const done = /^\d{4}-\d{2}-\d{2}$/.test(String(completedAt)) ? String(completedAt) : riyadhDate(new Date(completedAt ?? Date.now()));
+    item.last_done_on = done;
+    item.next_due_on = nextDueDate(done, item.recurrence);
+    item.updated_at = new Date().toISOString();
+  };
+  // Completed outside a visit: roll at once. During a visit: when it completes.
+  if (table === 'project_tasks' && op === 'UPDATE' && next!.recurring_item_id && !next!.completed_in_visit_id
+      && next!.status === 'completed' && prev!.status !== 'completed') {
+    roll(next!.recurring_item_id, next!.completed_at);
+  }
+  if (table === 'visits' && op === 'UPDATE' && next!.work_type_id && next!.work_type_id !== prev!.work_type_id) {
+    for (const a of ctx.state.labor_allocations) {
+      if (a.visit_id === next!.id && !a.voided_at && a.work_type_id !== next!.work_type_id) {
+        const before = { ...a };
+        a.work_type_id = next!.work_type_id;
+        a.updated_at = new Date().toISOString();
+        a.updated_by = ctx.actorId;
+        ctx.audit('labor_allocations.update', 'labor_allocations', a.id, { old: before, new: { ...a } });
+      }
+    }
+  }
+  if (table === 'visits' && op === 'UPDATE' && next!.status === 'completed' && prev!.status !== 'completed') {
+    for (const t of ctx.state.project_tasks) {
+      if (t.completed_in_visit_id === next!.id && t.status === 'completed' && t.recurring_item_id) {
+        roll(t.recurring_item_id, String(next!.visit_date).slice(0, 10));
+      }
+    }
+  }
+}
+
+export function isFieldOpsTable(t: string): boolean {
+  return (FIELD_OPS_TABLES as readonly string[]).includes(t);
+}
+
+// ---------------------------------------------------------------------------
+// Seed (mirrors the config rows inserted by 0006, plus demo projects/crew)
+// ---------------------------------------------------------------------------
+
+export function seedFieldOps(state: State, day: (offset: number, hour?: number, min?: number) => string): void {
+  const date = (offset: number) => day(offset).slice(0, 10);
+
+  // Checklist templates scoped to a project type or stage (mirrors 0006's seed,
+  // with a few frequencies set so the demo shows periodic items).
+  const item = (id: string, order: number, en: string, ar: string, extra: Partial<Row> = {}, ur?: string) =>
+    ({ id, order, required: false, label: ur ? { en, ar, ur } : { en, ar }, ...extra });
+  state.templates.push(
+    { id: 't-mnt', title: { en: 'Maintenance — standard', ar: 'صيانة — القائمة الأساسية', ur: 'دیکھ بھال — معیاری فہرست' }, project_type_id: 'pt-mnt', stage_id: null, active: true, version: 1,
+      created_by: 'u-mgr', created_at: day(-90), updated_at: day(-90), tasks: [
+        item('m-irr',   0, 'Irrigation network check', 'فحص شبكة الري', { recurrence: 'weekly' }, 'آبپاشی کے نظام کا معائنہ'),
+        item('m-plant', 1, 'Plant and general condition check', 'فحص النباتات والحالة العامة', { required: true }, 'پودوں اور عمومی حالت کا معائنہ'),
+        item('m-prune', 2, 'Pruning', 'التقليم', {}, 'کٹائی'),
+        item('m-fert',  3, 'Fertilizing', 'التسميد', { recurrence: 'monthly' }, 'کھاد ڈالنا'),
+        item('m-spray', 4, 'Spraying / pest control', 'الرش / المكافحة', { recurrence: 'monthly' }, 'اسپرے / کیڑوں کا تدارک'),
+        item('m-weed',  5, 'Weeding', 'إزالة الحشائش', {}, 'جڑی بوٹیوں کی صفائی'),
+        item('m-clean', 6, 'Cleaning', 'النظافة', { required: true, photoRequired: true }, 'صفائی'),
+        item('m-pump',  7, 'Pumps / site equipment check', 'فحص المضخات أو المعدات المرتبطة بالموقع', {}, 'پمپ / سائٹ کے آلات کا معائنہ'),
+      ] },
+  );
+
+  state.project_types = [
+    { id: 'pt-est', code: 'establishment', name: { en: 'Establishment / Execution', ar: 'تأسيس / تنفيذ', ur: 'قیام / تعمیر' }, uses_stages: true,  sort_order: 1, active: true },
+    { id: 'pt-mnt', code: 'maintenance',   name: { en: 'Maintenance', ar: 'صيانة', ur: 'دیکھ بھال' },                         uses_stages: false, sort_order: 2, active: true },
+    { id: 'pt-mod', code: 'modification',  name: { en: 'Modification / Addition', ar: 'تعديل / إضافة', ur: 'ترمیم / اضافہ' },     uses_stages: false, sort_order: 3, active: true },
+    { id: 'pt-oth', code: 'other',         name: { en: 'Other', ar: 'أخرى', ur: 'دیگر' },                                uses_stages: false, sort_order: 4, active: true },
+  ];
+
+  const stages: [string, string, string, string][] = [
+    ['site_handover', 'Site handover & preparation', 'استلام وتجهيز الموقع', 'سائٹ کی وصولی اور تیاری'],
+    ['preparatory', 'Preparatory works', 'الأعمال التحضيرية', 'تیاری کے کام'],
+    ['irrigation', 'Irrigation network', 'شبكة الري', 'آبپاشی کا نظام'],
+    ['planting_ready', 'Planting readiness', 'جاهزية الزراعة', 'شجرکاری کی تیاری'],
+    ['planting', 'Planting / Execution', 'الزراعة / التنفيذ', 'شجرکاری / تعمیر'],
+    ['handover', 'Inspection & handover', 'الفحص والتسليم', 'معائنہ اور حوالگی'],
+  ];
+  state.project_stages = stages.map(([code, en, ar, ur], i) => ({
+    id: `st-${code}`, project_type_id: 'pt-est', code, name: { en, ar, ur }, sort_order: i + 1, active: true,
+  }));
+  // A checklist for every stage (§9; same draft content as migration 0008).
+  for (const [code, en, ar, ur] of stages) {
+    state.templates.push({
+      id: code === 'irrigation' ? 't-irr' : `t-stage-${code}`,
+      title: { en: `${en} — stage checklist`, ar: `قائمة مرحلة ${ar}`, ur: `${ur} — مرحلے کی چیک لسٹ` },
+      project_type_id: 'pt-est', stage_id: `st-${code}`, active: true, version: 1,
+      created_by: 'u-mgr', created_at: day(-90), updated_at: day(-90),
+      tasks: STAGE_CHECKLISTS[code].map((it, order) => ({
+        id: it.id, order, required: it.required, ...(it.photoRequired ? { photoRequired: true } : {}), label: it.label,
+      })),
+    });
+  }
+
+  // 0009 managed lists (§36A initial values).
+  const named = (prefix: string, rows: [string, string, string, string][]) => rows.map(([code, en, ar, ur], i) => ({
+    id: `${prefix}-${code}`, code, name: { en, ar, ur }, sort_order: i + 1, active: true, created_at: day(-90),
+  }));
+  state.work_types = named('wt', [
+    ['planting', 'Planting', 'زراعة', 'شجرکاری'],
+    ['maintenance', 'Maintenance', 'صيانة', 'دیکھ بھال'],
+    ['irrigation', 'Irrigation', 'ري', 'آبپاشی'],
+    ['modification', 'Modifications', 'تعديلات', 'ترامیم'],
+    ['execution', 'Execution', 'تنفيذ', 'تعمیر'],
+    ['transport', 'Transport & loading', 'نقل وتحميل', 'نقل و حمل اور لوڈنگ'],
+    ['general', 'General works', 'أعمال عامة', 'عمومی کام'],
+    ['other', 'Other', 'أخرى', 'دیگر'],
+  ]);
+  state.operational_targets = named('ot', [
+    ['warehouse', 'Warehouse', 'المستودع', 'گودام'],
+    ['company_general', 'Company general works', 'أعمال عامة للشركة', 'کمپنی کے عمومی کام'],
+    ['office', 'Office', 'المكتب', 'دفتر'],
+    ['training', 'Training', 'تدريب', 'تربیت'],
+    ['leave', 'Leave', 'إجازة', 'چھٹی'],
+    ['absence', 'Absence', 'غياب', 'غیر حاضری'],
+    ['other', 'Other', 'أخرى', 'دیگر'],
+  ]);
+
+  state.projects = [
+    { id: 'pr-1', code: 'MNT-001', name: 'Khaled Residence — garden', client_id: 'c-1', project_type_id: 'pt-mnt', stage_id: null, status: 'active',  supervisor_id: 'u-wa', notes: null, closed_at: null, created_by: 'u-mgr', created_at: day(-60), updated_at: day(-60), updated_by: null },
+    { id: 'pr-2', code: 'EST-001', name: 'Green Oasis Villa — landscaping', client_id: 'c-3', project_type_id: 'pt-est', stage_id: 'st-irrigation', status: 'active', supervisor_id: 'u-wb', notes: null, closed_at: null, created_by: 'u-mgr', created_at: day(-40), updated_at: day(-40), updated_by: null },
+    { id: 'pr-3', code: 'MOD-001', name: 'Al Manar Tower — lobby planters', client_id: 'c-2', project_type_id: 'pt-mod', stage_id: null, status: 'completed', supervisor_id: 'u-wa', notes: null, closed_at: day(-10), created_by: 'u-mgr', created_at: day(-50), updated_at: day(-10), updated_by: null },
+  ];
+
+  const crew = ['Mohammed Rafiq', 'Abdul Karim', 'Imran Khan', 'Suresh Kumar', 'Bilal Ahmed', 'Nasir Hussain'];
+  state.employees = crew.map((full_name, i) => ({
+    id: `em-${i + 1}`, code: `W-${String(i + 1).padStart(3, '0')}`, full_name, phone: null,
+    status: 'active', notes: null, created_by: 'u-mgr', created_at: day(-90), updated_at: day(-90), updated_by: null,
+  }));
+  state.employees.push({
+    id: 'em-7', code: 'W-007', full_name: 'Tariq Mahmood', phone: null, status: 'inactive', notes: null,
+    created_by: 'u-mgr', created_at: day(-90), updated_at: day(-20), updated_by: 'u-mgr',
+  });
+
+  state.visits = [
+    { id: 'vi-1', project_id: 'pr-1', visit_date: date(-1), supervisor_id: 'u-wa', status: 'completed', work_type_id: 'wt-maintenance', started_at: day(-1, 8), completed_at: day(-1, 13), notes: null, created_by: 'u-wa', created_at: day(-1, 8), updated_at: day(-1, 13), updated_by: 'u-wa' },
+    { id: 'vi-2', project_id: 'pr-2', visit_date: date(0),  supervisor_id: 'u-wb', status: 'in_progress', work_type_id: 'wt-irrigation', started_at: day(0, 7, 30), completed_at: null, notes: null, created_by: 'u-wb', created_at: day(0, 7, 30), updated_at: day(0, 7, 30), updated_by: 'u-wb' },
+  ];
+
+  const t = (id: string, project_id: string, description: string, status: string, extra: Partial<Row> = {}): Row => ({
+    id, project_id, visit_id: null, source: 'manual', template_id: null, template_item_id: null, recurring_item_id: null,
+    description, status, photo_required: false, required: true, note: null, completed_at: null, completed_in_visit_id: null,
+    last_visit_id: null, created_by: 'u-mgr', created_at: day(-2), updated_at: day(-2), updated_by: null,
+    was_follow_up: status === 'needs_follow_up', ...extra,
+    follow_up_visit_id: status === 'needs_follow_up' ? (extra.last_visit_id ?? null) : null,
+  });
+  state.project_tasks = [
+    t('pt-1', 'pr-1', 'Fertilizing', 'needs_follow_up', { visit_id: 'vi-1', last_visit_id: 'vi-1', note: 'Fertilizer not delivered yet', template_id: 't-mnt', template_item_id: 'm-fert' }),
+    t('pt-2', 'pr-1', 'Pruning', 'completed', { visit_id: 'vi-1', completed_at: day(-1, 11), completed_in_visit_id: 'vi-1', template_id: 't-mnt', template_item_id: 'm-prune' }),
+    t('pt-3', 'pr-1', 'Irrigation network check', 'open', { source: 'recurring', recurring_item_id: 'ri-1', template_id: 't-mnt', template_item_id: 'm-irr' }),
+    t('pt-4', 'pr-2', 'Pressure-test irrigation lines', 'open', { source: 'stage', visit_id: 'vi-2', photo_required: true, template_id: 't-irr', template_item_id: 'i-test' }),
+    t('pt-5', 'pr-2', 'Check drip emitters at each basin', 'open', { source: 'stage', visit_id: 'vi-2', template_id: 't-irr', template_item_id: 'i-drip' }),
+    t('pt-6', 'pr-2', 'Record defects and fixes needed', 'open', { source: 'stage', visit_id: 'vi-2', template_id: 't-irr', template_item_id: 'i-notes' }),
+  ];
+
+  state.project_recurring_items = [
+    { id: 'ri-1', project_id: 'pr-1', template_id: 't-mnt', template_item_id: 'm-irr', description: 'Irrigation network check', recurrence: 'weekly',  last_done_on: date(-8),  next_due_on: date(-1), photo_required: false, active: true, created_by: 'u-mgr', created_at: day(-60), updated_at: day(-8), updated_by: null },
+    { id: 'ri-2', project_id: 'pr-1', template_id: 't-mnt', template_item_id: 'm-spray', description: 'Spraying / pest control',  recurrence: 'monthly', last_done_on: date(-12), next_due_on: nextDueDate(date(-12), 'monthly'), photo_required: false, active: true, created_by: 'u-mgr', created_at: day(-60), updated_at: day(-12), updated_by: null },
+    { id: 'ri-3', project_id: 'pr-1', template_id: 't-mnt', template_item_id: 'm-fert', description: 'Fertilizing', recurrence: 'monthly', last_done_on: date(-10), next_due_on: nextDueDate(date(-10), 'monthly'), photo_required: false, active: true, created_by: 'u-mgr', created_at: day(-60), updated_at: day(-40), updated_by: null },
+  ];
+
+  state.task_photos = [];
+  state.month_closes = [];
+
+  const la = (id: string, offset: number, employee_id: string, project_id: string | null, visit_id: string | null, duration: number, supervisor_id: string,
+    work_type_id: string, operational_target_id: string | null = null): Row => ({
+    id, work_date: date(offset), employee_id, project_id, operational_target_id, visit_id, work_type_id, duration, supervisor_id, notes: null,
+    change_reason: null, voided_at: null, voided_by: null, void_reason: null,
+    created_by: supervisor_id, created_at: day(offset, 8), updated_at: day(offset, 8), updated_by: null,
+  });
+  state.labor_allocations = [
+    la('la-1', -1, 'em-1', 'pr-1', 'vi-1', 1,   'u-wa', 'wt-maintenance'),
+    la('la-2', -1, 'em-2', 'pr-1', 'vi-1', 1,   'u-wa', 'wt-maintenance'),
+    la('la-3', -1, 'em-3', 'pr-1', 'vi-1', 0.5, 'u-wa', 'wt-maintenance'),
+    // A day with no project: on an operational target, no fake project (TC-14).
+    la('la-6', -1, 'em-5', null,   null,   1,   'u-wa', 'wt-transport', 'ot-warehouse'),
+    la('la-4', 0,  'em-3', 'pr-2', 'vi-2', 1,   'u-wb', 'wt-irrigation'),
+    la('la-5', 0,  'em-4', 'pr-2', 'vi-2', 0.5, 'u-wb', 'wt-irrigation'),
+    // Half a project + half company general works on one day (TC-15).
+    la('la-7', 0,  'em-4', null,   null,   0.5, 'u-wb', 'wt-general', 'ot-company_general'),
+  ];
+
+  state.visit_reports = [
+    // Frozen at completion, like every issued report: later visits never change it.
+    { id: 'vr-1', visit_id: 'vi-1', report_number: 1, signature_status: 'unsigned', signer_name: null, signature: null, signed_at: null, generated_at: day(-1, 13), created_by: 'u-wa',
+      content: (() => {
+        const fert = { taskId: 'pt-1', description: 'Fertilizing', status: 'needs_follow_up', note: 'Fertilizer not delivered yet', photos: [] };
+        const prune = { taskId: 'pt-2', description: 'Pruning', status: 'completed', photos: [] };
+        return {
+          reportNumber: 1, projectName: 'Khaled Residence — garden', projectCode: 'MNT-001', clientName: 'Khaled Residence',
+          visitDate: date(-1), supervisorName: 'Ahmed', completedAt: day(-1, 13),
+          required: [fert, prune], done: [prune], followUp: [fert],
+          crew: [{ name: 'Mohammed Rafiq', duration: 1 }, { name: 'Abdul Karim', duration: 1 }, { name: 'Imran Khan', duration: 0.5 }],
+        };
+      })() },
+  ];
+}
+
+export { RuleError };

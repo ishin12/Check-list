@@ -1,0 +1,199 @@
+/**
+ * Management and finance reports (§14). All figures are derived from the
+ * source records at read time (§24); nothing here is stored.
+ */
+import type { Employee, LaborAllocation, ProjectRecurringItem, ProjectTask } from '@/domain/models/ops';
+
+type Alloc = Pick<LaborAllocation, 'employeeId' | 'workDate' | 'duration' | 'voidedAt'>
+  & Partial<Pick<LaborAllocation, 'projectId' | 'operationalTargetId' | 'workTypeId'>>;
+
+/** Prefix of an operational-target key in the report "project / target" columns (v2.2). */
+export const TARGET_KEY = 'ot:';
+
+/**
+ * Where a labor row was spent: the project id, or `ot:<targetId>` for an
+ * operational target (warehouse, office, leave…). Reports group by this key,
+ * so a day split between a project and a target shows both (TC-15).
+ */
+export function placeOf(a: Pick<LaborAllocation, 'projectId' | 'operationalTargetId'>): string {
+  return a.projectId ?? `${TARGET_KEY}${a.operationalTargetId ?? ''}`;
+}
+
+export function targetOfPlace(key: string): string | undefined {
+  return key.startsWith(TARGET_KEY) ? key.slice(TARGET_KEY.length) : undefined;
+}
+
+const live = <A extends Alloc>(list: A[], from: string, to: string) =>
+  list.filter((a) => !a.voidedAt && a.workDate >= from && a.workDate <= to);
+
+const sum = (list: { duration: number }[]) => list.reduce((s, a) => s + Number(a.duration), 0);
+
+export interface WorkerRow {
+  employeeId: string;
+  days: number;
+  /** projectId is the place key (see placeOf). */
+  byProject: { projectId: string; days: number }[];
+}
+
+/** Worker report: where each worker worked and for how many days (§14, §21). */
+export function workerReport(allocations: Alloc[], from: string, to: string): WorkerRow[] {
+  const rows = new Map<string, Map<string, number>>();
+  for (const a of live(allocations, from, to)) {
+    const m = rows.get(a.employeeId) ?? new Map<string, number>();
+    m.set(placeOf(a), (m.get(placeOf(a)) ?? 0) + Number(a.duration));
+    rows.set(a.employeeId, m);
+  }
+  return [...rows].map(([employeeId, m]) => ({
+    employeeId,
+    days: [...m.values()].reduce((s, d) => s + d, 0),
+    byProject: [...m].map(([projectId, days]) => ({ projectId, days })).sort((x, y) => y.days - x.days),
+  })).sort((x, y) => y.days - x.days);
+}
+
+export interface ProjectRow {
+  projectId: string;
+  days: number;
+  byWorker: { employeeId: string; days: number }[];
+}
+
+/** Project report: which workers worked on it and days per worker (§14). */
+export function projectReport(allocations: Alloc[], from: string, to: string): ProjectRow[] {
+  const rows = new Map<string, Map<string, number>>();
+  for (const a of live(allocations, from, to)) {
+    const m = rows.get(placeOf(a)) ?? new Map<string, number>();
+    m.set(a.employeeId, (m.get(a.employeeId) ?? 0) + Number(a.duration));
+    rows.set(placeOf(a), m);
+  }
+  return [...rows].map(([projectId, m]) => ({
+    projectId,
+    days: [...m.values()].reduce((s, d) => s + d, 0),
+    byWorker: [...m].map(([employeeId, days]) => ({ employeeId, days })).sort((x, y) => y.days - x.days),
+  })).sort((x, y) => y.days - x.days);
+}
+
+export interface Matrix {
+  employeeIds: string[];
+  projectIds: string[];
+  /** cell(employeeId, projectId) → days */
+  cells: Map<string, number>;
+  rowTotals: Map<string, number>;
+  colTotals: Map<string, number>;
+  total: number;
+}
+
+/** Monthly labor distribution: workers × projects (§14). */
+export function laborMatrix(allocations: Alloc[], from: string, to: string): Matrix {
+  const rows = live(allocations, from, to);
+  const cells = new Map<string, number>();
+  const rowTotals = new Map<string, number>();
+  const colTotals = new Map<string, number>();
+  for (const a of rows) {
+    const d = Number(a.duration);
+    const k = `${a.employeeId}|${placeOf(a)}`;
+    cells.set(k, (cells.get(k) ?? 0) + d);
+    rowTotals.set(a.employeeId, (rowTotals.get(a.employeeId) ?? 0) + d);
+    colTotals.set(placeOf(a), (colTotals.get(placeOf(a)) ?? 0) + d);
+  }
+  return {
+    employeeIds: [...rowTotals.keys()],
+    projectIds: [...colTotals.keys()],
+    cells, rowTotals, colTotals, total: sum(rows),
+  };
+}
+
+export interface WorkTypeRow {
+  /** '' when a row has no work type (only rows recorded before v2.2). */
+  workTypeId: string;
+  days: number;
+  byPlace: { placeKey: string; days: number }[];
+}
+
+/** Days per work type, split by project / operational target (v2.2 §20, §36A). */
+export function workTypeReport(allocations: Alloc[], from: string, to: string): WorkTypeRow[] {
+  const rows = new Map<string, Map<string, number>>();
+  for (const a of live(allocations, from, to)) {
+    const k = a.workTypeId ?? '';
+    const m = rows.get(k) ?? new Map<string, number>();
+    m.set(placeOf(a), (m.get(placeOf(a)) ?? 0) + Number(a.duration));
+    rows.set(k, m);
+  }
+  return [...rows].map(([workTypeId, m]) => ({
+    workTypeId,
+    days: [...m.values()].reduce((s, d) => s + d, 0),
+    byPlace: [...m].map(([placeKey, days]) => ({ placeKey, days })).sort((x, y) => y.days - x.days),
+  })).sort((x, y) => y.days - x.days);
+}
+
+/**
+ * The labor output finance takes out of the system (§36A): worker + date +
+ * project / operational target + work type + full / half day, one line per row.
+ */
+export function laborLines<A extends Alloc>(allocations: A[], from: string, to: string): A[] {
+  return live(allocations, from, to).sort((x, y) => x.workDate.localeCompare(y.workDate) || x.employeeId.localeCompare(y.employeeId));
+}
+
+export interface UnallocatedDay {
+  date: string;
+  items: { employeeId: string; free: number }[];
+}
+
+/**
+ * Unallocated workers per working day (§6, §14, TC-11). Only active workers,
+ * only configured working days. A half-booked worker shows 0.5 free.
+ */
+export function unallocatedReport(
+  employees: (Pick<Employee, 'id' | 'status'> & Partial<Pick<Employee, 'createdAt' | 'updatedAt'>>)[],
+  allocations: Alloc[],
+  days: string[],
+  workDays: number[],
+  weekdayOf: (date: string) => number,
+  /** Calendar date of a timestamp (Riyadh); defaults to its first 10 characters. */
+  dayOf: (iso: string) => string = (iso) => iso.slice(0, 10),
+): UnallocatedDay[] {
+  const load = new Map<string, number>();
+  for (const a of allocations) {
+    if (a.voidedAt) continue;
+    const k = `${a.employeeId}|${a.workDate}`;
+    load.set(k, (load.get(k) ?? 0) + Number(a.duration));
+  }
+  // An inactive worker still counts on the days before they were switched off,
+  // so a past month does not change when someone leaves (UAT L8).
+  const active = employees.filter((e) => e.status === 'active' || !!e.updatedAt);
+  const workedOn = (e: (typeof employees)[number], date: string) =>
+    e.status === 'active' || (!!e.updatedAt && date < dayOf(e.updatedAt));
+  return days
+    .filter((d) => workDays.includes(weekdayOf(d)))
+    .map((date) => ({
+      date,
+      items: active
+        // A worker is not unallocated before they were added (UAT D-18).
+        .filter((e) => (!e.createdAt || dayOf(e.createdAt) <= date) && workedOn(e, date))
+        .map((e) => ({ employeeId: e.id, free: Math.max(0, 1 - (load.get(`${e.id}|${date}`) ?? 0)) }))
+        .filter((x) => x.free > 0),
+    }));
+}
+
+/** Unallocated days per worker over the period (free capacity summed). */
+export function unallocatedByWorker(days: UnallocatedDay[]): { employeeId: string; freeDays: number }[] {
+  const m = new Map<string, number>();
+  for (const d of days) for (const x of d.items) m.set(x.employeeId, (m.get(x.employeeId) ?? 0) + x.free);
+  return [...m].map(([employeeId, freeDays]) => ({ employeeId, freeDays })).sort((a, b) => b.freeDays - a.freeDays);
+}
+
+export interface OpenWork {
+  followUp: ProjectTask[];
+  open: ProjectTask[];
+  overduePeriodic: ProjectRecurringItem[];
+  duePeriodic: ProjectRecurringItem[];
+}
+
+/** Open, follow-up and overdue work (§14). */
+export function openWorkReport(tasks: ProjectTask[], recurring: ProjectRecurringItem[], today: string): OpenWork {
+  const activeItems = recurring.filter((r) => r.active);
+  return {
+    followUp: tasks.filter((t) => t.status === 'needs_follow_up'),
+    open: tasks.filter((t) => t.status === 'open'),
+    overduePeriodic: activeItems.filter((r) => r.nextDueOn < today),
+    duePeriodic: activeItems.filter((r) => r.nextDueOn === today),
+  };
+}

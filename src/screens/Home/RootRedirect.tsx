@@ -19,6 +19,6 @@ export function RootRedirect() {
   if (loading) return <div className="app-shell"><main className="app-main"><p className="hint">{t('common.loading', 'Loading…')}</p></main></div>;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === 'client') return <Navigate to="/portal" replace />;
-  if (user.role === 'auditor') return <Navigate to="/reports" replace />;
-  return <Navigate to="/today" replace />;
+  if (user.role === 'finance') return <Navigate to="/reports" replace />;
+  return <Navigate to="/field" replace />;
 }

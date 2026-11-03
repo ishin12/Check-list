@@ -12,7 +12,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
 interface InviteBody {
   email: string;
-  role: 'manager' | 'supervisor' | 'worker' | 'auditor' | 'client';
+  role: 'manager' | 'supervisor' | 'finance' | 'worker' | 'client';
+  /** Managers only: also grant finance (month close, post-close edits). */
+  finance_access?: boolean;
   full_name?: string;
   phone?: string;
   client_id?: string;
@@ -58,6 +60,9 @@ Deno.serve(async (req: Request) => {
     if (!body.email || !body.role) {
       return cors(new Response('email and role required', { status: 400 }));
     }
+    if (!['manager', 'supervisor', 'finance', 'worker', 'client'].includes(body.role)) {
+      return cors(new Response('unknown role', { status: 400 }));
+    }
 
     const url = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -70,7 +75,7 @@ Deno.serve(async (req: Request) => {
     if (!callerUser?.user) return cors(new Response('Unauthorized', { status: 401 }));
     const { data: callerProfile } = await callerClient
       .from('profiles').select('role').eq('id', callerUser.user.id).maybeSingle();
-    if (callerProfile?.role !== 'manager' && callerProfile?.role !== 'supervisor') {
+    if (callerProfile?.role !== 'manager') {
       return cors(new Response('Forbidden', { status: 403 }));
     }
 
@@ -96,6 +101,7 @@ Deno.serve(async (req: Request) => {
       email: body.email,
       phone: body.phone ?? null,
       client_id: body.client_id ?? null,
+      finance_access: body.role === 'manager' && body.finance_access === true,
       active: true,
     };
     const { error: upErr } = await admin.from('profiles').upsert(profileRow);

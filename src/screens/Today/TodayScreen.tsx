@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useLanguage } from '@/app/providers/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '@/app/providers/LanguageContext';
 import { Link } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
 import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/app/providers/AuthContext';
 import { listTasks } from '@/services/data/tasks';
-import { timeOnTaskMinutes } from '@/domain/job/taskFlow';
+import { dailySummary, timeOnTaskMinutes } from '@/domain/job/taskFlow';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
+import { localToday } from '@/lib/dates';
 import { formatTime } from '@/lib/datetime';
 import { Chevron } from '@/components/Chevron';
 import '@/styles/screens/field.css';
@@ -51,24 +52,15 @@ export function TodayScreen() {
     })();
   }, [user]);
 
-  // The list below is already scoped to today (and to the worker's own tasks
-  // for workers; managers see everyone's), so the greeting counts exactly that
-  // list. It used to re-filter by "assigned to me", which made a manager's
-  // hero say "No visits scheduled today" above a list of today's visits.
-  const summary = user
-    ? {
-        taskCount: tasks.length,
-        completedCount: tasks.filter((x) => x.status === 'submitted' || x.status === 'approved').length,
-        totalMinutes: tasks.reduce((sum, x) => sum + timeOnTaskMinutes(x), 0),
-      }
-    : null;
+  const today = localToday();
+  const summary = user ? dailySummary(user.id, today, tasks) : null;
   const next = tasks.find((x) => x.status !== 'approved' && x.status !== 'rejected') ?? tasks[0];
 
   return (
     <AppShell>
       <AppHeader title={t('today.title', 'Today')} />
       <main className="app-main">
-        {loading ? <p className="hint">{t('common.loading', 'Loading…')}</p> : null}
+        {loading ? <p className="hint">Loading…</p> : null}
         {error ? <div className="banner banner--error">{error}</div> : null}
 
         {summary ? (

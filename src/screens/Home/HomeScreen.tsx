@@ -1,7 +1,7 @@
-import { Chevron } from '@/components/Chevron';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Chevron } from '@/components/Chevron';
 import { AppHeader } from '@/components/AppHeader';
 import { useStorage } from '@/app/providers/StorageContext';
 import { useLanguage } from '@/app/providers/LanguageContext';

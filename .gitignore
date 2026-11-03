@@ -10,5 +10,6 @@ coverage
 dev-dist
 *.log
 *.tsbuildinfo
-e2e/shots*/
-.worktrees/
+dist-demo
+ghsoon-najd-demo.zip
+dist-demo2

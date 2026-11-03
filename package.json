@@ -10,20 +10,21 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:db": "scripts/test-db.sh",
-    "check:locales": "node scripts/check-locales.mjs"
+    "test:db": "bash scripts/test-db.sh",
+    "build:demo": "VITE_DEMO_MODE=1 VITE_HASH_ROUTER=1 VITE_BASE=./ VITE_FEATURE_LEGACY_TASKS=0 sh -c 'tsc -b && vite build --outDir dist-demo --emptyOutDir'"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
     "html-to-image": "^1.11.13",
-    "idb": "^8.0.0",
     "i18next": "^24.2.1",
+    "idb": "^8.0.0",
     "jspdf": "^2.5.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^15.4.0",
     "react-router-dom": "^7.1.1",
-    "signature_pad": "^5.0.4"
+    "signature_pad": "^5.0.4",
+    "write-excel-file": "^4.1.1"
   },
   "devDependencies": {
     "@types/node": "^22.19.19",
@@ -31,6 +32,7 @@
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.17.0",
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^25.0.1",
     "typescript": "~5.6.3",
     "vite": "^6.0.7",

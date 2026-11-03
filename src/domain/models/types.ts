@@ -1,13 +1,22 @@
+import type { Recurrence } from '@/domain/job/recurrence';
+
 export type Language = 'en' | 'ar' | 'ur';
 
-/** en and ar are required; ur is optional (older templates have none). */
-export type LocalizedText = Record<'en' | 'ar', string> & { ur?: string };
+/** Right-to-left languages (Arabic, Urdu). */
+export const RTL_LANGUAGES: readonly Language[] = ['ar', 'ur'];
+
+/** English and Arabic are always entered; Urdu is optional and falls back. */
+export type LocalizedText = { en: string; ar: string; ur?: string };
 
 export interface Task {
   id: string;
   label: LocalizedText;
   order: number;
   required: boolean;
+  /** Periodic maintenance item: shown when due rather than on every visit. */
+  recurrence?: Recurrence;
+  /** A photo must be attached before this item can be completed (BR-012). */
+  photoRequired?: boolean;
 }
 
 export interface Template {
@@ -17,6 +26,11 @@ export interface Template {
   createdAt: string;
   updatedAt: string;
   version: number;
+  /** Scope: which project type / stage this checklist belongs to. */
+  projectTypeId?: string;
+  stageId?: string;
+  /** Switched-off checklists are kept (never deleted) but not used on visits. */
+  active?: boolean;
 }
 
 export interface TaskResult {

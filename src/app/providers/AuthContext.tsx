@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { getSupabase, hasSupabaseConfig } from '@/services/supabase/client';
-import { flushQueue } from '@/services/media/mediaQueue';
 import type { AppUser, Role } from '@/domain/models/ops';
 
 interface AuthState {
@@ -11,8 +10,6 @@ interface AuthState {
   signInWithEmail: (email: string) => Promise<void>;
   /** Email + password sign-in (production). */
   signInWithPassword: (email: string, password: string) => Promise<void>;
-  /** Email a password-reset link (production). */
-  sendPasswordReset: (email: string) => Promise<void>;
   /** Change the signed-in user's own password. */
   updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -30,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sb = getSupabase();
     const { data, error } = await sb
       .from('profiles')
-      .select('id, role, full_name, email, phone, client_id, active')
+      .select('*') // '*' so a build deployed before migration 0006 still loads
       .eq('id', userId)
       .maybeSingle();
     if (error || !data) {
@@ -49,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: data.email ?? undefined,
       phone: data.phone ?? undefined,
       clientId: data.client_id ?? undefined,
+      financeAccess: data.finance_access === true,
       active: data.active,
     };
   }, []);
@@ -84,13 +82,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, [configured, loadProfile, refresh]);
 
-  // Once signed in, upload any proofs that were captured offline or whose
-  // earlier upload failed (the queue otherwise only retries on `online`).
-  const signedInId = user?.id;
-  useEffect(() => {
-    if (signedInId) void flushQueue();
-  }, [signedInId]);
-
   const signInWithEmail = useCallback(async (email: string) => {
     const sb = getSupabase();
     const base = `${location.origin}${import.meta.env.BASE_URL}`.replace(/\/$/, '');
@@ -109,15 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw new Error(error.message);
   }, []);
 
-  const sendPasswordReset = useCallback(async (email: string) => {
-    const sb = getSupabase();
-    const base = `${location.origin}${import.meta.env.BASE_URL}`.replace(/\/$/, '');
-    const { error } = await (sb.auth as unknown as {
-      resetPasswordForEmail: (e: string, o: { redirectTo: string }) => Promise<{ error: { message: string } | null }>;
-    }).resetPasswordForEmail(email, { redirectTo: `${base}/auth/reset` });
-    if (error) throw new Error(error.message);
-  }, []);
-
   const updatePassword = useCallback(async (password: string) => {
     const sb = getSupabase();
     const { error } = await (sb.auth as unknown as {
@@ -133,8 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ loading, user, configured, signInWithEmail, signInWithPassword, sendPasswordReset, updatePassword, signOut, refresh }),
-    [loading, user, configured, signInWithEmail, signInWithPassword, sendPasswordReset, updatePassword, signOut, refresh],
+    () => ({ loading, user, configured, signInWithEmail, signInWithPassword, updatePassword, signOut, refresh }),
+    [loading, user, configured, signInWithEmail, signInWithPassword, updatePassword, signOut, refresh],
   );
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;

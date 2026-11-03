@@ -62,7 +62,11 @@ export class LocalStorageProvider implements StorageProvider {
   }
 
   async deleteTemplate(id: string): Promise<void> {
-    const templates = this.ensureSeeded().filter((t) => t.id !== id);
+    await this.setTemplateActive(id, false);
+  }
+
+  async setTemplateActive(id: string, active: boolean): Promise<void> {
+    const templates = this.ensureSeeded().map((t) => (t.id === id ? { ...t, active } : t));
     writeJson(TEMPLATES_KEY, templates);
   }
 

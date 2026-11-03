@@ -32,7 +32,7 @@ Deno.serve(async () => {
       status: 'approved',
       approval_method: 'auto_no_response',
       decision_at: new Date().toISOString(),
-      decision_note: `Auto-approved after ${days} days — client did not respond`,
+      decision_note: `Response window expired after ${days} days — the client did not sign or reply`,
     }).eq('id', link.task_id).eq('status', 'submitted');
     await admin.from('audit_log').insert({
       actor_id: null,

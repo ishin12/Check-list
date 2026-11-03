@@ -2,10 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppHeader } from '@/components/AppHeader';
+import { AppShell } from '@/components/AppShell';
+import { features } from '@/config/features';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useStorage } from '@/app/providers/StorageContext';
 import { useLanguage } from '@/app/providers/LanguageContext';
 import { duplicateTemplate, templateTitle } from '@/domain/template/template';
+import { useFieldData } from '@/app/providers/FieldDataContext';
+import { configText } from '@/lib/configText';
 import type { Template } from '@/domain/models/types';
 import { Icon } from '@/components/Icon';
 import '@/styles/screens/admin.css';
@@ -15,10 +19,18 @@ export function TemplateListScreen() {
   const navigate = useNavigate();
   const storage = useStorage();
   const { language } = useLanguage();
+  const fd = useFieldData();
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [pendingDelete, setPendingDelete] = useState<Template | null>(null);
+  const [pendingOff, setPendingOff] = useState<Template | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
-  const reload = () => storage.listTemplates().then(setTemplates);
+  // Only field checklists (scoped to a project type or stage) when the older
+  // task system is hidden (UAT D-34).
+  const reload = () => storage.listTemplates().then((list) =>
+    setTemplates(features.legacyTasks ? list : list.filter((x) => x.projectTypeId || x.stageId)));
+  // Stable order by name, so switching one on or off does not move it (UAT L9).
+  const shown = templates.filter((x) => showInactive || x.active !== false)
+    .sort((a, b) => templateTitle(a, language).localeCompare(templateTitle(b, language)));
 
   useEffect(() => {
     reload();
@@ -26,23 +38,25 @@ export function TemplateListScreen() {
   }, [storage]);
 
   const onDuplicate = async (template: Template) => {
-    const suffix = { en: t('templates.copySuffix'), ar: t('templates.copySuffix'), ur: t('templates.copySuffix') };
+    const suffix = { en: t('templates.copySuffix'), ar: t('templates.copySuffix') };
     await storage.saveTemplate(duplicateTemplate(template, suffix));
     reload();
   };
 
-  const onDelete = async () => {
-    if (!pendingDelete) return;
-    await storage.deleteTemplate(pendingDelete.id);
-    setPendingDelete(null);
+  // Checklists are switched off, never deleted (UAT D-32, BR-014).
+  const onSwitchOff = async () => {
+    if (!pendingOff) return;
+    await storage.setTemplateActive(pendingOff.id, false);
+    setPendingOff(null);
     reload();
   };
 
   return (
-    <div className="app-shell">
-      <AppHeader title={t('templates.title')} showBack showLanguage />
+    <AppShell>
+      <AppHeader title={t('templates.title')} showBack />
       <main className="app-main">
-        {templates.length === 0 ? (
+        <label className="adm-check"><input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />{t('templates.showInactive', 'Show switched-off checklists')}</label>
+        {shown.length === 0 ? (
           <div className="empty">
             <div className="empty__icon"><Icon name="list" /></div>
             <p>{t('templates.empty')}</p>
@@ -50,8 +64,8 @@ export function TemplateListScreen() {
           </div>
         ) : (
           <div className="adm-list">
-            {templates.map((template) => (
-              <div key={template.id} className="adm-row">
+            {shown.map((template) => (
+              <div key={template.id} className={`adm-row${template.active === false ? ' adm-row--off' : ''}`}>
                 <button
                   type="button"
                   className="adm-row__main"
@@ -60,9 +74,12 @@ export function TemplateListScreen() {
                   <div className="adm-row__text">
                     <div className="card__title">
                       {templateTitle(template, language)}
+                      {template.active === false ? <span className="tag adm-title-tag">{t('templates.off', 'Switched off')}</span> : null}
                     </div>
                     <div className="card__meta">
                       {t('templates.tasksCount', { count: template.tasks.length })}
+                      {template.projectTypeId ? ` · ${configText(fd.type(template.projectTypeId)?.name, language)}` : ''}
+                      {template.stageId ? ` · ${configText(fd.stage(template.stageId)?.name, language)}` : ''}
                     </div>
                   </div>
                 </button>
@@ -82,14 +99,15 @@ export function TemplateListScreen() {
                 >
                   <Icon name="copy" />
                 </button>
-                <button
-                  type="button"
-                  className="icon-btn adm-danger"
-                  onClick={() => setPendingDelete(template)}
-                  aria-label={t('common.delete')}
-                >
-                  <Icon name="trash" />
-                </button>
+                {template.active === false ? (
+                  <button type="button" className="btn btn--ghost btn--sm" onClick={async () => { await storage.setTemplateActive(template.id, true); reload(); }}>
+                    {t('users.activate', 'Activate')}
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn--text btn--sm" onClick={() => setPendingOff(template)}>
+                    {t('templates.switchOff', 'Switch off')}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -106,14 +124,13 @@ export function TemplateListScreen() {
       </div>
 
       <ConfirmDialog
-        open={!!pendingDelete}
-        title={t('templates.deleteConfirm')}
-        body={t('templates.deleteConfirmBody')}
-        confirmLabel={t('common.delete')}
-        danger
-        onConfirm={onDelete}
-        onCancel={() => setPendingDelete(null)}
+        open={!!pendingOff}
+        title={t('templates.switchOffTitle', 'Switch off this checklist?')}
+        body={t('templates.switchOffBody', 'It stops appearing on new visits. It is kept with its history and can be switched on again.')}
+        confirmLabel={t('templates.switchOff', 'Switch off')}
+        onConfirm={onSwitchOff}
+        onCancel={() => setPendingOff(null)}
       />
-    </div>
+    </AppShell>
   );
 }

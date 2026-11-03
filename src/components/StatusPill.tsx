@@ -21,8 +21,8 @@ export function StatusPill({ status, approvalMethod }: Props) {
   // never reads like a confirmed signature.
   if (status === 'approved' && approvalMethod === 'auto_no_response') {
     return (
-      <span className="status-pill status-pill--auto" title={t('approval.autoFull', 'Auto-approved — client did not respond')}>
-        {t('approval.autoShort', 'Approved · no response')}
+      <span className="status-pill status-pill--auto" title={t('approval.autoFull', 'Response window expired — the client did not sign or reply')}>
+        {t('approval.autoShort', 'Expired · not signed')}
       </span>
     );
   }

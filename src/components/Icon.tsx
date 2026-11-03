@@ -127,6 +127,38 @@ const P: Record<string, ReactNode> = {
   back: <path d="M15 5l-7 7 7 7" />,
   forward: <path d="M9 5l7 7-7 7" />,
   'chevron-down': <path d="M5 9l7 7 7-7" />,
+  /* Field operations */
+  projects: (
+    <>
+      <path d="M3.5 7a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" />
+      <path d="M3.5 11h17" />
+    </>
+  ),
+  labor: (
+    <>
+      <path d="M4 17.5h16M5.5 17.5v-3a6.5 6.5 0 0 1 13 0v3" />
+      <path d="M10 8.3V5.5h4v2.8M12 11v3" />
+    </>
+  ),
+  chart: (
+    <>
+      <path d="M4 4v16h16" />
+      <path d="M8.5 16v-4M12.5 16V8M16.5 16v-6" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="5" y="10.5" width="14" height="10" rx="2" />
+      <path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3M12 14.5v2" />
+    </>
+  ),
+  checklist: (
+    <>
+      <path d="M4 6.5l1.5 1.5L8.5 5M4 12.5L5.5 14l3-3M4 18.5L5.5 20l3-3" />
+      <path d="M11.5 6.5h8.5M11.5 12.5h8.5M11.5 18.5h8.5" />
+    </>
+  ),
+  play: <path d="M8 5.5v13l10-6.5z" />,
 };
 
 /** Icons whose artwork has a direction and must be mirrored in RTL. */

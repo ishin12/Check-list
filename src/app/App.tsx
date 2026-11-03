@@ -4,6 +4,7 @@ import { LanguageProvider, useLanguage } from './providers/LanguageContext';
 import { CurrentJobProvider } from './providers/CurrentJobContext';
 import { AuthProvider } from './providers/AuthContext';
 import { DirectoryProvider } from './providers/DirectoryContext';
+import { FieldDataProvider } from './providers/FieldDataContext';
 import { router } from './router';
 
 function AppRoutes() {
@@ -18,9 +19,11 @@ export default function App() {
       <LanguageProvider>
         <AuthProvider>
           <DirectoryProvider>
-            <CurrentJobProvider>
-              <AppRoutes />
-            </CurrentJobProvider>
+            <FieldDataProvider>
+              <CurrentJobProvider>
+                <AppRoutes />
+              </CurrentJobProvider>
+            </FieldDataProvider>
           </DirectoryProvider>
         </AuthProvider>
       </LanguageProvider>

@@ -4,14 +4,13 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/Check-list/' : '/',
+  base: command === 'build' ? (process.env.VITE_BASE ?? '/Check-list/') : '/',
   plugins: [
     react(),
     VitePWA({
+      // Standalone demo builds skip the service worker.
+      disable: process.env.VITE_HASH_ROUTER === '1',
       registerType: 'autoUpdate',
-      // /demo/ is a separate standalone demo build deployed alongside this
-      // site; keep this app's service worker from answering its navigations.
-      workbox: { navigateFallbackDenylist: [/\/demo\//] },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Ghsoon Najd',

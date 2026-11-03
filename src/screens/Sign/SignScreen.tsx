@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useLanguage } from '@/app/providers/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { getSupabase } from '@/services/supabase/client';
 import { SignaturePadCanvas, type SignaturePadHandle } from '@/components/SignaturePadCanvas';
 import { formatDate } from '@/lib/datetime';
+import { useLanguage } from '@/app/providers/LanguageContext';
 import { Icon } from '@/components/Icon';
 import { VisitWhen } from './VisitWhen';
 import { BrandMark } from '@/screens/Login/BrandMark';

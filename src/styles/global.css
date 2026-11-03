@@ -1695,3 +1695,307 @@ html[lang='ur'] .check-item__label { line-height: 2; }
 html[lang='ur'] .agenda__date { line-height: 2.1; }
 html[lang='ur'] .demo-switcher__item,
 html[lang='ur'] .demo-switcher__chip { line-height: 1.9; }
+
+/* ==========================================================================
+   Field operations (projects, visits, crew, labor, reports)
+   Same system as the rest of the app: flat, tone steps, 6/8/12 radii,
+   ink for selection, field green for accents, no outlines on rows or chips.
+   ========================================================================== */
+
+.banner--warn { background: var(--color-gold-soft); color: var(--status-in_progress-fg); }
+
+.demo-account__role--supervisor { background: var(--color-accent-soft); color: var(--color-ink); }
+.demo-account__role--finance    { background: var(--color-gold-soft); color: var(--status-in_progress-fg); }
+
+/* Status tags for the field-ops state machines */
+.status-pill--planned,
+.status-pill--open            { background: var(--status-not_started-bg); color: var(--status-not_started-fg); }
+.status-pill--completed       { background: var(--status-approved-bg);    color: var(--status-approved-fg); }
+.status-pill--needs_follow_up,
+.status-pill--on_hold         { background: var(--status-in_progress-bg); color: var(--status-in_progress-fg); }
+.status-pill--active          { background: var(--status-submitted-bg);   color: var(--status-submitted-fg); }
+.status-pill--closed,
+.status-pill--inactive        { background: var(--color-surface-3);       color: var(--color-text-muted); }
+.status-pill--overdue         { background: var(--status-rejected-bg);    color: var(--status-rejected-fg); }
+
+/* Filter chips / segmented choices */
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.chip {
+  border: none;
+  background: var(--color-surface-3);
+  color: var(--color-ink);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  min-height: 40px;
+  transition: background var(--ease);
+}
+.chip:hover { background: var(--color-surface-4); }
+.chip--active, .chip--active:hover { background: var(--color-ink); color: var(--color-surface); }
+
+/* Page tabs (project, reports): field-green underline indicator, no rule */
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs__item {
+  border: none;
+  background: transparent;
+  padding: 10px 12px;
+  min-height: 44px;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  border-radius: var(--radius);
+  white-space: nowrap;
+  transition: background var(--ease), color var(--ease);
+}
+.tabs__item:hover { background: var(--color-surface-2); }
+.tabs__item--active, .tabs__item--active:hover { background: var(--color-accent-soft); color: var(--color-ink); font-weight: 700; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; }
+.toolbar > .field { flex: 1 1 140px; min-width: 0; }
+
+.search { position: relative; }
+.search .input { padding-inline-start: 40px; }
+.search__icon {
+  position: absolute;
+  inset-inline-start: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+  display: inline-flex;
+}
+
+/* KPI tiles */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--space-3); }
+.kpi {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+a.kpi { transition: background var(--ease); }
+a.kpi:hover { background: var(--color-surface-2); }
+.kpi__value { font-size: var(--fs-lg); font-weight: 700; line-height: 1.2; letter-spacing: var(--tracking-tight); }
+.kpi__label { font-size: var(--fs-sm); color: var(--color-text-muted); font-weight: 600; }
+.kpi--warn   { background: var(--status-in_progress-bg); }
+.kpi--warn .kpi__value, .kpi--warn .kpi__label { color: var(--status-in_progress-fg); }
+.kpi--danger { background: var(--status-rejected-bg); }
+.kpi--danger .kpi__value, .kpi--danger .kpi__label { color: var(--status-rejected-fg); }
+
+/* Task item on a visit: one-tap answers. State is fill + tag, not a border. */
+.task-item {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: background var(--ease);
+}
+.task-item--completed { background: var(--color-accent-soft); }
+.task-item__head { display: flex; gap: var(--space-2); align-items: flex-start; }
+.task-item__title { font-weight: 700; flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: 1.35; }
+.task-item__tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-3);
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+.tag--warn  { background: var(--status-in_progress-bg); color: var(--status-in_progress-fg); }
+.tag--brand { background: var(--color-ink); color: var(--color-surface); }
+
+.answers { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+.answer {
+  border: none;
+  background: var(--color-surface-2);
+  border-radius: var(--radius);
+  min-height: 48px;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  color: var(--color-ink);
+  padding: 6px 4px;
+  transition: background var(--ease), transform var(--ease);
+}
+.answer:hover:not(:disabled) { background: var(--color-surface-3); }
+.answer:active:not(:disabled) { transform: scale(0.98); }
+.task-item--completed .answer { background: var(--color-surface); }
+.answer--done.answer--on      { background: var(--color-ink); color: var(--color-surface); }
+.answer--not_done.answer--on  { background: var(--color-text-muted); color: var(--color-surface); }
+.answer--follow_up.answer--on { background: var(--status-in_progress-bg); color: var(--status-in_progress-fg); }
+.answer:disabled { background: var(--color-disabled-bg); color: var(--color-disabled-fg); cursor: not-allowed; }
+.answer--on:disabled { opacity: 0.7; }
+
+/* Photos */
+.thumbs { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.thumb {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--color-surface-2);
+  border: none;
+  padding: 0;
+}
+.thumb img, .thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb__kind {
+  position: absolute;
+  inset-inline-start: 4px;
+  bottom: 4px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  background: rgba(0, 43, 19, 0.82);
+  color: var(--color-surface);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+}
+html[dir='ltr'] .thumb__kind { text-transform: uppercase; }
+.thumb-add {
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--color-surface-2);
+  color: var(--color-accent);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: background var(--ease);
+}
+.thumb-add:hover { background: var(--color-surface-3); }
+
+/* Crew picker: multi-select with full / half day */
+.crew-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.crew-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: none;
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  min-height: 56px;
+  transition: background var(--ease);
+}
+.crew-row--on { background: var(--color-accent-soft); }
+.crew-row--full { background: var(--color-disabled-bg); color: var(--color-disabled-fg); }
+.crew-row__name { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.crew-row__meta { font-size: var(--fs-sm); color: var(--color-text-muted); font-weight: 600; }
+.crew-row__check {
+  width: 24px; height: 24px; border-radius: var(--radius-xs);
+  border: 2px solid var(--color-border-strong);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--color-surface); font-weight: 700; flex-shrink: 0;
+}
+.crew-row--on .crew-row__check { background: var(--color-ink); border-color: var(--color-ink); }
+.dur { display: inline-flex; background: var(--color-surface-3); border-radius: var(--radius); padding: 2px; gap: 2px; flex-shrink: 0; }
+.dur button {
+  border: none; background: transparent; padding: 6px 12px; font-weight: 600; font-size: var(--fs-sm);
+  color: var(--color-ink); min-height: 40px; border-radius: 6px;
+}
+.dur button.dur--on { background: var(--color-ink); color: var(--color-surface); }
+.dur button:disabled { color: var(--color-disabled-fg); }
+
+/* Data tables: scroll inside their box, never the page. Real tables keep rules between rows. */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+}
+table.data { border-collapse: collapse; width: 100%; font-size: var(--fs-sm); }
+table.data th, table.data td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-surface-2);
+  text-align: start;
+  white-space: nowrap;
+}
+table.data th { background: var(--color-surface-2); font-weight: 600; color: var(--color-text-muted); position: sticky; top: 0; border-bottom: none; }
+table.data td.num, table.data th.num { text-align: end; font-variant-numeric: tabular-nums; }
+table.data tr:last-child td { border-bottom: none; }
+table.data tfoot td { font-weight: 700; background: var(--color-surface-2); }
+table.data .muted { color: var(--color-text-muted); }
+table.data a { color: var(--color-link); font-weight: 600; }
+
+.list-link { text-decoration: none; color: inherit; }
+.muted { color: var(--color-text-muted); }
+.grow { flex: 1; min-width: 0; }
+.wrap { flex-wrap: wrap; }
+.nowrap { white-space: nowrap; }
+
+.checkbox-row { display: flex; align-items: center; gap: var(--space-2); font-weight: 600; min-height: 44px; }
+.checkbox-row input { width: 20px; height: 20px; accent-color: var(--color-ink); }
+
+.weekdays { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.weekdays .chip { padding: 6px 12px; }
+
+/* Printable visit report host (captured into the PDF): white paper on the page */
+.report-frame {
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: #fff;
+}
+
+@media (min-width: 1024px) {
+  .answers { max-width: 420px; }
+}
+
+/* Links styled as buttons / tiles / cards never show link underlines. */
+a.btn, a.kpi, a.card, a.chip { text-decoration: none; }
+a.card, a.kpi { color: inherit; }
+.card ol a, .card ul a, .card__meta a { color: var(--color-link); font-weight: 600; }
+
+/* On a phone, hint that wide tables and tab rows scroll sideways. */
+.scroll-hint { display: none; margin: 0 0 var(--space-1); }
+.scroll-hint--always { display: block; }
+@media (max-width: 640px) {
+  .scroll-hint { display: block; }
+  .tabs { -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); mask-image: linear-gradient(to right, #000 85%, transparent); padding-inline-end: 24px; }
+  [dir='rtl'] .tabs { -webkit-mask-image: linear-gradient(to left, #000 85%, transparent); mask-image: linear-gradient(to left, #000 85%, transparent); }
+}
+
+/* A Latin title in an RTL header truncates at its end, not its start. */
+.app-header__title { unicode-bidi: plaintext; }
+
+/* Desktop: report tabs wrap instead of hiding the last ones. */
+@media (min-width: 700px) {
+  .tabs { flex-wrap: wrap; overflow-x: visible; }
+}
+
+/* Urdu: Nastaliq needs taller controls in the field-ops widgets too. */
+html[lang='ur'] .chip,
+html[lang='ur'] .tabs__item,
+html[lang='ur'] .answer,
+html[lang='ur'] .dur button { line-height: 2; padding-block: 4px; }
+html[lang='ur'] .kpi__value { font-family: var(--font-sans); }
+
+/* Setup lists: each record is a tile inside its card, not a ruled line. */
+.fo-tile-row {
+  justify-content: space-between;
+  background: var(--color-surface-2);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  min-height: 56px;
+}
+
+.fo-tile-row .btn { min-height: 40px; padding-inline: var(--space-3); font-size: var(--fs-sm); }
+.fo-tile-row .grow, .fo-tile-row > div:first-child { min-width: 0; overflow-wrap: anywhere; }

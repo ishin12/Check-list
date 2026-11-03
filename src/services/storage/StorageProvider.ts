@@ -16,6 +16,8 @@ export interface StorageProvider {
   getTemplate(id: string): Promise<Template | undefined>;
   saveTemplate(template: Template): Promise<void>;
   deleteTemplate(id: string): Promise<void>;
+  /** Switch a checklist on or off (checklists are never deleted). */
+  setTemplateActive(id: string, active: boolean): Promise<void>;
 
   // Settings
   getSettings(): Promise<Settings>;

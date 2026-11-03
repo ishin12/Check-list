@@ -11,6 +11,9 @@ export function dateLocale(language: Language): string {
   return 'en-GB';
 }
 
+/** Every time in the app is shown in Saudi time, whatever the device clock says. */
+const APP_TZ = 'Asia/Riyadh';
+
 type DateInput = string | number | Date;
 
 export function formatDate(
@@ -18,7 +21,7 @@ export function formatDate(
   language: Language,
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  return new Date(value).toLocaleDateString(dateLocale(language), options);
+  return new Date(value).toLocaleDateString(dateLocale(language), { timeZone: APP_TZ, ...options });
 }
 
 export function formatTime(
@@ -26,7 +29,7 @@ export function formatTime(
   language: Language,
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  return new Date(value).toLocaleTimeString(dateLocale(language), options);
+  return new Date(value).toLocaleTimeString(dateLocale(language), { timeZone: APP_TZ, ...options });
 }
 
 export function formatDateAndTime(
@@ -34,7 +37,7 @@ export function formatDateAndTime(
   language: Language,
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  const text = new Date(value).toLocaleString(dateLocale(language), options);
+  const text = new Date(value).toLocaleString(dateLocale(language), { timeZone: APP_TZ, ...options });
   // Numeric date+time in Urdu mixes digits with the Urdu comma; isolate it as one
   // left-to-right run so the comma does not jump to the wrong side. Textual
   // formats (month names) are real Urdu words and must stay RTL.
@@ -47,6 +50,7 @@ export function formatDateTime(iso: string, language: Language): string {
     return new Intl.DateTimeFormat(locale, {
       dateStyle: 'medium',
       timeStyle: 'short',
+      timeZone: APP_TZ,
     }).format(new Date(iso));
   } catch {
     return iso;

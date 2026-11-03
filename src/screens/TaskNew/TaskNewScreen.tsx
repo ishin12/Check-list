@@ -1,39 +1,28 @@
 import { useEffect, useState } from 'react';
-import { useLanguage } from '@/app/providers/LanguageContext';
-import { localizedText } from '@/domain/template/template';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
 import { createTask } from '@/services/data/tasks';
-import { WorkerMultiSelect } from '@/components/WorkerMultiSelect';
-import { LocationInput } from '@/components/LocationInput';
-import { LocationMap } from '@/components/LocationMap';
-import type { TaskLocation } from '@/domain/location';
 import { RECURRENCE_OPTIONS, recurrenceLabel, type Recurrence } from '@/domain/job/recurrence';
-import { clientLocationForSelection } from './clientLocation';
-import '@/styles/screens/field.css';
 
-interface Option { id: string; label: string; location?: TaskLocation | null }
+interface Option { id: string; label: string }
 interface TemplateOpt extends Option { /* same shape, kept distinct for readability */ }
 
 export function TaskNewScreen() {
   const { t } = useTranslation();
-  const { language } = useLanguage();
   const navigate = useNavigate();
   const [workers, setWorkers] = useState<Option[]>([]);
   const [clients, setClients] = useState<Option[]>([]);
   const [templates, setTemplates] = useState<TemplateOpt[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [workerIds, setWorkerIds] = useState<string[]>([]);
+  const [workerId, setWorkerId] = useState('');
   const [clientId, setClientId] = useState('');
   const [templateId, setTemplateId] = useState('');
   const [when, setWhen] = useState(defaultWhen());
   const [recurrence, setRecurrence] = useState<Recurrence>('none');
-  const [location, setLocation] = useState<TaskLocation | null>(null);
-  const [locationInvalid, setLocationInvalid] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,19 +31,14 @@ export function TaskNewScreen() {
       const sb = getSupabase();
       const [{ data: ws }, { data: cs }, { data: ts }] = await Promise.all([
         sb.from('profiles').select('id, full_name, email').eq('role', 'worker').eq('active', true),
-        sb.from('clients').select('id, name, location_url, location_lat, location_lng').order('name'),
+        sb.from('clients').select('id, name').order('name'),
         sb.from('templates').select('id, title').order('updated_at', { ascending: false }),
       ]);
       setWorkers((ws ?? []).map((w) => ({ id: w.id, label: w.full_name ?? w.email ?? w.id })));
-      setClients((cs ?? []).map((c) => ({
-        id: c.id, label: c.name,
-        location: c.location_url || c.location_lat != null || c.location_lng != null
-          ? { locationUrl: c.location_url, locationLat: c.location_lat, locationLng: c.location_lng }
-          : null,
-      })));
+      setClients((cs ?? []).map((c) => ({ id: c.id, label: c.name })));
       setTemplates((ts ?? []).map((tpl) => ({
         id: tpl.id,
-        label: localizedText(tpl.title, language) || 'Untitled',
+        label: (tpl.title?.en ?? tpl.title?.ar ?? 'Untitled') as string,
       })));
     })();
   }, []);
@@ -66,11 +50,10 @@ export function TaskNewScreen() {
     try {
       const task = await createTask({
         title, description: description || undefined,
-        clientId, workerIds,
+        clientId, assignedWorkerId: workerId,
         scheduledAt: new Date(when).toISOString(),
         recurrence,
         templateId: templateId || undefined,
-        location,
       });
       navigate(`/tasks/${task.id}`, { replace: true });
     } catch (err) {
@@ -80,83 +63,63 @@ export function TaskNewScreen() {
     }
   }
 
-  const ready = title && clientId && workerIds.length > 0 && when && !locationInvalid;
+  const ready = title && clientId && workerId && when;
 
   return (
     <AppShell>
       <AppHeader title={t('taskNew.title', 'New task')} showBack />
-      <form className="app-main task-form" onSubmit={onSubmit}>
+      <form className="app-main" onSubmit={onSubmit}>
         {error ? <div className="banner banner--error">{error}</div> : null}
-        <div className="stack">
-          <div className="field">
-            <label className="field__label">{t('taskNew.title', 'Title')}</label>
-            <input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="field__label">{t('taskNew.description', 'Description')}</label>
-            <textarea className="textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="field__label">{t('taskNew.client', 'Client')}</label>
-            <select className="input" required value={clientId} onChange={(e) => {
-              const nextId = e.target.value;
-              setClientId(nextId);
-              setLocation(clientLocationForSelection(clients, nextId));
-              setLocationInvalid(false);
-            }}>
-              <option value="">—</option>
-              {clients.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
-          </div>
+        <div className="field">
+          <label className="field__label">{t('taskNew.title', 'Title')}</label>
+          <input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
-        <div className="stack">
-          <div className="field">
-            <label className="field__label">{t('taskNew.worker', 'Assign to')}</label>
-            <WorkerMultiSelect options={workers} value={workerIds} onChange={setWorkerIds} />
-            {workerIds.length === 0 ? (
-              <div className="hint">{t('workers.atLeastOne', 'Select at least one worker.')}</div>
-            ) : null}
-          </div>
-          <div className="field">
-            <label className="field__label">{t('taskNew.when', 'Scheduled at')}</label>
-            <input className="input" type="datetime-local" required value={when} onChange={(e) => setWhen(e.target.value)} />
-          </div>
+        <div className="field">
+          <label className="field__label">{t('taskNew.description', 'Description')}</label>
+          <textarea className="textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
-        <div className="stack">
-          <div className="field">
-            <label className="field__label">{t('taskNew.template', 'Checklist template')}</label>
-            <select className="input" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
-              <option value="">{t('taskNew.noTemplate', '— none —')}</option>
-              {templates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.label}</option>)}
-            </select>
-            <div className="hint">{t('taskNew.templateHint', 'The worker sees this checklist on the task and ticks items off as they go.')}</div>
-          </div>
-          <div className="field">
-            <label className="field__label">{t('taskNew.repeats', 'Repeats')}</label>
-            <select
-              className="input"
-              value={recurrence}
-              onChange={(e) => setRecurrence(e.target.value as Recurrence)}
-            >
-              {RECURRENCE_OPTIONS.map((opt) => {
-                const lbl = recurrenceLabel(opt);
-                return <option key={opt} value={opt}>{t(lbl.i18n, lbl.fallback)}</option>;
-              })}
-            </select>
-          </div>
-          <div className="field">
-            <label className="field__label">
-              {t('location.label')} <span className="hint">({t('location.optional')})</span>
-            </label>
-            <LocationInput key={clientId} initial={location} onChange={(loc, state) => { setLocation(loc); setLocationInvalid(state === 'invalid'); }} />
-            {location ? <LocationMap location={location} /> : null}
-          </div>
+        <div className="field">
+          <label className="field__label">{t('taskNew.client', 'Client')}</label>
+          <select className="input" required value={clientId} onChange={(e) => setClientId(e.target.value)}>
+            <option value="">—</option>
+            {clients.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+          </select>
         </div>
-        <div className="action-bar">
-          <button className="btn btn--primary btn--block btn--lg" disabled={!ready || saving} type="submit">
-            {saving ? t('common.saving', 'Saving…') : t('taskNew.create', 'Create task')}
-          </button>
+        <div className="field">
+          <label className="field__label">{t('taskNew.worker', 'Assign to')}</label>
+          <select className="input" required value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
+            <option value="">—</option>
+            {workers.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
+          </select>
         </div>
+        <div className="field">
+          <label className="field__label">{t('taskNew.when', 'Scheduled at')}</label>
+          <input className="input" type="datetime-local" required value={when} onChange={(e) => setWhen(e.target.value)} />
+        </div>
+        <div className="field">
+          <label className="field__label">{t('taskNew.template', 'Checklist template')}</label>
+          <select className="input" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+            <option value="">{t('taskNew.noTemplate', '— none —')}</option>
+            {templates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.label}</option>)}
+          </select>
+          <div className="hint">{t('taskNew.templateHint', 'The worker sees this checklist on the task and ticks items off as they go.')}</div>
+        </div>
+        <div className="field">
+          <label className="field__label">{t('taskNew.repeats', 'Repeats')}</label>
+          <select
+            className="input"
+            value={recurrence}
+            onChange={(e) => setRecurrence(e.target.value as Recurrence)}
+          >
+            {RECURRENCE_OPTIONS.map((opt) => {
+              const lbl = recurrenceLabel(opt);
+              return <option key={opt} value={opt}>{t(lbl.i18n, lbl.fallback)}</option>;
+            })}
+          </select>
+        </div>
+        <button className="btn btn--primary btn--block btn--lg" disabled={!ready || saving} type="submit">
+          {saving ? t('common.saving', 'Saving…') : t('taskNew.create', 'Create task')}
+        </button>
       </form>
     </AppShell>
   );

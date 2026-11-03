@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useLanguage } from '@/app/providers/LanguageContext';
-import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
@@ -8,13 +6,11 @@ import { useAuth } from '@/app/providers/AuthContext';
 import { getSupabase } from '@/services/supabase/client';
 import { useDirectory } from '@/app/providers/DirectoryContext';
 import type { AppNotification } from '@/domain/models/ops';
-import { formatDateAndTime } from '@/lib/datetime';
+import { APP_TIME_ZONE } from '@/lib/dates';
 import { Icon } from '@/components/Icon';
-import '@/styles/screens/field.css';
 
 export function NotificationsScreen() {
   const { t } = useTranslation();
-  const { language } = useLanguage();
   const { user } = useAuth();
   const { workers } = useDirectory();
   const [items, setItems] = useState<AppNotification[]>([]);
@@ -68,26 +64,18 @@ export function NotificationsScreen() {
         ) : (
           <div className="stack">
             {items.map((n) => {
-              const payload = n.payload as { title?: string; reason?: string; worker_id?: string; worker_ids?: string[] };
-              const ids = payload.worker_ids?.length ? payload.worker_ids : payload.worker_id ? [payload.worker_id] : [];
-              const workerName = ids
-                .map((id) => workers.get(id)?.fullName ?? workers.get(id)?.email)
-                .filter(Boolean)
-                .join(', ');
+              const payload = n.payload as { title?: string; worker_id?: string };
+              const workerId = payload.worker_id;
+              const workerName = workerId ? (workers.get(workerId)?.fullName ?? workers.get(workerId)?.email) : null;
               return (
-                <div key={n.id} className={`card note-item ${n.readAt ? '' : 'card--unread'}`}>
-                  <div className="card__title">{renderKind(n.kind, t)}</div>
+                <div key={n.id} className={`card ${n.readAt ? '' : 'card--unread'}`}>
+                  <div className="card__title">{renderKind(n.kind)}</div>
+                  <div className="card__meta">{new Date(n.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: APP_TIME_ZONE })}</div>
                   {payload.title ? (
-                    <div className="note-item__what">
+                    <div className="card__meta">
                       {payload.title}{workerName ? ` · ${workerName}` : ''}
                     </div>
                   ) : null}
-                  {payload.reason ? <div className="card__text">{payload.reason}</div> : null}
-                  <div className="card__meta">
-                    {formatDateAndTime(n.createdAt, language, {
-                      weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-                    })}
-                  </div>
                 </div>
               );
             })}
@@ -98,13 +86,12 @@ export function NotificationsScreen() {
   );
 }
 
-function renderKind(kind: string, t: TFunction): string {
+function renderKind(kind: string): string {
   switch (kind) {
-    case 'task.assigned':   return t('notifications.kind.assigned', 'New task assigned to you');
-    case 'task.submitted':  return t('notifications.kind.submitted', 'Task submitted for approval');
-    case 'task.approved':   return t('notifications.kind.approved', 'Your task was approved');
-    case 'task.rejected':   return t('notifications.kind.rejected', 'Your task was rejected');
-    case 'task.worker_rejected': return t('notifications.kind.workerRejected', 'Worker rejected assigned work');
+    case 'task.assigned':   return 'New task assigned to you';
+    case 'task.submitted':  return 'Task submitted for approval';
+    case 'task.approved':   return 'Your task was approved';
+    case 'task.rejected':   return 'Your task was rejected';
     default: return kind;
   }
 }

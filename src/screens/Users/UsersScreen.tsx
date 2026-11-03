@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/AppShell';
+import { useAuth } from '@/app/providers/AuthContext';
+import { features } from '@/config/features';
 import { AppHeader } from '@/components/AppHeader';
 import { getSupabase } from '@/services/supabase/client';
 import { invokeFunction } from '@/services/data/functions';
@@ -11,13 +13,15 @@ import '@/styles/screens/admin.css';
 interface ClientOpt { id: string; name: string }
 
 export function UsersScreen() {
+  const { user: me } = useAuth();
   const { t } = useTranslation();
   const directory = useDirectory();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [clients, setClients] = useState<ClientOpt[]>([]);
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<Role>('worker');
+  const [role, setRole] = useState<Role>('supervisor');
+  const [financeGrant, setFinanceGrant] = useState(false);
   const [clientId, setClientId] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -50,13 +54,13 @@ export function UsersScreen() {
   async function load() {
     const sb = getSupabase();
     const [{ data: ps }, { data: cs }] = await Promise.all([
-      sb.from('profiles').select('id, role, full_name, email, phone, client_id, active').order('full_name'),
+      sb.from('profiles').select('*').order('full_name'),
       sb.from('clients').select('id, name').order('name'),
     ]);
     setUsers((ps ?? []).map((p) => ({
       id: p.id, role: p.role, fullName: p.full_name ?? undefined,
       email: p.email ?? undefined, phone: p.phone ?? undefined,
-      clientId: p.client_id ?? undefined, active: p.active,
+      clientId: p.client_id ?? undefined, active: p.active, financeAccess: p.finance_access === true,
     })));
     setClients((cs ?? []).map((c) => ({ id: c.id, name: c.name })));
   }
@@ -67,22 +71,14 @@ export function UsersScreen() {
     e.preventDefault();
     setStatus('sending'); setError(null);
     try {
-      const sb = getSupabase();
-      const { data: { session } } = await sb.auth.getSession();
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token ?? ''}`,
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          role,
-          full_name: fullName || undefined,
-          client_id: role === 'client' ? clientId || undefined : undefined,
-        }),
+      const res = await invokeFunction('invite-user', {
+        email: email.trim(),
+        role,
+        full_name: fullName || undefined,
+        client_id: role === 'client' ? clientId || undefined : undefined,
+        finance_access: role === 'manager' ? financeGrant : undefined,
       });
-      if (!resp.ok) throw new Error(await resp.text());
+      if (!res.ok) throw new Error(res.error ?? 'invite failed');
       setStatus('ok');
       setEmail(''); setFullName(''); setClientId('');
       await load();
@@ -93,6 +89,14 @@ export function UsersScreen() {
     }
   }
 
+  async function updateProfile(u: AppUser, patch: Record<string, unknown>) {
+    setError(null);
+    const { error: err } = await getSupabase().from('profiles').update(patch).eq('id', u.id);
+    if (err) { setError(err.message); return; }
+    await load();
+    await directory.refresh();
+  }
+
   async function toggleActive(u: AppUser) {
     await getSupabase().from('profiles').update({ active: !u.active }).eq('id', u.id);
     await load();
@@ -101,14 +105,14 @@ export function UsersScreen() {
 
   return (
     <AppShell>
-      <AppHeader title={t('users.title', 'Team & clients')} showBack />
+      <AppHeader title={features.legacyTasks ? t('users.title', 'Team & clients') : t('users.teamTitle', 'Team')} showBack />
       <main className="app-main">
         <form className="card adm-card" onSubmit={invite}>
           <div className="adm-card__title">{t('users.invite', 'Invite someone')}</div>
           <div className="adm-fields adm-fields--md-2">
             <div className="field">
               <label className="field__label">{t('auth.email', 'Email')}</label>
-              <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input className="input" type="email" dir="ltr" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="field">
               <label className="field__label">{t('users.name', 'Name')}</label>
@@ -117,11 +121,11 @@ export function UsersScreen() {
             <div className="field">
               <label className="field__label">{t('users.role', 'Role')}</label>
               <select className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-                <option value="worker">{t('roles.worker', 'Worker')}</option>
-                <option value="manager">{t('roles.manager', 'Manager')}</option>
-                <option value="supervisor">{t('roles.supervisor', 'Supervisor')}</option>
-                <option value="auditor">{t('roles.auditor', 'Accountant')}</option>
-                <option value="client">{t('roles.client', 'Client')}</option>
+                <option value="supervisor">{t('fo.role.supervisor', 'Supervisor')}</option>
+                <option value="manager">{t('fo.role.manager', 'Manager')}</option>
+                <option value="finance">{t('fo.role.finance', 'Finance')}</option>
+                {features.legacyTasks ? <option value="client">{t('fo.role.client', 'Client')}</option> : null}
+                {features.legacyTasks ? <option value="worker">{t('fo.role.worker', 'Worker (older task list)')}</option> : null}
               </select>
             </div>
             {role === 'client' ? (
@@ -134,6 +138,12 @@ export function UsersScreen() {
               </div>
             ) : null}
           </div>
+          {role === 'manager' ? (
+            <label className="adm-check">
+              <input type="checkbox" checked={financeGrant} onChange={(e) => setFinanceGrant(e.target.checked)} />
+              {t('fo.users.grantFinance', 'Also grant finance (month close, post-close edits)')}
+            </label>
+          ) : null}
           <button className="btn btn--primary btn--block" type="submit" disabled={status === 'sending'}>
             {status === 'sending' ? t('users.sending', 'Sending invite…') : t('users.sendInvite', 'Send invite')}
           </button>
@@ -141,27 +151,51 @@ export function UsersScreen() {
           {error ? <div className="banner banner--error">{error}</div> : null}
         </form>
 
-        <div className="section-title">{t('users.everyone', 'Everyone')}</div>
+        <h2 className="section-title">{t('users.everyone', 'Everyone')}</h2>
         <div className="adm-list adm-list--grid">
-          {users.map((u) => (
+          {users.filter((u) => features.legacyTasks || (u.role !== 'client' && u.role !== 'worker')).map((u) => (
             <div key={u.id} className={`card adm-person${u.active ? '' : ' adm-person--off'}`}>
               <div>
                 <div className="adm-person__head">
                   <div className="card__title"><bdi>{u.fullName ?? u.email ?? u.id}</bdi></div>
-                  <span className="badge">{t(`roles.${u.role}`, u.role)}</span>
-                  {u.active ? null : <span className="badge adm-tag--off">{t('users.inactive', 'inactive')}</span>}
+                  <span className="badge">{t(`fo.role.${u.role}`, u.role)}</span>
+                  {u.financeAccess && u.role !== 'finance' ? <span className="badge">{t('fo.role.finance', 'Finance')}</span> : null}
+                  {u.active ? null : <span className="badge adm-tag--off">{t('fo.status.inactive', 'Inactive')}</span>}
                 </div>
                 {u.fullName && u.email ? <div className="card__meta"><bdi>{u.email}</bdi></div> : null}
               </div>
+              {u.role !== 'client' ? (
+                <div className="adm-fields">
+                  {/* Your own role cannot be changed here, so the last manager can't demote themself (UAT D1). */}
+                  <select className="input" value={u.role} aria-label={t('users.role', 'Role') ?? ''}
+                    disabled={u.id === me?.id} title={u.id === me?.id ? t('users.ownRole', 'Another manager must change your role.') ?? undefined : undefined}
+                    onChange={(e) => void updateProfile(u, { role: e.target.value })}>
+                    <option value="supervisor">{t('fo.role.supervisor', 'Supervisor')}</option>
+                    <option value="manager">{t('fo.role.manager', 'Manager')}</option>
+                    <option value="finance">{t('fo.role.finance', 'Finance')}</option>
+                    {features.legacyTasks ? <option value="worker">{t('fo.role.worker', 'Worker (older task list)')}</option> : null}
+                  </select>
+                  {u.role === 'manager' ? (
+                    <label className="adm-check">
+                      <input type="checkbox" checked={u.financeAccess === true}
+                        onChange={(e) => void updateProfile(u, { finance_access: e.target.checked })} />
+                      {t('fo.users.financeGrant', 'Finance access')}
+                    </label>
+                  ) : null}
+                </div>
+              ) : null}
               <div className="adm-actions">
                 {u.role !== 'client' ? (
                   <button className="btn btn--ghost btn--sm" onClick={() => setPasswordFor(u)}>
                     {t('users.setPassword', 'Set password')}
                   </button>
                 ) : null}
-                <button className="btn btn--ghost btn--sm" onClick={() => toggleActive(u)}>
-                  {u.active ? t('users.deactivate', 'Deactivate') : t('users.activate', 'Activate')}
-                </button>
+                {/* Nobody can switch off their own account (UAT M4; the database refuses it too). */}
+                {u.id !== me?.id ? (
+                  <button className="btn btn--ghost btn--sm" onClick={() => toggleActive(u)}>
+                    {u.active ? t('users.deactivate', 'Deactivate') : t('users.activate', 'Activate')}
+                  </button>
+                ) : null}
               </div>
               {pwTarget?.id === u.id ? (
                 <div className="adm-tile">

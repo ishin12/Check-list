@@ -43,23 +43,33 @@ Open the **SQL Editor** and run each file's contents, in this order:
 3. `supabase/migrations/0003_extra_work.sql` — the worker "extra work done" log.
 4. `supabase/migrations/0004_signing.sql` — WhatsApp signing links, `app_settings`,
    `approval_method`, and the two public sign RPCs.
-5. `supabase/migrations/0005_storage.sql` — `proofs` storage bucket and policies (see §3).
-6. `supabase/migrations/0006_task_workers.sql` — several workers per task (`task_workers`).
-7. `supabase/migrations/0007_task_location.sql` — optional Google Maps location on tasks.
+5. `supabase/migrations/0005_roles.sql` — adds the `supervisor` and `finance` roles.
+   **Run it on its own and let it finish before step 6** (Postgres can't use a new
+   enum value in the same transaction that adds it).
+6. `supabase/migrations/0006_field_ops.sql` — projects, employees, visits, project
+   tasks, recurring items, task photos, labor allocation (≤ 1.0 day per worker,
+   enforced in the database), month close and visit reports.
+7. `supabase/migrations/0007_field_ops_app.sql` — policies and helpers the field
+   screens need (supervisor checklist tasks, day-load lookup, staff directory,
+   working days, same-visit correction of a "Done" tap, finance post-close
+   inserts, Urdu names for the seeded configuration).
 
-0005–0007 are additive and safe to re-run. Rollback statements are at the bottom
-of each file.
+> **Upgrading the live project:** run 0005 → 0006 → 0007 in the SQL editor
+> *before* merging this branch to `main` (merging deploys the new screens).
+> The app keeps loading if the migrations are late, but the field screens
+> show an error until they are applied.
 
-## 3. Storage bucket and policies
-Run `supabase/migrations/0005_storage.sql` in the SQL Editor (after 0004). It is safe
-to re-run and creates:
-- the private `proofs` bucket (50 MB limit; JPEG/PNG/WebP/HEIC photos, MP4/MOV/WebM videos);
-- the `storage.objects` policies: managers can do everything, the assigned worker can
-  read/add/delete files in their task's folder (`<task id>/...`), and clients can read
-  only the `finish` proof of an approved task of their own client. Anonymous users get nothing.
+Test the migrations locally before running them on the live project:
+```
+PGHOST=... PGPORT=... PGUSER=postgres npm run test:db
+```
+This builds a throwaway database, applies every migration, and runs the
+business-rule and acceptance tests in `supabase/tests/`. Never point it at production.
 
-Supabase creates **no** default storage policy, so without this migration uploads fail
-with "bucket not found" or row-level-security errors. Do not create the bucket by hand.
+## 3. Create the storage bucket
+1. **Storage → New bucket** → name `proofs`, **private** (uncheck "public bucket").
+2. Enable RLS; the default "auth.uid() is not null" insert/select policy is enough
+   — RLS on `task_proofs` already controls what shows in the UI.
 
 ## 4. Make yourself the first manager
 Email/password users are created by the `invite-user` function, but you need a
@@ -73,7 +83,7 @@ values ('<your-auth.uid>', 'manager', 'Your Name', 'you@example.com', true);
 ## 5. Deploy the Edge Functions
 ```
 supabase functions deploy notify --no-verify-jwt
-supabase functions deploy invite-user
+supabase functions deploy invite-user   # redeploy: now accepts supervisor / finance roles
 supabase functions deploy set-password
 supabase functions deploy send-sign-link
 supabase functions deploy send-reminder --no-verify-jwt
@@ -92,6 +102,11 @@ supabase secrets set WHATSAPP_PHONE_NUMBER_ID=<phone number id>
 
 Create a **Database Webhook** on `notifications` (INSERT) → `notify` so in-app
 notifications also email.
+
+WhatsApp client signing is **off** by default (`VITE_FEATURE_WHATSAPP_SIGNING=0`).
+While it's off, no signing links are sent, so `send-reminder` and `expire-signing`
+have nothing to act on and nothing is auto-approved. Set the flag to `1` in the
+build environment to turn it back on.
 
 ## 6. Schedule the cron sweeps (pg_cron)
 In SQL Editor (enable `pg_cron` + `pg_net` extensions first under Database → Extensions):

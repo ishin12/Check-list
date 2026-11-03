@@ -27,6 +27,9 @@ export class ApiStorageProvider implements StorageProvider {
   deleteTemplate(): Promise<void> {
     return this.notImplemented();
   }
+  setTemplateActive(): Promise<void> {
+    return this.notImplemented();
+  }
   getSettings(): Promise<Settings> {
     return this.notImplemented();
   }

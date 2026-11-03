@@ -29,7 +29,7 @@ Deno.serve(async (req: Request) => {
     const url = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Verify the caller has full administrative access.
+    // Verify the caller is a manager.
     const caller = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -37,9 +37,7 @@ Deno.serve(async (req: Request) => {
     if (!callerUser?.user) return cors(new Response('Unauthorized', { status: 401 }));
     const { data: callerProfile } = await caller
       .from('profiles').select('role').eq('id', callerUser.user.id).maybeSingle();
-    if (callerProfile?.role !== 'manager' && callerProfile?.role !== 'supervisor') {
-      return cors(new Response('Forbidden', { status: 403 }));
-    }
+    if (callerProfile?.role !== 'manager') return cors(new Response('Forbidden', { status: 403 }));
 
     // Update the target user's password.
     const admin = createClient(url, serviceKey);

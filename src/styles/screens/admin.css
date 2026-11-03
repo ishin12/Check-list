@@ -187,3 +187,27 @@ html[lang='ur'] .adm-log__when,
 html[lang='ur'] .adm-log__who { line-height: 2; }
 html[lang='ur'] .adm-log__what,
 html[lang='ur'] .adm-row__text { line-height: 1.8; }
+
+/* Audit: field-level old → new values under a log row */
+.adm-log__changes {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  padding-inline-start: calc(var(--space-3) + 16px);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+.adm-log__changes li + li { margin-top: 2px; }
+html[lang='ur'] .adm-log__changes { line-height: 2; }
+
+/* Switched-off records stay listed, one tone step down */
+.adm-row--off { background: var(--color-surface-2); }
+.adm-row--off .card__title { color: var(--color-text-muted); }
+.adm-title-tag { margin-inline-start: var(--space-2); vertical-align: middle; }
+
+/* Checklist editor: per-item options on one wrapping line */
+.adm-task-opts { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--space-4); row-gap: var(--space-2); }
+.adm-task-opts__freq { flex: 1 1 180px; max-width: 260px; }

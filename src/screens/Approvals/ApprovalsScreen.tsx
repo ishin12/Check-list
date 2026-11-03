@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useLanguage } from '@/app/providers/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '@/app/providers/LanguageContext';
 import { Link } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
 import { AppHeader } from '@/components/AppHeader';
@@ -8,6 +8,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { listTasks } from '@/services/data/tasks';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
+import { APP_TIME_ZONE } from '@/lib/dates';
 import { formatDateAndTime } from '@/lib/datetime';
 import { Icon } from '@/components/Icon';
 import '@/styles/screens/field.css';
@@ -45,6 +46,7 @@ export function ApprovalsScreen() {
                   </div>
                   <div className="card__title">{x.title}</div>
                   <TaskWhoLine task={x} />
+                  <div className="card__meta">{new Date(x.scheduledAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: APP_TIME_ZONE })}</div>
                 </div>
               </Link>
             ))}

@@ -32,17 +32,6 @@ jobs:
           VITE_DEMO_MODE: '0'
           VITE_SUPABASE_URL: https://qyznhoimffltdigickjl.supabase.co
           VITE_SUPABASE_ANON_KEY: sb_publishable_8GlzwxVm3OTezLF18jmWyQ_UtI924W4
-      # Client demo (in-browser sample data, no backend) served at /Check-list/demo/.
-      # Pinned to the tested commit of the field-ops development branch
-      # (accepted after the 30 Sep 2026 retest); bump it to publish a newer demo.
-      - uses: actions/checkout@v4
-        with:
-          ref: 2949faab15ea601ba3edbbba8b2bfaab4e549f0b
-          path: demo-src
-      - run: npm ci
-        working-directory: demo-src
-      - run: npm run build:demo && cp -r dist-demo ../dist/demo
-        working-directory: demo-src
       - uses: actions/configure-pages@v5
         with:
           enablement: true

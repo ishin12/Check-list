@@ -1,0 +1,45 @@
+import type { TFunction } from 'i18next';
+import { errorText } from './useAsync';
+
+/**
+ * Turns a database refusal into a sentence the user can act on. The raw text
+ * is kept after the explanation so support can still see what happened.
+ */
+export function friendlyError(e: unknown, t: TFunction): string {
+  const raw = errorText(e);
+  const known: [RegExp, string, string][] = [
+    [/BR-001/, 'err.br001', 'This worker is already booked for the full day. A worker cannot exceed 1.0 day.'],
+    [/duration_full_or_half|BR-002/, 'err.br002', 'Labor must be a full day (1.0) or half day (0.5).'],
+    [/labor_one_per_visit/, 'err.duplicateCrew', 'This worker is already on this visit.'],
+    [/BR-009/, 'err.br009', 'This month is closed. Only finance can change its labor.'],
+    [/BR-010/, 'err.br010', 'Enter a reason to change labor in a closed month.'],
+    [/your own (account|role)/, 'err.self', 'You cannot deactivate your own account or change your own role. Ask another manager.'],
+    [/BR-008/, 'err.br008', 'This project is completed or closed. It keeps its history but takes no new visits.'],
+    [/STAGE-GATE/, 'err.stageGate', 'The current stage checklist is not finished. Complete its required items on a visit first.'],
+    [/MONTH-OPEN-VISITS/, 'err.monthOpenVisits', 'A visit in this month is still in progress. Complete it before closing the month.'],
+    [/WORK-TYPE: this work type is switched off/, 'err.workTypeOff', 'This work type is switched off. Choose another one.'],
+    [/WORK-TYPE/, 'err.workType', 'Choose the work type first.'],
+    [/TARGET: /, 'err.targetOff', 'This operational target is switched off. Choose another one.'],
+    [/labor_project_or_target|labor_visit_needs_project/, 'err.placeRequired', 'Choose either a project or an operational target.'],
+    [/_name_(en_|ar_)?unique/, 'err.duplicateName', 'An entry with this name already exists. Edit or reactivate it instead.'],
+    [/_names"/, 'err.namesRequired', 'Enter the name in English and Arabic.'],
+    [/BR-014/, 'err.br014', 'Completed records cannot be deleted. Archive, close or void instead.'],
+    [/visit in progress and cannot be closed/, 'err.projectOpenVisit', 'This project has a visit in progress. Complete it first.'],
+    [/cannot start before its date/, 'err.futureVisit', 'A visit cannot be started before its date.'],
+    [/cannot be closed/, 'err.projectOpenTasks', 'This project still has open or follow-up tasks.'],
+    [/cannot move from/, 'err.visitState', 'This visit cannot change to that status.'],
+    [/cannot be reopened|cannot go back/, 'err.taskState', 'This task cannot go back to that status.'],
+    [/cannot change status/, 'err.projectFinal', 'This project is completed or closed and cannot change status.'],
+    [/month_closes_pkey/, 'err.monthAlreadyClosed', 'This month is already closed.'],
+    [/row-level security|permission denied/i, 'err.permission', 'You do not have permission to do this.'],
+    [/Failed to fetch|NetworkError|network/i, 'err.network', 'Could not reach the server. Nothing was saved — check the connection and try again.'],
+  ];
+  // Half a day already booked: say only a half day is free (UAT v2.2).
+  if (/BR-001: employee already has 0\.5 /.test(raw)) {
+    return t('err.br001half', 'This worker already has half a day booked that day. Only a half day is free.');
+  }
+  for (const [rx, key, fallback] of known) {
+    if (rx.test(raw)) return `${t(key, fallback)}`;
+  }
+  return `${t('err.saveFailed', 'Not saved:')} ${raw}`;
+}

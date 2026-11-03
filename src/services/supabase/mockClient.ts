@@ -15,22 +15,34 @@
  * Exposes window.__demo for the role switcher and Settings reset button.
  */
 import { openDB, type IDBPDatabase } from 'idb';
+import { addDays, localToday } from '@/lib/dates';
+import {
+  FIELD_OPS_TABLES,
+  fieldOpsAfter,
+  fieldOpsBefore,
+  fieldOpsDefaults,
+  isFieldOpsTable,
+  seedFieldOps,
+  type GuardContext,
+} from './mockFieldOps';
 
 const DB_NAME = 'checklist-demo';
-const DB_VERSION = 2; // v2 adds the task_workers store
+// Re-seed when this changes (bump on each schema-affecting change).
+const SEED_VERSION = 'v15';
+const DB_VERSION = 3; // 2: field-ops tables (0006); 3: work types + operational targets (0009)
 
 const TABLES = [
   'profiles',
   'clients',
   'templates',
   'tasks',
-  'task_workers',
   'task_proofs',
   'client_notes',
   'notifications',
   'audit_log',
   'signing_links',
   'app_settings',
+  ...FIELD_OPS_TABLES,
 ] as const;
 type Table = typeof TABLES[number];
 
@@ -45,13 +57,25 @@ const state: Record<Table, Row[]> = {
   clients: [],
   templates: [],
   tasks: [],
-  task_workers: [],
   task_proofs: [],
   client_notes: [],
   notifications: [],
   audit_log: [],
   signing_links: [],
   app_settings: [],
+  project_types: [],
+  project_stages: [],
+  projects: [],
+  employees: [],
+  visits: [],
+  project_tasks: [],
+  project_recurring_items: [],
+  task_photos: [],
+  month_closes: [],
+  labor_allocations: [],
+  visit_reports: [],
+  work_types: [],
+  operational_targets: [],
 };
 const blobs: Map<string, Blob> = new Map();
 
@@ -84,19 +108,92 @@ async function loadAll(): Promise<void> {
     if (v) blobs.set(String(k), v);
   }
   const seeded = await conn.get('meta', 'seeded');
-  if (seeded !== 'v7') await seedDemo();
-  else if (state.task_workers.length === 0 && state.tasks.length > 0) {
-    // Demo data created before multi-worker tasks: mirror migration 0006's backfill.
-    for (const t of state.tasks) addTaskWorker(t.id, t.assigned_worker_id, false);
-    await persist('task_workers');
-  }
+  if (seeded !== SEED_VERSION) await seedDemo();
   const u = await conn.get('meta', 'activeUserId');
   if (typeof u === 'string') activeUserId = u;
 }
 
 function ensureReady(): Promise<void> {
-  if (!ready) ready = loadAll();
+  if (!ready) ready = loadAll().then(async () => { localRev = Number((await (await db()).get('meta', 'rev')) ?? 0); });
   return ready;
+}
+
+/** Tables audited like migration 0008 (checklists, team, setup). */
+const EXTRA_AUDITED = new Set<string>(['templates', 'profiles', 'project_types', 'project_stages', 'app_settings']);
+
+/**
+ * Row-level security for supervisors, as in 0006/0007: they see only the
+ * projects they supervise and those projects' visits, tasks, photos, reports
+ * and labor. Managers and anyone with finance see everything.
+ */
+function rowVisible(table: Table, row: Row): boolean {
+  const me = state.profiles.find((p) => p.id === activeUserId);
+  if (!me || me.role !== 'supervisor' || me.finance_access === true) return true;
+  const supervises = (projectId: unknown) => state.projects.some((p) => p.id === projectId && p.supervisor_id === activeUserId);
+  switch (table) {
+    case 'projects': return row.supervisor_id === activeUserId;
+    case 'visits':
+    case 'project_tasks':
+    case 'project_recurring_items':
+    case 'task_photos': return supervises(row.project_id);
+    case 'labor_allocations': return row.supervisor_id === activeUserId || supervises(row.project_id);
+    case 'visit_reports': {
+      const visit = state.visits.find((v) => v.id === row.visit_id);
+      return !!visit && supervises(visit.project_id);
+    }
+    case 'clients': return state.projects.some((p) => p.client_id === row.id && p.supervisor_id === activeUserId);
+    default: return true;
+  }
+}
+
+// Several tabs share one IndexedDB. Every statement runs under a cross-tab
+// lock, first reloading what another tab committed, and every write commits
+// all tables with a new revision — so two tabs can never overwrite each
+// other's rows (the demo's stand-in for Postgres transactions, TC-12).
+let localRev = 0;
+
+function withDbLock<T>(fn: () => Promise<T>): Promise<T> {
+  const locks = typeof navigator !== 'undefined' ? (navigator as unknown as { locks?: { request(name: string, cb: () => Promise<T>): Promise<T> } }).locks : undefined;
+  return locks?.request ? locks.request('checklist-demo-db', fn) : fn();
+}
+
+async function syncFromDb(): Promise<void> {
+  const conn = await db();
+  const rev = Number((await conn.get('meta', 'rev')) ?? 0);
+  if (rev === localRev) return;
+  for (const t of TABLES) state[t] = (await conn.getAll(t)) as Row[];
+  for (const k of await conn.getAllKeys('blobs')) {
+    if (blobs.has(String(k))) continue;
+    const v = (await conn.get('blobs', k)) as Blob | undefined;
+    if (v) blobs.set(String(k), v);
+  }
+  localRev = rev;
+}
+
+async function commitAll(): Promise<void> {
+  const conn = await db();
+  const tx = conn.transaction([...TABLES, 'meta'], 'readwrite');
+  for (const t of TABLES) {
+    const store = tx.objectStore(t);
+    await store.clear();
+    for (const row of state[t]) await store.put(row);
+  }
+  const meta = tx.objectStore('meta');
+  const rev = Number((await meta.get('rev')) ?? 0) + 1;
+  await meta.put(rev, 'rev');
+  await tx.done;
+  localRev = rev;
+}
+
+/** Runs a statement against the latest shared data; commits it if it wrote. */
+function atomically<T>(fn: () => T | Promise<T>, write: boolean): Promise<T> {
+  return ensureReady().then(() => withDbLock(async () => {
+    await syncFromDb();
+    const out = await fn();
+    const failed = !!(out && typeof out === 'object' && 'error' in (out as object) && (out as unknown as { error: unknown }).error);
+    if (write && !failed) await commitAll();
+    return out;
+  }));
 }
 
 async function persist(table: Table): Promise<void> {
@@ -161,11 +258,11 @@ function audit(action: string, entity: string, entityId: string | null, payload:
     action,
     entity,
     entity_id: entityId,
-    payload,
+    // A snapshot: later writes to the same row must not change this entry.
+    payload: JSON.parse(JSON.stringify(payload)),
     at: new Date().toISOString(),
   };
   state.audit_log.unshift(row);
-  void persist('audit_log');
 }
 
 function notify(userId: string, kind: string, payload: Record<string, unknown>): void {
@@ -179,36 +276,7 @@ function notify(userId: string, kind: string, payload: Record<string, unknown>):
     created_at: new Date().toISOString(),
   };
   state.notifications.unshift(row);
-  void persist('notifications');
   fireChange('notifications', 'INSERT', row);
-}
-
-/**
- * task_workers row insert (mirrors 0006): notifies the added worker unless
- * they are the task's lead (the tasks insert trigger already notified them).
- */
-function addTaskWorker(taskId: string, workerId: string, withNotify = true): void {
-  const id = `${taskId}:${workerId}`;
-  if (state.task_workers.some((r) => r.id === id)) return;
-  state.task_workers.push({
-    id, task_id: taskId, worker_id: workerId, created_at: new Date().toISOString(),
-  });
-  void persist('task_workers');
-  const task = state.tasks.find((t) => t.id === taskId);
-  if (withNotify && task && task.assigned_worker_id !== workerId) {
-    notify(workerId, 'task.assigned', {
-      task_id: task.id, title: task.title, scheduled_at: task.scheduled_at,
-    });
-  }
-}
-
-/** Workers on a task, oldest first; falls back to the lead (mirrors 0006). */
-function workerIdsFor(task: Row): string[] {
-  const ids = state.task_workers
-    .filter((r) => r.task_id === task.id)
-    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
-    .map((r) => r.worker_id as string);
-  return ids.length ? ids : [task.assigned_worker_id];
 }
 
 function onTaskInsert(task: Row): void {
@@ -216,20 +284,15 @@ function onTaskInsert(task: Row): void {
     task_id: task.id, title: task.title, scheduled_at: task.scheduled_at,
   });
   audit('task.created', 'task', task.id, { status: task.status });
-  addTaskWorker(task.id, task.assigned_worker_id); // mirror trigger
 }
 
 function onTaskUpdate(prev: Row, next: Row): void {
-  if (prev.assigned_worker_id !== next.assigned_worker_id) {
-    addTaskWorker(next.id, next.assigned_worker_id); // mirror trigger
-  }
   if (prev.status !== next.status) {
     audit(`task.${next.status}`, 'task', next.id, { status: next.status });
     if (next.status === 'submitted') {
-      for (const m of state.profiles.filter((p) => (p.role === 'manager' || p.role === 'supervisor') && p.active)) {
+      for (const m of state.profiles.filter((p) => p.role === 'manager' && p.active)) {
         notify(m.id, 'task.submitted', {
           task_id: next.id, title: next.title, worker_id: next.assigned_worker_id,
-          worker_ids: workerIdsFor(next),
         });
       }
     } else if (next.status === 'approved' || next.status === 'rejected') {
@@ -242,12 +305,16 @@ function onTaskUpdate(prev: Row, next: Row): void {
   }
 }
 
+function guardCtx(): GuardContext {
+  return { state: state as Record<string, Row[]>, actorId: activeUserId, audit };
+}
+
 // ---------------------------------------------------------------------------
 // Query builder
 // ---------------------------------------------------------------------------
 
 type Op = 'select' | 'insert' | 'update' | 'upsert' | 'delete';
-interface SelectEmbed { alias: string; table: Table; cols: string[]; many: boolean }
+interface SelectEmbed { alias: string; table: Table; cols: string[] }
 
 class Query<T = any> implements PromiseLike<{ data: T; error: { message: string } | null }> {
   private op: Op = 'select';
@@ -265,13 +332,22 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
     this.embeds = parseEmbeds(cols);
     return this;
   }
-  insert(data: Row | Row[]): this { this.op = 'insert'; this.payload = data; return this; }
-  update(data: Row): this { this.op = 'update'; this.payload = data; return this; }
+  insert(data: Partial<Row> | Partial<Row>[]): this { this.op = 'insert'; this.payload = data as Row | Row[]; return this; }
+  update(data: Partial<Row>): this { this.op = 'update'; this.payload = data as Row; return this; }
   upsert(data: Row | Row[]): this { this.op = 'upsert'; this.payload = data; return this; }
   delete(): this { this.op = 'delete'; return this; }
 
   eq(col: string, val: unknown): this {
     this.filters.push((r) => String(r[col] ?? '') === String(val ?? ''));
+    return this;
+  }
+  neq(col: string, val: unknown): this {
+    this.filters.push((r) => String(r[col] ?? '') !== String(val ?? ''));
+    return this;
+  }
+  in(col: string, vals: unknown[]): this {
+    const set = new Set(vals.map((v) => String(v ?? '')));
+    this.filters.push((r) => set.has(String(r[col] ?? '')));
     return this;
   }
   gte(col: string, val: unknown): this {
@@ -280,11 +356,6 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
   }
   lte(col: string, val: unknown): this {
     this.filters.push((r) => (r[col] ?? '') <= (val as any));
-    return this;
-  }
-  in(col: string, vals: unknown[]): this {
-    const set = new Set(vals.map((v) => String(v)));
-    this.filters.push((r) => set.has(String(r[col] ?? '')));
     return this;
   }
   is(col: string, val: null | boolean): this {
@@ -304,11 +375,11 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
     onFulfilled?: ((v: { data: any; error: { message: string } | null }) => TR1 | PromiseLike<TR1>) | null,
     onRejected?: ((reason: any) => TR2 | PromiseLike<TR2>) | null,
   ): PromiseLike<TR1 | TR2> {
-    return ensureReady().then(() => this.run()).then(onFulfilled as any, onRejected as any);
+    return atomically(() => this.run(), this.op !== 'select').then(onFulfilled as any, onRejected as any);
   }
 
   private filterRows(): Row[] {
-    let rows = state[this.table].slice();
+    let rows = state[this.table].filter((r) => rowVisible(this.table, r));
     for (const f of this.filters) rows = rows.filter(f);
     if (this.orderBy) {
       const { col, asc } = this.orderBy;
@@ -325,14 +396,6 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
   private project(row: Row): Row {
     const projected: Row = { ...row };
     for (const emb of this.embeds) {
-      if (emb.many) {
-        // One-to-many child embed (e.g. tasks -> task_workers via task_id).
-        projected[emb.alias] = state[emb.table]
-          .filter((r) => r.task_id === row.id)
-          .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
-          .map((r) => pick(r, emb.cols));
-        continue;
-      }
       const fkCol = guessFkCol(this.table, emb.table, emb.alias);
       const target = state[emb.table].find((r) => r.id === row[fkCol]);
       projected[emb.alias] = target ? [pick(target, emb.cols)] : [];
@@ -350,55 +413,99 @@ class Query<T = any> implements PromiseLike<{ data: T; error: { message: string 
         case 'insert': {
           const list = Array.isArray(this.payload) ? this.payload : [this.payload!];
           const inserted: Row[] = [];
-          for (const data of list) {
-            const row: Row = withDefaults(this.table, { ...data, id: data.id ?? crypto.randomUUID() });
-            state[this.table].push(row);
-            inserted.push(row);
-            void persist(this.table);
+          const fieldOps = isFieldOpsTable(this.table);
+          const before = state[this.table].length;
+          try {
+            for (const data of list) {
+              const row: Row = withDefaults(this.table, { ...data, id: data.id ?? crypto.randomUUID() });
+              // Checked one by one against earlier rows of the same batch, like
+              // row triggers in a single INSERT statement.
+              if (fieldOps) fieldOpsBefore(this.table, 'INSERT', null, row, guardCtx());
+              state[this.table].push(row);
+              inserted.push(row);
+            }
+          } catch (e) {
+            state[this.table].splice(before);   // statement is atomic
+            throw e;
+          }
+          for (const row of inserted) {
+            if (EXTRA_AUDITED.has(this.table)) audit(`${this.table}.insert`, this.table, String(row.id), { old: null, new: row });
             if (this.table === 'tasks') onTaskInsert(row);
+            if (fieldOps) fieldOpsAfter(this.table, 'INSERT', null, row, guardCtx());
           }
           return formatResult(inserted, this.singleMode);
         }
         case 'update': {
           const target = this.filterRows();
           const updated: Row[] = [];
-          for (const row of target) {
-            const prev = { ...row };
-            if (
-              this.table === 'tasks' && 'assigned_worker_id' in (this.payload as Row) &&
-              (this.payload as Row).assigned_worker_id !== row.assigned_worker_id &&
-              !isManagerUser()
-            ) {
-              throw new Error('only managers can reassign a task'); // guard trigger
+          const fieldOps = isFieldOpsTable(this.table);
+          const prevs: Row[] = [];
+          try {
+            for (const row of target) {
+              const prev = { ...row };
+              const next: Row = { ...row, ...(this.payload as Row), updated_at: new Date().toISOString() };
+              // 0008 profiles_self_guard (UAT M4)
+              if (this.table === 'profiles' && row.id === activeUserId && row.active !== false && next.active === false) {
+                throw new Error('You cannot deactivate your own account');
+              }
+              if (this.table === 'profiles' && row.id === activeUserId && next.role !== row.role) {
+                throw new Error('You cannot change your own role');
+              }
+              if (fieldOps) {
+                next.updated_by = activeUserId;
+                fieldOpsBefore(this.table, 'UPDATE', prev, next, guardCtx());
+              }
+              Object.assign(row, next);
+              prevs.push(prev);
+              updated.push(row);
             }
-            Object.assign(row, this.payload as Row, { updated_at: new Date().toISOString() });
-            updated.push(row);
-            if (this.table === 'tasks') onTaskUpdate(prev, row);
+          } catch (e) {
+            updated.forEach((row, i) => { for (const k of Object.keys(row)) delete row[k]; Object.assign(row, prevs[i]); });
+            throw e;
           }
-          void persist(this.table);
+          updated.forEach((row, i) => {
+            // 0009: project types / stages are audited only when something changed.
+            const noop = (this.table === 'project_types' || this.table === 'project_stages')
+              && JSON.stringify({ ...prevs[i], updated_at: null, updated_by: null }) === JSON.stringify({ ...row, updated_at: null, updated_by: null });
+            if (EXTRA_AUDITED.has(this.table) && !noop) audit(`${this.table}.update`, this.table, String(row.id), { old: prevs[i], new: row });
+            if (this.table === 'tasks') onTaskUpdate(prevs[i], row);
+            if (fieldOps) fieldOpsAfter(this.table, 'UPDATE', prevs[i], row, guardCtx());
+          });
           return formatResult(updated, this.singleMode);
         }
         case 'upsert': {
           const list = Array.isArray(this.payload) ? this.payload : [this.payload!];
           const out: Row[] = [];
+          if (isFieldOpsTable(this.table)) {
+            throw new Error(`upsert is not supported on ${this.table} in demo mode; use insert/update`);
+          }
           for (const data of list) {
             const idx = state[this.table].findIndex((r) => r.id === data.id);
             if (idx >= 0) {
+              const prev = { ...state[this.table][idx] };
               Object.assign(state[this.table][idx], data, { updated_at: new Date().toISOString() });
               out.push(state[this.table][idx]);
+              if (EXTRA_AUDITED.has(this.table)) audit(`${this.table}.update`, this.table, String(data.id), { old: prev, new: state[this.table][idx] });
             } else {
               const row = withDefaults(this.table, { ...data, id: data.id ?? crypto.randomUUID() });
               state[this.table].push(row); out.push(row);
+              if (EXTRA_AUDITED.has(this.table)) audit(`${this.table}.insert`, this.table, String(row.id), { old: null, new: row });
             }
           }
-          void persist(this.table);
           return formatResult(out, this.singleMode);
         }
         case 'delete': {
           const target = this.filterRows();
+          // 0008: checklists are switched off, never deleted (BR-014).
+          if (this.table === 'templates' && target.length) throw new Error('BR-014: templates rows cannot be deleted; archive, close or void instead');
+          if (isFieldOpsTable(this.table)) {
+            for (const row of target) fieldOpsBefore(this.table, 'DELETE', row, null, guardCtx());
+          }
           const ids = new Set(target.map((r) => r.id));
           state[this.table] = state[this.table].filter((r) => !ids.has(r.id));
-          void persist(this.table);
+          if (isFieldOpsTable(this.table)) {
+            for (const row of target) fieldOpsAfter(this.table, 'DELETE', row, null, guardCtx());
+          }
           return formatResult(target, this.singleMode);
         }
       }
@@ -428,13 +535,13 @@ function pick(row: Row, cols: string[]): Row {
 
 /** Parse `actor:profiles!audit_log_actor_id_fkey(full_name, email)` embeds out of a select string. */
 function parseEmbeds(sel: string): SelectEmbed[] {
-  if (!sel.includes('(')) return [];
+  if (!sel.includes(':')) return [];
   const out: SelectEmbed[] = [];
-  const rx = /(?:(\w+):)?(\w+)(?:![\w_]+)?\(([^)]+)\)/g;
+  const rx = /(\w+):(\w+)!?[\w_]*\(([^)]+)\)/g;
   let m: RegExpExecArray | null;
   while ((m = rx.exec(sel))) {
     const cols = m[3].split(',').map((s) => s.trim());
-    out.push({ alias: m[1] ?? m[2], table: m[2] as Table, cols, many: !m[1] && m[2] === 'task_workers' });
+    out.push({ alias: m[1], table: m[2] as Table, cols });
   }
   return out;
 }
@@ -465,6 +572,9 @@ function withDefaults(table: Table, row: Row): Row {
   if (table === 'task_proofs') {
     base.uploaded_at ??= now;
     base.uploaded_by ??= activeUserId;
+  }
+  if (isFieldOpsTable(table)) {
+    return fieldOpsDefaults(table, base, activeUserId, state as Record<string, Row[]>);
   }
   if (table === 'notifications') {
     base.created_at ??= now;
@@ -555,13 +665,11 @@ export function getMockClient(): MockClient {
       },
     },
     async rpc(fn: string, args: Record<string, unknown>) {
-      await ensureReady();
-      return runRpc(fn, args);
+      return atomically(() => runRpc(fn, args), true);
     },
     functions: {
       async invoke(name: string, opts: { body: unknown }) {
-        await ensureReady();
-        return runFunction(name, (opts.body ?? {}) as Record<string, unknown>);
+        return atomically(() => runFunction(name, (opts.body ?? {}) as Record<string, unknown>), true);
       },
     },
     from(table: Table) { return new Query(table); },
@@ -613,10 +721,6 @@ export function getMockClient(): MockClient {
   return mock;
 }
 
-function isManagerUser(): boolean {
-  return state.profiles.some((p) => p.id === activeUserId && (p.role === 'manager' || p.role === 'supervisor') && p.active);
-}
-
 function parseFilterString(s: string | undefined): Subscription['filter'] {
   if (!s) return undefined;
   // Format: `user_id=eq.${uid}`
@@ -639,48 +743,17 @@ function runRpc(fn: string, args: Record<string, unknown>): { data: any; error: 
     const task = state.tasks.find((t) => t.id === link.task_id);
     if (!task) return { data: [], error: null };
     const client = state.clients.find((c) => c.id === task.client_id);
-    const names = state.task_workers
-      .filter((r) => r.task_id === task.id)
-      .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
-      .map((r) => state.profiles.find((p) => p.id === r.worker_id)?.full_name)
-      .filter((n): n is string => !!n);
-    const lead = state.profiles.find((p) => p.id === task.assigned_worker_id);
-    const workerName = names.length ? names.join(', ') : (lead?.full_name ?? '');
+    const worker = state.profiles.find((p) => p.id === task.assigned_worker_id);
     return {
       data: [{
         task_title: task.title,
         client_name: client?.name ?? '',
-        worker_name: workerName,
+        worker_name: worker?.full_name ?? '',
         scheduled_at: task.scheduled_at,
         expires_at: link.expires_at,
       }],
       error: null,
     };
-  }
-  if (fn === 'set_task_workers') {
-    if (!isManagerUser()) return { data: null, error: { message: 'only managers can change task workers' } };
-    const taskId = String(args.p_task ?? '');
-    const raw = Array.isArray(args.p_workers) ? (args.p_workers as unknown[]).map(String) : [];
-    const ids = [...new Set(raw)];
-    if (ids.length === 0) return { data: null, error: { message: 'at least one worker is required' } };
-    const okWorker = (id: string) =>
-      state.profiles.some((p) => p.id === id && p.role === 'worker' && p.active);
-    if (!ids.every(okWorker)) {
-      return { data: null, error: { message: 'every worker must be an active worker profile' } };
-    }
-    const task = state.tasks.find((t) => t.id === taskId);
-    if (!task) return { data: null, error: { message: 'task not found' } };
-    for (const id of ids) addTaskWorker(taskId, id); // notifies new non-lead workers
-    if (!ids.includes(task.assigned_worker_id)) {
-      const prev = { ...task };
-      task.assigned_worker_id = ids[0];
-      task.updated_at = new Date().toISOString();
-      onTaskUpdate(prev, task);
-      void persist('tasks');
-    }
-    state.task_workers = state.task_workers.filter((r) => r.task_id !== taskId || ids.includes(r.worker_id));
-    void persist('task_workers');
-    return { data: null, error: null };
   }
   if (fn === 'complete_signing') {
     const token = String(args.p_token ?? '');
@@ -691,7 +764,6 @@ function runRpc(fn: string, args: Record<string, unknown>): { data: any; error: 
     }
     link.signed_at = new Date().toISOString();
     link.signature_data_url = signature;
-    void persist('signing_links');
     const task = state.tasks.find((t) => t.id === link.task_id);
     if (task) {
       const prev = { ...task };
@@ -703,9 +775,22 @@ function runRpc(fn: string, args: Record<string, unknown>): { data: any; error: 
         signature: { dataUrl: signature, signedAt: new Date().toISOString() },
       });
       onTaskUpdate(prev, task);
-      void persist('tasks');
     }
     return { data: true, error: null };
+  }
+  if (fn === 'employee_day_load') {
+    // Mirrors 0007: non-voided day totals across all projects.
+    const from = String(args.p_from), to = String(args.p_to);
+    const totals = new Map<string, { employee_id: string; work_date: string; total: number }>();
+    for (const a of state.labor_allocations) {
+      const d = String(a.work_date).slice(0, 10);
+      if (a.voided_at || d < from || d > to) continue;
+      const key = `${a.employee_id}|${d}`;
+      const cur = totals.get(key) ?? { employee_id: a.employee_id, work_date: d, total: 0 };
+      cur.total += Number(a.duration);
+      totals.set(key, cur);
+    }
+    return { data: [...totals.values()], error: null };
   }
   return { data: null, error: { message: `unknown rpc ${fn}` } };
 }
@@ -741,7 +826,6 @@ function runFunction(name: string, body: Record<string, unknown>): { data: unkno
       created_at: new Date().toISOString(),
     };
     state.signing_links.unshift(row);
-    void persist('signing_links');
     audit('task.sign_link_sent', 'task', taskId, { status: 'sent' });
     // In demo there's no real WhatsApp — the link is shown to the manager directly.
     const signUrl = `${location.origin}${import.meta.env.BASE_URL}sign/${token}`.replace(/([^:]\/)\/+/g, '$1');
@@ -758,8 +842,9 @@ function runFunction(name: string, body: Record<string, unknown>): { data: unkno
     state.profiles.push({
       id, role, full_name: body.full_name ?? null, email,
       phone: body.phone ?? null, client_id: body.client_id ?? null, active: true,
+      finance_access: role === 'manager' && body.finance_access === true,
     });
-    void persist('profiles');
+    audit('profiles.insert', 'profiles', id, { old: null, new: state.profiles[state.profiles.length - 1] });
     return { data: { user_id: id }, error: null };
   }
   return { data: null, error: { message: `unknown function ${name}` } };
@@ -784,6 +869,7 @@ async function resetDemo(): Promise<void> {
   blobs.clear();
   for (const t of TABLES) state[t] = [];
   await seedDemo();
+  await withDbLock(commitAll);   // other open tabs reload the fresh seed
 }
 
 declare global {
@@ -808,18 +894,17 @@ if (typeof window !== 'undefined') {
 // ---------------------------------------------------------------------------
 
 async function seedDemo(): Promise<void> {
-  const now = new Date();
-  const iso = (d: Date) => d.toISOString();
-  const day = (offset: number, hour = 9, min = 0) => {
-    const d = new Date(now); d.setDate(d.getDate() + offset); d.setHours(hour, min, 0, 0); return iso(d);
-  };
+  // Seed times are Riyadh times so "today" matches on any device (UAT I05).
+  const today = localToday();
+  const pad2 = (n: number) => String(n).padStart(2, '0');
+  const day = (offset: number, hour = 9, min = 0) =>
+    new Date(`${addDays(today, offset)}T${pad2(hour)}:${pad2(min)}:00+03:00`).toISOString();
 
   state.profiles = [
-    { id: 'u-mgr', role: 'manager', full_name: 'Faisal (Manager)', email: 'faisal@demo.com', phone: null, client_id: null, active: true },
-    { id: 'u-sup', role: 'supervisor', full_name: 'Site supervisor', email: 'supervisor@demo.com', phone: null, client_id: null, active: true },
-    { id: 'u-wa', role: 'worker',  full_name: 'Ahmed',            email: 'ahmed@demo.com',   phone: null, client_id: null, active: true },
-    { id: 'u-wb', role: 'worker',  full_name: 'Sara',             email: 'sara@demo.com',    phone: null, client_id: null, active: true },
-    { id: 'u-aud', role: 'auditor', full_name: 'Finance auditor', email: 'auditor@demo.com', phone: null, client_id: null, active: true },
+    { id: 'u-mgr', role: 'manager', full_name: 'Faisal', email: 'faisal@demo.com', phone: null, client_id: null, active: true, finance_access: true },
+    { id: 'u-wa', role: 'supervisor', full_name: 'Ahmed', email: 'ahmed@demo.com', phone: null, client_id: null, active: true },
+    { id: 'u-wb', role: 'supervisor', full_name: 'Sara',  email: 'sara@demo.com',  phone: null, client_id: null, active: true },
+    { id: 'u-fin', role: 'finance',   full_name: 'Noura',    email: 'noura@demo.com', phone: null, client_id: null, active: true },
     { id: 'u-cli', role: 'client', full_name: 'Khaled Al-Saud',   email: 'khaled@demo.com',  phone: null, client_id: 'c-1', active: true },
   ];
 
@@ -830,17 +915,17 @@ async function seedDemo(): Promise<void> {
   ];
 
   state.templates = [
-    { id: 't-ac', title: { en: 'AC Maintenance', ar: 'صيانة المكيف', ur: 'اے سی کی دیکھ بھال' }, tasks: [
-      { id: crypto.randomUUID(), order: 0, required: true,  label: { en: 'Inspect outdoor unit', ar: 'فحص الوحدة الخارجية', ur: 'باہر والے یونٹ کی جانچ' } },
-      { id: crypto.randomUUID(), order: 1, required: true,  label: { en: 'Clean filters',        ar: 'تنظيف الفلاتر', ur: 'فلٹر صاف کریں' } },
+    { id: 't-ac', title: { en: 'AC Maintenance', ar: 'صيانة المكيف' }, tasks: [
+      { id: crypto.randomUUID(), order: 0, required: true,  label: { en: 'Inspect outdoor unit', ar: 'فحص الوحدة الخارجية' } },
+      { id: crypto.randomUUID(), order: 1, required: true,  label: { en: 'Clean filters',        ar: 'تنظيف الفلاتر' } },
       { id: crypto.randomUUID(), order: 2, required: false, label: { en: 'Check gas pressure',    ar: 'فحص ضغط الغاز' } },
     ], version: 1, created_by: 'u-mgr', created_at: day(-30, 9), updated_at: day(-30, 9) },
   ];
 
   state.tasks = [
-    mkTask('k-1', 'AC maintenance — Living room', 'u-wa', 'c-1', day(0, 9),  'not_started', { template_id: 't-ac', location_lat: 24.7136, location_lng: 46.6753, location_url: 'https://www.google.com/maps/search/?api=1&query=24.7136,46.6753' }),
+    mkTask('k-1', 'AC maintenance — Living room', 'u-wa', 'c-1', day(0, 9),  'not_started', { template_id: 't-ac' }),
     mkTask('k-2', 'Quarterly inspection',          'u-wa', 'c-2', day(0, 11), 'in_progress', { started_at: day(0, 10, 0), recurrence: 'quarterly', series_id: 's-2' }),
-    mkTask('k-3', 'Pool service',                  'u-wb', 'c-3', day(0, 14), 'not_started', { recurrence: 'weekly', series_id: 's-3', location_url: 'https://maps.app.goo.gl/demoPoolVilla' }),
+    mkTask('k-3', 'Pool service',                  'u-wb', 'c-3', day(0, 14), 'not_started', { recurrence: 'weekly', series_id: 's-3' }),
     mkTask('k-4', 'Filter change',                 'u-wa', 'c-2', day(-1, 10),'submitted',   { started_at: day(-1, 10, 5), finished_at: day(-1, 10, 55), extra_work: [
       { id: 'ew-1', body: 'Tightened a loose mounting bracket on the return duct.', addedAt: day(-1, 10, 40), addedBy: 'u-wa', addedByName: 'Ahmed' },
     ] }),
@@ -851,13 +936,8 @@ async function seedDemo(): Promise<void> {
     mkTask('k-6', 'Leak inspection',               'u-wa', 'c-3', day(-2, 13),'rejected',    { started_at: day(-2, 13, 10), finished_at: day(-2, 14, 0), decision_at: day(-2, 15), decision_note: 'Photos unclear — please re-shoot.' }),
     mkTask('k-7', 'Follow-up AC',                  'u-wb', 'c-1', day(1, 9),  'not_started', { recurrence: 'monthly', series_id: 's-7' }),
     mkTask('k-8', 'Quote walk-through',            'u-wa', 'c-3', day(1, 13), 'not_started'),
-    mkTask('k-9', 'Garden upkeep',                 'u-wb', 'c-2', day(-4, 10),'approved',    { started_at: day(-4, 10, 5), finished_at: day(-4, 11, 0), decision_at: day(-1, 3), decision_note: 'Auto-approved after 3 days — client did not respond', approval_method: 'auto_no_response' }),
+    mkTask('k-9', 'Garden upkeep',                 'u-wb', 'c-2', day(-4, 10),'approved',    { started_at: day(-4, 10, 5), finished_at: day(-4, 11, 0), decision_at: day(-1, 3), decision_note: 'Response window expired after 3 days — the client did not sign or reply', approval_method: 'auto_no_response' }),
   ];
-
-  // Mirrors the 0006 backfill (every lead), plus a second worker on k-2 for the demo.
-  state.task_workers = [];
-  for (const t of state.tasks) addTaskWorker(t.id, t.assigned_worker_id, false);
-  addTaskWorker('k-2', 'u-wb', false);
 
   state.client_notes = [
     { id: 'n-1', client_id: 'c-1', body: 'Replace return-air filter on next visit.',         status: 'open',     created_in_task_id: 'k-5', resolved_in_task_id: null, created_by: 'u-wb', created_at: day(-1, 16), resolved_at: null },
@@ -867,7 +947,7 @@ async function seedDemo(): Promise<void> {
 
   // Pre-seeded notifications (recent inbox state).
   state.notifications = [
-    { id: 'no-1', user_id: 'u-mgr', kind: 'task.submitted', payload: { task_id: 'k-4', title: 'Filter change', worker_id: 'u-wa', worker_ids: ['u-wa'] }, read_at: null, email_sent_at: null, created_at: day(-1, 11) },
+    { id: 'no-1', user_id: 'u-mgr', kind: 'task.submitted', payload: { task_id: 'k-4', title: 'Filter change', worker_id: 'u-wa' }, read_at: null, email_sent_at: null, created_at: day(-1, 11) },
     { id: 'no-2', user_id: 'u-wa',  kind: 'task.assigned',  payload: { task_id: 'k-1', title: 'AC maintenance — Living room', scheduled_at: day(0, 9) }, read_at: day(-1, 8), email_sent_at: null, created_at: day(-1, 7) },
     { id: 'no-3', user_id: 'u-wa',  kind: 'task.rejected',  payload: { task_id: 'k-6', title: 'Leak inspection' }, read_at: null, email_sent_at: null, created_at: day(-2, 15, 5) },
     { id: 'no-4', user_id: 'u-wb',  kind: 'task.assigned',  payload: { task_id: 'k-3', title: 'Pool service', scheduled_at: day(0, 14) }, read_at: null, email_sent_at: null, created_at: day(-1, 7, 30) },
@@ -906,7 +986,7 @@ async function seedDemo(): Promise<void> {
   // Configurable signing window (single row). id is the boolean singleton key
   // in Postgres; the mock stores it as the string 'true' so eq('id', true) and
   // eq('id', 'true') both match (the query stringifies both sides).
-  state.app_settings = [{ id: 'true', signing_expiry_days: 3, signing_reminder_hours: 24, updated_at: day(-30, 9) }];
+  state.app_settings = [{ id: 'true', signing_expiry_days: 3, signing_reminder_hours: 24, work_days: [0, 1, 2, 3, 4, 6], updated_at: day(-30, 9) }];
 
   // An active, awaiting-signature link on the submitted task k-4 so the manager
   // can open the demo sign page.
@@ -918,12 +998,13 @@ async function seedDemo(): Promise<void> {
     created_at: day(-1, 11),
   }];
 
+  seedFieldOps(state as Record<string, Row[]>, day);
+
   for (const t of TABLES) await persist(t);
   const conn = await db();
   // Persist blob seeds.
   for (const [path, blob] of blobs.entries()) await conn.put('blobs', blob, path);
-  // Re-seed when the value here changes (bump on each schema-affecting change).
-  await conn.put('meta', 'v5', 'seeded');
+  await conn.put('meta', SEED_VERSION, 'seeded');
   await conn.put('meta', activeUserId, 'activeUserId');
 }
 
@@ -953,7 +1034,6 @@ function mkTask(
     recurrence: 'none', series_id: id,
     extra_work: [],
     approval_method: null,
-    location_url: null, location_lat: null, location_lng: null,
     ...extra,
   };
 }

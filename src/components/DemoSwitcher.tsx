@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { isDemoMode } from '@/services/supabase/client';
+import { features } from '@/config/features';
 
 interface Profile { id: string; full_name: string; role: string }
 
@@ -14,7 +15,8 @@ export function DemoSwitcher() {
   useEffect(() => {
     if (!isDemoMode()) return;
     const ps = window.__demo?.listProfiles() ?? [];
-    setProfiles(ps as Profile[]);
+    const all = ps as Profile[];
+    setProfiles(features.legacyTasks ? all : all.filter((x) => x.role !== 'client' && x.role !== 'worker'));
   }, []);
 
   if (!isDemoMode()) return null;
@@ -37,7 +39,7 @@ export function DemoSwitcher() {
           {profiles.map((p) => (
             <button key={p.id} type="button" className="demo-switcher__item" onClick={() => switchTo(p.id)}>
               <span style={{ flex: 1 }}>{p.full_name}</span>
-              <span className="card__meta" style={{ textTransform: 'capitalize' }}>{t(`roles.${p.role}`, p.role)}</span>
+              <span className="card__meta">{t(`demo.role.${p.role}`, p.role)}</span>
             </button>
           ))}
         </div>

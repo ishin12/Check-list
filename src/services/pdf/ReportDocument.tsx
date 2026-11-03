@@ -28,16 +28,13 @@ interface Props {
  */
 export const ReportDocument = forwardRef<HTMLDivElement, Props>(
   ({ job, language, labels }, ref) => {
-    const rtl = language === 'ar' || language === 'ur';
-    const dir = rtl ? 'rtl' : 'ltr';
+    const dir = language === 'en' ? 'ltr' : 'rtl';
     const fontFamily =
       language === 'ur'
-        ? "'Noto Nastaliq Urdu', 'Noto Naskh Arabic', 'Cairo', system-ui, sans-serif"
+        ? "'Noto Naskh Arabic', 'Cairo', system-ui, sans-serif"
         : language === 'ar'
           ? "'Cairo', system-ui, sans-serif"
           : "'Geist', system-ui, sans-serif";
-    // Nastaliq needs tall line boxes or ascenders/descenders get clipped.
-    const lineHeight = language === 'ur' ? 2.1 : undefined;
     const tasks = job.templateSnapshot.tasks;
     const resultFor = (taskId: string) =>
       job.results.find((r) => r.taskId === taskId);
@@ -53,7 +50,6 @@ export const ReportDocument = forwardRef<HTMLDivElement, Props>(
           background: '#ffffff',
           color: '#0f172a',
           fontFamily,
-          lineHeight,
           padding: 48,
           boxSizing: 'border-box',
         }}
@@ -138,12 +134,12 @@ export const ReportDocument = forwardRef<HTMLDivElement, Props>(
                     border: `2px solid ${checked ? '#16a34a' : '#cbd5e1'}`,
                     color: '#ffffff',
                     fontSize: 14,
-                    lineHeight: language === 'ur' ? '34px' : '20px',
+                    lineHeight: '20px',
                     textAlign: 'center',
                     fontWeight: 700,
                   }}
                 >
-                  {checked ? '✓' : ''} {/* taste-skill-ignore: compact PDF checklist state, not app UI */}
+                  {checked ? '✓' : ''}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 500 }}>

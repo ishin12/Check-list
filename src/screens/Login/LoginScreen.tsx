@@ -4,16 +4,24 @@ import { Navigate } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { useAuth } from '@/app/providers/AuthContext';
 import { isDemoMode } from '@/services/supabase/client';
+import { features } from '@/config/features';
 import { Icon } from '@/components/Icon';
 import { BrandMark } from './BrandMark';
 import '@/styles/screens/first-impression.css';
 
-interface DemoProfile { id: string; full_name: string; email: string; role: 'manager' | 'supervisor' | 'worker' | 'auditor' | 'client' }
+interface DemoProfile { id: string; full_name: string; email: string; role: 'manager' | 'supervisor' | 'finance' | 'worker' | 'client' }
 
+const ROLE_BLURB: Record<DemoProfile['role'], string> = {
+  manager:    'Projects, checklists, workers, reports — plus finance in the demo',
+  supervisor: 'Start visits, pick the crew, record work and photos',
+  finance:    'Labor reports, Excel export, month close',
+  worker:     'Older task list · capture proof · submit',
+  client:     'Read-only portal — visits & approved proof',
+};
 
 export function LoginScreen() {
   const { t } = useTranslation();
-  const { user, signInWithEmail, signInWithPassword, sendPasswordReset, configured } = useAuth();
+  const { user, signInWithEmail, signInWithPassword, configured } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
@@ -24,7 +32,7 @@ export function LoginScreen() {
   useEffect(() => {
     if (!demo) return;
     const profiles = (window.__demo?.listProfiles() ?? []) as DemoProfile[];
-    setDemoProfiles(profiles);
+    setDemoProfiles(features.legacyTasks ? profiles : profiles.filter((x) => x.role !== 'client' && x.role !== 'worker'));
   }, [demo]);
 
   if (user) return <Navigate to="/" replace />;
@@ -44,23 +52,6 @@ export function LoginScreen() {
         await signInWithPassword(email.trim(), password);
         setStatus('idle');
       }
-    } catch (err) {
-      setStatus('error');
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }
-
-  async function onForgot() {
-    if (!email) {
-      setStatus('error');
-      setError(t('auth.email', 'Email'));
-      return;
-    }
-    setStatus('sending');
-    setError(null);
-    try {
-      await sendPasswordReset(email.trim());
-      setStatus('sent');
     } catch (err) {
       setStatus('error');
       setError(err instanceof Error ? err.message : String(err));
@@ -115,11 +106,11 @@ export function LoginScreen() {
                   disabled={status === 'sending'}
                 >
                   <div className={`demo-account__role demo-account__role--${p.role}`}>
-                    {t(`roles.${p.role}`, p.role)}
+                    {t(`demo.role.${p.role}`, p.role)}
                   </div>
                   <div className="demo-account__body">
                     <div className="card__title">{p.full_name}</div>
-                    <div className="card__meta">{t(`demo.blurb.${p.role}`)}</div>
+                    <div className="card__meta">{t(`demo.blurb.${p.role}`, ROLE_BLURB[p.role])}</div>
                   </div>
                   <span className="demo-account__arrow"><Icon name="forward" /></span>
                 </button>
@@ -173,22 +164,9 @@ export function LoginScreen() {
               : demo ? t('auth.sendLink', 'Send magic link') : t('auth.signIn', 'Sign in')}
           </button>
 
-          {!demo ? (
-            <button
-              type="button"
-              className="btn btn--text"
-              onClick={onForgot}
-              disabled={status === 'sending' || !configured}
-            >
-              {t('auth.forgotPassword', 'Forgot password?')}
-            </button>
-          ) : null}
-
           {status === 'sent' ? (
-            <div className="banner banner--success" role="status">
-              {demo
-                ? t('auth.linkSent', 'Check your email and tap the link to continue.')
-                : t('auth.resetSent', 'If that email has an account, a reset link is on its way.')}
+            <div className="banner banner--success">
+              {t('auth.linkSent', 'Check your email and tap the link to continue.')}
             </div>
           ) : null}
           {status === 'error' && error ? (

@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLanguage } from '@/app/providers/LanguageContext';
-import type { TFunction } from 'i18next';
-import type { Language } from '@/domain/models/types';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '@/app/providers/LanguageContext';
 import { Link } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { AppShell } from '@/components/AppShell';
@@ -12,10 +10,10 @@ import { listTasks } from '@/services/data/tasks';
 import { getSupabase } from '@/services/supabase/client';
 import { TaskWhoLine } from '@/components/TaskWhoLine';
 import type { FieldTask } from '@/domain/models/ops';
-import { formatDate, formatTime } from '@/lib/datetime';
+import { APP_TIME_ZONE } from '@/lib/dates';
+import { formatTime } from '@/lib/datetime';
 import { Icon } from '@/components/Icon';
 import '@/styles/screens/field.css';
-import { isAdministrator } from '@/domain/permissions';
 
 interface Option { id: string; label: string }
 
@@ -30,7 +28,7 @@ export function CalendarScreen() {
   const [filterId, setFilterId] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
 
-  const isManager = user ? isAdministrator(user.role) : false;
+  const isManager = user?.role === 'manager';
 
   // Load reference lists for the manager filter dropdown.
   useEffect(() => {
@@ -111,8 +109,8 @@ export function CalendarScreen() {
           {groups.map(([day, items]) => (
             <section key={day} className="agenda__day">
               <header className="agenda__header">
-                <span className="agenda__date">{formatDay(day, language, t)}</span>
-                <span className="agenda__count" title={t('calendar.taskCount', 'Task count')}>{items.length}</span>
+                <span className="agenda__date">{formatDay(day)}</span>
+                <span className="agenda__count" title="task count">{items.length}</span>
               </header>
               <div className="stack">
                 {items.map((x) => (
@@ -126,6 +124,9 @@ export function CalendarScreen() {
                       </div>
                       <div className="card__title">{x.title}</div>
                       <TaskWhoLine task={x} hideWorker={!isManager} />
+                      <div className="card__meta">
+                        {new Date(x.scheduledAt).toLocaleTimeString(undefined, { timeZone: APP_TIME_ZONE, hour: '2-digit', minute: '2-digit' })}
+                      </div>
                     </div>
                   </Link>
                 ))}
@@ -148,12 +149,12 @@ function groupByDay(tasks: FieldTask[]): Array<[string, FieldTask[]]> {
   return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
 }
 
-function formatDay(day: string, language: Language, t: TFunction): string {
+function formatDay(day: string): string {
   const d = new Date(day + 'T00:00:00');
   const today = new Date(); today.setHours(0,0,0,0);
   const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
-  if (diff === 0) return t('calendar.dayToday', 'Today');
-  if (diff === 1) return t('calendar.dayTomorrow', 'Tomorrow');
-  if (diff === -1) return t('calendar.dayYesterday', 'Yesterday');
-  return formatDate(d, language, { weekday: 'short', month: 'short', day: 'numeric' });
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
