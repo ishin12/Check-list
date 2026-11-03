@@ -1,9 +1,9 @@
 name: Deploy to GitHub Pages
 
+# Manual only for now: the app on this branch needs the field-ops database
+# migrations (0005_roles .. 0009_v22) applied to the live Supabase project
+# before it is deployed. Run it from the Actions tab once they are applied.
 on:
-  push:
-    branches:
-      - claude/elegant-lovelace-I02rh
   workflow_dispatch:
 
 permissions:
@@ -32,6 +32,9 @@ jobs:
           VITE_DEMO_MODE: '0'
           VITE_SUPABASE_URL: https://qyznhoimffltdigickjl.supabase.co
           VITE_SUPABASE_ANON_KEY: sb_publishable_8GlzwxVm3OTezLF18jmWyQ_UtI924W4
+      # Client demo (in-browser sample data, no backend) served at /Check-list/demo/,
+      # built from this same commit.
+      - run: npm run build:demo && cp -r dist-demo dist/demo
       - uses: actions/configure-pages@v5
         with:
           enablement: true

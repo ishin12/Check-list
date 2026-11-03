@@ -13,3 +13,5 @@ dev-dist
 dist-demo
 ghsoon-najd-demo.zip
 dist-demo2
+e2e/shots*/
+.worktrees/
